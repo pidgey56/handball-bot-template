@@ -14,14 +14,18 @@ Elle combine un **robot WhatsApp officiel** (sans API payante), un **scraping au
 
 ## ⚡ Fonctionnalités clés
 
-* 🤖 **Sondages WhatsApp hebdomadaires automatiques** : Détection des matchs de vos équipes sur `ffhandball.fr`, calcul automatique des heures de rendez-vous (domicile ou extérieur avec temps de trajet), et publication du sondage à choix multiples dans votre groupe d'équipe.
-* 📥 **Déchiffrement et synchronisation des votes** : Lecture des votes chiffrés AES-GCM multi-appareils (Baileys), mise en correspondance automatique avec le répertoire des joueurs via leur numéro de téléphone.
-* 🤾 **WebApp mobile de composition d'équipe** :
-  * **Mode Classique** : Glisser-déposer (Drag & Drop) des joueurs disponibles entre les équipes.
-  * **Mode Tinder** : Swiper à gauche pour l'Équipe 1, à droite pour l'Équipe 2, vers le bas pour le repos.
+* 🤖 **Sondages WhatsApp hebdomadaires automatiques** : Détection des matchs de vos équipes sur `ffhandball.fr`, calcul automatique des heures de rendez-vous (domicile ou extérieur avec temps de trajet), et publication du sondage à choix multiples dans votre groupe d'équipe (support de 1, 2 ou 3 équipes maximum).
+* 📥 **Déchiffrement et synchronisation des votes** : Lecture des votes chiffrés AES-GCM multi-appareils (Baileys), mise en correspondance automatique avec le répertoire des joueurs via leur numéro de téléphone. Nettoyage automatique des fichiers de session temporaires (`auth_info/`) sans déconnexion.
+* 🤾 **WebApp mobile de composition d'équipe (1 à 3 équipes)** :
+  * **Mode Classique** : Tableau responsive en colonnes (Équipe 1, Équipe 2, Équipe 3, Joueurs disponibles) avec glisser-déposer (Drag & Drop) intuitif.
+  * **Mode Tinder adaptatif** :
+    * **1 équipe** : 👈 Gauche = Repos | 👉 Droite = Sélectionné
+    * **2 équipes** : 👈 Gauche = Équipe 1 | 👉 Droite = Équipe 2 | 👇 Bas = Repos
+    * **3 équipes** : 👆 Haut = Équipe 1 | 👈 Gauche = Équipe 2 | 👉 Droite = Équipe 3 | 👇 Bas = Repos
   * **Gestion des entraînements** : Répartition des présents en groupes de niveau ou sélection d'effectif restreint.
 * 📤 **Convocations WhatsApp en 1 clic** : Mise en forme instantanée de la liste des convoqués avec adversaire, lieu et heure de rendez-vous, envoyée directement dans le groupe WhatsApp depuis la WebApp.
-* 👤 **Portail Joueur en libre-service** : Code PIN personnel, sélection du poste de jeu préféré, ajout de photo de profil et notes d'entraîneurs.
+* 🎨 **Identité visuelle & Couleurs personnalisées** : Adaptation automatique de la WebApp et du classeur aux couleurs de votre club (couleur primaire, secondaire, équipe 1, équipe 2 et équipe 3). Sélecteur de couleurs interactif avec nuanciers de clubs professionnels (HBC Nantes, PSG, Montpellier MHB, etc.) ou codes hexadécimaux libres.
+* 🔄 **Mises à jour faciles & Détection de version** : Détection automatique des nouvelles versions du modèle dans la WebApp et Google Sheets, avec synchronisation de votre robot GitHub Actions en 1 clic.
 * 💸 **0 € de frais d'hébergement** : Fonctionne entièrement sur les quotas gratuits de Google Sheets et de GitHub Actions. Aucun serveur ni base de données à administrer.
 
 ---
@@ -62,6 +66,7 @@ Pour installer le bot dans votre club en moins de 15 minutes, consultez le guide
 
 Tous les réglages s'effectuent sans coder, directement depuis l'onglet **Configuration** de votre Google Sheet :
 - **Nom et blason du club** : Nom officiel et URL du logo pour la WebApp.
+- **Couleurs du club et des équipes** : Palette personnalisée (`#HEX`) avec aperçu en temps réel et nuanciers intégrés.
 - **Équipes gérées** : Nom des équipes (ex: `SG1`, `SG2`, `N2`, `-18M`), mots-clés FFHB et URLs de poules.
 - **Créneaux d'entraînement** : Jours, horaires et gymnases personnalisables.
 - **Délai de rendez-vous** : Décalage en heures avant le coup d'envoi (ex: 1h pour domicile, 1h30 pour extérieur).
@@ -86,3 +91,4 @@ Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une *Issue* ou 
 ## 📄 Licence
 
 Ce projet est distribué sous licence [MIT](LICENSE). Vous êtes libre de l'utiliser, le modifier et le déployer pour votre club de handball.
+

@@ -1,0 +1,51 @@
+name: Sync with Handball Bot Template
+
+on:
+  # Déclenchement manuel en 1 clic depuis l'onglet Actions
+  workflow_dispatch:
+  # Vérification mensuelle le 1er du mois à 4h00
+  schedule:
+    - cron: '0 4 1 * *'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-template:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du dépôt du club
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configuration de Git
+        run: |
+          git config user.name "Handball Bot Auto-Updater"
+          git config user.email "bot-updater@users.noreply.github.com"
+
+      - name: Téléchargement des fichiers mis à jour depuis le modèle officiel
+        run: |
+          UPSTREAM_RAW="https://raw.githubusercontent.com/pidgey56/handball-bot-template/main"
+          echo "Téléchargement des derniers scripts depuis $UPSTREAM_RAW..."
+          
+          curl -sSL "$UPSTREAM_RAW/send-poll.js" -o send-poll.js
+          curl -sSL "$UPSTREAM_RAW/package.json" -o package.json
+          curl -sSL "$UPSTREAM_RAW/version.json" -o version.json
+          curl -sSL "$UPSTREAM_RAW/.github/workflows/whatsapp.yml" -o .github/workflows/whatsapp.yml
+          curl -sSL "$UPSTREAM_RAW/.github/workflows/sync-template.yml" -o .github/workflows/sync-template.yml
+          curl -sSL "$UPSTREAM_RAW/GUIDE_INSTALLATION.md" -o GUIDE_INSTALLATION.md
+          curl -sSL "$UPSTREAM_RAW/README.md" -o README.md
+
+      - name: Application des modifications
+        run: |
+          git add send-poll.js package.json version.json .github/workflows/whatsapp.yml .github/workflows/sync-template.yml GUIDE_INSTALLATION.md README.md
+          if git diff --staged --quiet; then
+            echo "Votre dépôt est déjà à jour avec le modèle officiel !"
+          else
+            VERSION=$(cat version.json | grep '"version"' | head -n 1 | awk -F '"' '{print $4}')
+            git commit -m "chore(update): Synchronisation avec Handball Bot Template v$VERSION"
+            git push
+            echo "Mise à jour réussie vers la version $VERSION !"
+          fi
+

@@ -129,17 +129,36 @@ Dans l'onglet **Configuration** de votre Google Sheet :
 - **Logo du Club (URL)** (`C23`) : Lien direct vers l'image de votre blason (facultatif).
 - **Gymnase / Ville par défaut** (`C24`) : Le nom de votre salle pour les matchs à domicile.
 - **Numéros Coachs / Admins** (`C25`) : Vos numéros au format international séparés par des virgules (ex: `33612345678,33698765432`). Les numéros renseignés ici ont accès à l'espace coach de la WebApp sans restriction.
+- **Couleurs personnalisées du club** (au format hexadécimal `#RRGGBB`) :
+  - **Couleur Principale** (`C26`) : Teinte majeure du club (en-tête, boutons d'action, accents). Ex: `#f97316` (Orange).
+  - **Couleur Secondaire** (`C27`) : Teinte d'accentuation (boutons secondaires, dégradés). Ex: `#fbbf24` (Ambre).
+  - **Couleur Équipe 1** (`C28`) : Couleur distinctive de l'équipe 1 (badges, colonne, maillot). Ex: `#3b82f6` (Bleu).
+  - **Couleur Équipe 2** (`C29`) : Couleur distinctive de l'équipe 2. Ex: `#f97316` (Orange).
+  - **Couleur Équipe 3** (`C30`) : Couleur distinctive de l'équipe 3. Ex: `#10b981` (Émeraude).
 
-### 2. Équipes & Poules FFHB (Lignes 4 et 5)
-Pour chaque équipe (Équipe 1, Équipe 2) :
-- **Nom recherché (Mot-clé FFHB)** : Le nom de votre club tel qu'il apparaît sur le site de la FFHB (ex: `NANTES`, `IVRY`, `BOULOGNE`).
-- **Libellé dans le sondage** : L'appellation courte de l'équipe (ex: `SG1`, `SG2`, `N2`, `R1`, `-18M`).
-- **Délai RDV avant match** : Nombre d'heures de convocation avant le coup d'envoi (ex: `1` pour 1h avant, `1.5` pour 1h30).
+> [!TIP]
+> **Personnalisation visuelle en 1 clic :**
+> Vous pouvez aussi configurer vos couleurs directement depuis votre smartphone sur la WebApp (bouton **🎨 Couleurs** ou via le menu Coach **🎨 Couleurs & Identité du Club**).
+> Un sélecteur interactif propose des palettes prêtes à l'emploi (HBC Nantes, PSG, Montpellier MHB, USAM Nîmes, Chambéry, etc.) avec aperçu en temps réel et sauvegarde automatique dans le Google Sheet !
+> Si vous modifiez les couleurs directement dans la feuille Google Sheet, cliquez sur le menu **`⚡ Handball Bot` > `🎨 7. Actualiser les couleurs et styles`** pour recalculer les pastilles et la couleur des onglets.
+
+### 2. Équipes & Poules FFHB (Lignes 4 à 6 - 3 équipes maximum)
+Pour préserver une ergonomie optimale sur smartphone et un mode Tinder fluide, le système gère **jusqu'à 3 équipes maximum** (ex: SG1, SG2, SG3) :
+- **Code équipe** (`Colonne B`) : ex. `Équipe 1`, `Équipe 2`, `Équipe 3`.
+- **Nom recherché (Mot-clé FFHB)** (`Colonne C`) : Le nom de votre club tel qu'il apparaît sur le site de la FFHB (ex: `NANTES`, `IVRY`, `BOULOGNE`).
+- **Libellé dans le sondage** (`Colonne D`) : L'appellation courte de l'équipe (ex: `SG1`, `SG2`, `SG3`, `N2`, `R1`, `-18M`).
+- **Délai RDV avant match** (`Colonne E`) : Nombre d'heures de convocation avant le coup d'envoi (ex: `1` pour 1h avant, `1.5` pour 1h30).
 - **URL de la poule FFHB** :
   1. Allez sur le site officiel [ffhandball.fr](https://www.ffhandball.fr).
   2. Naviguez vers **Compétitions** > Choisissez la division de votre équipe > Sélectionnez votre poule.
   3. Copiez l'URL de la page dans la barre d'adresse de votre navigateur (ex : `https://www.ffhandball.fr/competitions/saison-2026-2027-22/regional/regionale-3-masculine-32421/poule-190542/`).
   4. Collez cette URL dans la colonne **F**.
+
+> [!IMPORTANT]
+> **Mode Tinder adaptatif selon le nombre d'équipes configurées :**
+> - **1 équipe** : 👈 Gauche = Repos | 👉 Droite = Sélectionné
+> - **2 équipes** : 👈 Gauche = Équipe 1 | 👉 Droite = Équipe 2 | 👇 Bas = Repos
+> - **3 équipes** : 👆 Haut = Équipe 1 | 👈 Gauche = Équipe 2 | 👉 Droite = Équipe 3 | 👇 Bas = Repos
 
 ### 3. Créneaux d'Entraînement (Lignes 9 à 14)
 - Personnalisez l'intitulé de vos entraînements (jours, horaires, gymnase).
@@ -228,3 +247,30 @@ Assurez-vous que les permissions des workflows sont activées en écriture sur v
 Lors du déploiement de la WebApp :
 - Choisissez toujours **Exécuter en tant que : Moi** et **Qui a accès : Tout le monde**.
 - Si vous modifiez le code `code.gs`, pensez à faire **Déployer > Gérer les déploiements > Modifier (crayon) > Nouvelle version > Déployer** pour que les changements soient pris en compte.
+
+---
+
+## Étape 10 : Mettre à jour votre Bot lors des nouvelles versions
+
+Lorsqu'une nouvelle version de Handball Bot est publiée avec de nouvelles fonctionnalités ou des correctifs, vous en êtes automatiquement averti :
+- **Sur l'accueil Coach de la WebApp** : Un bandeau violet vous indique la nouvelle version disponible et affiche la liste des nouveautés.
+- **Dans Google Sheets** : Le menu **`⚡ Handball Bot` > `🔄 8. Vérifier les mises à jour du modèle`** vous donne les détails et liens directs.
+
+### 1. Mettre à jour le robot WhatsApp (GitHub Actions) en 1 clic
+1. Sur votre dépôt GitHub privé, rendez-vous dans l'onglet **Actions**.
+2. Dans la colonne de gauche, cliquez sur le workflow **« Sync with Handball Bot Template »**.
+3. À droite, cliquez sur **Run workflow** > **Run workflow**.
+4. En 10 secondes, GitHub télécharge les nouveaux scripts (`send-poll.js`, etc.) et les applique à votre dépôt **sans jamais toucher à votre session WhatsApp (`auth_info/`)**.
+
+### 2. Mettre à jour le Google Sheet (`code.gs`)
+1. Dans votre Google Sheet, ouvrez **Extensions > Apps Script**.
+2. Supprimez l'ancien contenu de `code.gs` et collez la nouvelle version.
+3. Cliquez sur la disquette 💾 pour enregistrer.
+4. Cliquez sur **Déployer > Gérer les déploiements > Modifier (icône crayon)**.
+5. Dans **Version**, choisissez **Nouvelle version**, puis cliquez sur **Déployer**.
+
+> [!NOTE]
+> **Vos données sont 100% en sécurité :**
+> Vos effectifs, numéros, créneaux, URLs FFHB et palettes de couleurs sont stockés dans les cellules de vos feuilles Google Sheets. La mise à jour de `code.gs` ne touche à aucune de vos données !
+
+

@@ -1,0 +1,15 @@
+{
+  "version": "1.3.0",
+  "releaseDate": "2026-10-09",
+  "title": "Gestion 1 à 3 Équipes, Tinder 4 Directions & Purge Session WhatsApp",
+  "changelog": [
+    "🤾 Support flexible et optimisé de 1, 2 ou 3 équipes maximum par coach",
+    "🔥 Mode Tinder directionnel adaptatif : 1 équipe (👈 Repos / 👉 Sélectionné), 2 équipes (👈 Éq 1 / 👉 Éq 2 / 👇 Repos), 3 équipes (👆 Éq 1 / 👈 Éq 2 / 👉 Éq 3 / 👇 Repos)",
+    "🎨 Personnalisation des maillots et couleurs pour l'Équipe 3 en direct dans la WebApp et Google Sheets",
+    "🧹 Purge automatique hebdomadaire de auth_info/ préservant la session creds.json et allégeant le dépôt GitHub",
+    "🚀 Détecteur de mises à jour intégré dans la WebApp et menu Google Sheets avec synchronisation en 1 clic",
+    "📋 Grille de composition responsive sur mobile et desktop avec Sortable drag-and-drop adapté"
+  ],
+  "repoUrl": "https://github.com/pidgey56/handball-bot-template",
+  "codeGsRawUrl": "https://raw.githubusercontent.com/pidgey56/handball-bot-template/main/code.gs"
+}

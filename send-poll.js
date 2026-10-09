@@ -108,6 +108,56 @@ if (fs.existsSync('./last_poll.json')) {
   console.log('Aucun fichier last_poll.json trouvé dans le dépôt.');
 }
 
+function nettoyerAuthInfo() {
+  const authDir = './auth_info';
+  if (!fs.existsSync(authDir)) return;
+
+  try {
+    const files = fs.readdirSync(authDir);
+    let preKeyFiles = [];
+    let memoryFiles = [];
+
+    for (const f of files) {
+      if (f.startsWith('pre-key-') && f.endsWith('.json')) {
+        const match = f.match(/^pre-key-(\d+)\.json$/);
+        const id = match ? parseInt(match[1], 10) : 0;
+        preKeyFiles.push({ file: f, id: id });
+      } else if (f.startsWith('sender-key-memory-') && f.endsWith('.json')) {
+        memoryFiles.push(f);
+      }
+    }
+
+    // Supprimer les caches de mémoire temporaires
+    for (const mf of memoryFiles) {
+      try { fs.unlinkSync(`${authDir}/${mf}`); } catch (e) {}
+    }
+
+    // Conserver uniquement les 30 pre-keys les plus récentes
+    preKeyFiles.sort((a, b) => a.id - b.id);
+    const GARDER = 30;
+    let supprCount = 0;
+    if (preKeyFiles.length > GARDER) {
+      const aSupprimer = preKeyFiles.slice(0, preKeyFiles.length - GARDER);
+      for (const pk of aSupprimer) {
+        try {
+          fs.unlinkSync(`${authDir}/${pk.file}`);
+          supprCount++;
+        } catch (e) {}
+      }
+    }
+
+    if (supprCount > 0 || memoryFiles.length > 0) {
+      console.log(`🧹 Purge auth_info : ${supprCount} ancienne(s) pre-key(s) et ${memoryFiles.length} fichier(s) mémoire nettoyé(s) (session WhatsApp préservée)`);
+    }
+  } catch (err) {
+    console.log('Erreur nettoyage auth_info : ' + err.message);
+  }
+}
+
+process.on('exit', () => {
+  nettoyerAuthInfo();
+});
+
 const LISTEN_MS = (Number(process.env.LISTEN_SECONDS) || 120) * 1000;
 let upsertCount = 0;
 let stubCount = 0;
@@ -397,6 +447,7 @@ async function startBot() {
         console.log('ERREUR lors de l\'action WhatsApp : ' + errAction.message);
       }
 
+      nettoyerAuthInfo();
       await delay(2000);
       process.exit(0);
     }
@@ -471,6 +522,8 @@ function sauvegarderFichierVotesLocal(botJid, botLid, afficherBilan) {
           selectedOptions: [],
           dispoEquipe1: false,
           dispoEquipe2: false,
+          dispoEquipe3: false,
+          dispoEquipe4: false,
           dispo1B: false,
           dispo1C: false,
           dispoLundi: false,
@@ -498,13 +551,14 @@ function sauvegarderFichierVotesLocal(botJid, botLid, afficherBilan) {
       }
 
       if (matchOptionsDetected.length > 0) {
-        if (optName === matchOptionsDetected[0]) {
-          joueursMap[phone].dispoEquipe1 = true;
-          joueursMap[phone].dispo1B = true;
-        } else if (matchOptionsDetected.length > 1 && optName === matchOptionsDetected[1]) {
-          joueursMap[phone].dispoEquipe2 = true;
-          joueursMap[phone].dispo1C = true;
-        }
+        matchOptionsDetected.forEach((mOpt, mIdx) => {
+          if (optName === mOpt) {
+            const eqNum = mIdx + 1;
+            joueursMap[phone]['dispoEquipe' + eqNum] = true;
+            if (eqNum === 1) joueursMap[phone].dispo1B = true;
+            if (eqNum === 2) joueursMap[phone].dispo1C = true;
+          }
+        });
       }
 
       if (optNameUp.includes('ÉQUIPE 1') || optNameUp.includes('EQUIPE 1') || optNameUp.includes('1B') || optNameUp.includes('SG1') || optNameUp.includes('SF1')) {
@@ -514,6 +568,12 @@ function sauvegarderFichierVotesLocal(botJid, botLid, afficherBilan) {
       if (optNameUp.includes('ÉQUIPE 2') || optNameUp.includes('EQUIPE 2') || optNameUp.includes('1C') || optNameUp.includes('SG2') || optNameUp.includes('SF2')) {
         joueursMap[phone].dispoEquipe2 = true;
         joueursMap[phone].dispo1C = true;
+      }
+      if (optNameUp.includes('ÉQUIPE 3') || optNameUp.includes('EQUIPE 3') || optNameUp.includes('1D') || optNameUp.includes('SG3') || optNameUp.includes('SF3')) {
+        joueursMap[phone].dispoEquipe3 = true;
+      }
+      if (optNameUp.includes('ÉQUIPE 4') || optNameUp.includes('EQUIPE 4') || optNameUp.includes('1E') || optNameUp.includes('SG4') || optNameUp.includes('SF4')) {
+        joueursMap[phone].dispoEquipe4 = true;
       }
     }
   }
@@ -533,6 +593,8 @@ setTimeout(() => {
   if (MODE === 'sync_votes' && savedPoll) {
     sauvegarderFichierVotesLocal(null, null, true);
   }
+  nettoyerAuthInfo();
   console.log('Fin du temps imparti, fermeture propre du script.');
   process.exit(0);
 }, LISTEN_MS + 60000);
+
