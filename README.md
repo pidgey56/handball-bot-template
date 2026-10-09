@@ -34,7 +34,8 @@ Elle combine un **robot WhatsApp officiel** (sans API payante), un **scraping au
 
 Pour installer le bot dans votre club en moins de 15 minutes, consultez le guide pas à pas :
 
-👉 **[Consulter le Guide d'Installation Complet (GUIDE_INSTALLATION.md)](GUIDE_INSTALLATION.md)**
+👉 **[📖 Guide d'Installation Pas à Pas (GUIDE_INSTALLATION.md)](GUIDE_INSTALLATION.md)** : Installation initiale en 15 minutes.  
+👉 **[🤾 Guide d'Utilisation au Quotidien (GUIDE_UTILISATION.md)](GUIDE_UTILISATION.md)** : Fonctionnement hebdomadaire pour les coachs (matchs, entraînements, mode Tinder) et joueurs.
 
 ### Résumé des 4 étapes d'installation :
 1. **Créer votre dépôt** : Cliquez sur **« Use this template »** (visibilité **Privée** requise).
