@@ -22,8 +22,9 @@ const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
 // Logo de secours (Handball SVG moderne généré dynamiquement selon la couleur principale)
 function genererLogoDefaut(couleur) {
-  const hex = encodeURIComponent(couleur || '#f97316');
-  return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="' + hex + '"><circle cx="12" cy="12" r="10" stroke="%23cbd5e1" stroke-width="1.5" fill="%231e293b"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 0 20 0M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14" stroke="%23cbd5e1" stroke-width="1.2" fill="none"/></svg>';
+  const c = couleur || '#f97316';
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="' + c + '"><circle cx="12" cy="12" r="10" stroke="#cbd5e1" stroke-width="1.5" fill="#1e293b"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 0 20 0M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14" stroke="#cbd5e1" stroke-width="1.2" fill="none"/></svg>';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
 const LOGO_DEFAULT = genererLogoDefaut('#f97316');
@@ -95,7 +96,13 @@ function getSpreadsheet() {
  * Récupère la configuration complète du club depuis l'onglet "Configuration"
  */
 function getClubConfig(ss) {
-  const classeur = ss || getSpreadsheet();
+  let classeur = null;
+  try {
+    classeur = ss || getSpreadsheet();
+  } catch (err) {
+    return getDefaultConfig();
+  }
+  if (!classeur) return getDefaultConfig();
   const shCfg = classeur.getSheetByName('Configuration');
   if (!shCfg) return getDefaultConfig();
 
