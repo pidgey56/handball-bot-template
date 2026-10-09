@@ -54,7 +54,7 @@ jobs:
           POLL_OPTIONS: ${{ toJson(github.event.client_payload.poll_options) }}
           TEXT_MESSAGE: ${{ github.event.client_payload.text_message }}
           WEBAPP_URL: ${{ github.event.client_payload.webapp_url }}
-          LISTEN_SECONDS: ${{ github.event_name == 'schedule' && '240' || '120' }}
+          LISTEN_SECONDS: '25'
         run: node send-poll.js
 
       - name: Sauvegarde automatique de la session et des votes

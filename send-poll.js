@@ -158,7 +158,7 @@ process.on('exit', () => {
   nettoyerAuthInfo();
 });
 
-const LISTEN_MS = (Number(process.env.LISTEN_SECONDS) || 120) * 1000;
+const LISTEN_MS = (Number(process.env.LISTEN_SECONDS) || 25) * 1000;
 let upsertCount = 0;
 let stubCount = 0;
 
@@ -596,5 +596,5 @@ setTimeout(() => {
   nettoyerAuthInfo();
   console.log('Fin du temps imparti, fermeture propre du script.');
   process.exit(0);
-}, LISTEN_MS + 60000);
+}, LISTEN_MS + 15000);
 
