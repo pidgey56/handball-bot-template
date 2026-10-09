@@ -33,14 +33,13 @@ jobs:
           curl -sSL "$UPSTREAM_RAW/send-poll.js" -o send-poll.js
           curl -sSL "$UPSTREAM_RAW/package.json" -o package.json
           curl -sSL "$UPSTREAM_RAW/version.json" -o version.json
-          curl -sSL "$UPSTREAM_RAW/.github/workflows/whatsapp.yml" -o .github/workflows/whatsapp.yml
-          curl -sSL "$UPSTREAM_RAW/.github/workflows/sync-template.yml" -o .github/workflows/sync-template.yml
           curl -sSL "$UPSTREAM_RAW/GUIDE_INSTALLATION.md" -o GUIDE_INSTALLATION.md
+          curl -sSL "$UPSTREAM_RAW/GUIDE_UTILISATION.md" -o GUIDE_UTILISATION.md
           curl -sSL "$UPSTREAM_RAW/README.md" -o README.md
 
       - name: Application des modifications
         run: |
-          git add send-poll.js package.json version.json .github/workflows/whatsapp.yml .github/workflows/sync-template.yml GUIDE_INSTALLATION.md README.md
+          git add send-poll.js package.json version.json GUIDE_INSTALLATION.md GUIDE_UTILISATION.md README.md
           if git diff --staged --quiet; then
             echo "Votre dépôt est déjà à jour avec le modèle officiel !"
           else

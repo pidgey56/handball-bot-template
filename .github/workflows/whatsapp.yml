@@ -77,5 +77,7 @@ jobs:
             git rebase --abort 2>/dev/null || true
             sleep 5
           done
+          echo "❌ ERREUR : Échec de la sauvegarde sur GitHub."
+          echo "👉 Vérifiez que 'Read and write permissions' est activé dans Settings > Actions > General > Workflow permissions."
           exit 1
 
