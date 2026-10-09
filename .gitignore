@@ -1,0 +1,23 @@
+# Dépendances Node.js
+node_modules/
+package-lock.json
+
+# Environnement et secrets locaux
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers temporaires ou exports Excel (sauf le template officiel)
+*.xlsx
+!Handball_Bot_Template.xlsx
+
+# NOTE : Ne pas ignorer auth_info/, last_poll.json et votes_semaine.json !
+# GitHub Actions les sauvegarde automatiquement sur la branche principale
+# pour maintenir la session WhatsApp et synchroniser les votes.

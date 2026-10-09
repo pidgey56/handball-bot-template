@@ -1,0 +1,25 @@
+{
+  "name": "handball-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp & Gestionnaire de Matchs et Entraînements pour Clubs de Handball",
+  "type": "module",
+  "scripts": {
+    "start": "node send-poll.js",
+    "setup": "node send-poll.js",
+    "sync": "node send-poll.js"
+  },
+  "keywords": [
+    "handball",
+    "whatsapp",
+    "bot",
+    "baileys",
+    "ffhb",
+    "google-sheets"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "pino": "^9.0.0"
+  }
+}

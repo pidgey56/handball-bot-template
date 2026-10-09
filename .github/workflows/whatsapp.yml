@@ -1,0 +1,74 @@
+name: WhatsApp Poll Bot
+
+on:
+  # Synchronisation périodique automatique des votes toutes les heures
+  schedule:
+    - cron: '0 * * * *'
+
+  # Déclenchements envoyés depuis Google Sheets ou la WebApp
+  repository_dispatch:
+    types: [send_whatsapp_poll, send_whatsapp_text, sync_whatsapp_votes]
+
+  # Déclenchement manuel depuis l'interface GitHub (ex: première connexion / setup)
+  workflow_dispatch:
+    inputs:
+      phone_number:
+        description: 'Votre numéro de téléphone sans + (ex: 33612345678)'
+        required: false
+        default: ''
+      mode:
+        description: 'Mode à lancer'
+        type: choice
+        options: [setup, sync_votes]
+        default: setup
+
+# Empêche deux workflows de se connecter à WhatsApp en même temps (évite l'erreur 440)
+concurrency:
+  group: whatsapp-session-unique
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run-whatsapp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du dépôt
+        uses: actions/checkout@v4
+
+      - name: Installation de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Installation des dépendances Baileys
+        run: npm install
+
+      - name: Exécution du script WhatsApp
+        env:
+          MODE: ${{ github.event_name == 'schedule' && 'sync_votes' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.mode || 'setup') || (github.event.action == 'send_whatsapp_text' && 'send_text' || (github.event.action == 'sync_whatsapp_votes' && 'sync_votes' || 'poll'))) }}
+          PHONE_NUMBER: ${{ github.event.inputs.phone_number }}
+          GROUP_ID: ${{ github.event.client_payload.group_id }}
+          POLL_TITLE: ${{ github.event.client_payload.poll_title }}
+          POLL_OPTIONS: ${{ toJson(github.event.client_payload.poll_options) }}
+          TEXT_MESSAGE: ${{ github.event.client_payload.text_message }}
+          WEBAPP_URL: ${{ github.event.client_payload.webapp_url }}
+          LISTEN_SECONDS: ${{ github.event_name == 'schedule' && '240' || '120' }}
+        run: node send-poll.js
+
+      - name: Sauvegarde automatique de la session et des votes
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add auth_info last_poll.json votes_semaine.json 2>/dev/null || true
+          git diff --staged --quiet && exit 0
+          git commit -m "Mise à jour session et votes WhatsApp"
+          git checkout -- .
+          for i in 1 2 3 4 5; do
+            git pull --rebase -X theirs origin main && git push && exit 0
+            git rebase --abort 2>/dev/null || true
+            sleep 5
+          done
+          exit 1
