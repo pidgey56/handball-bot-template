@@ -47,13 +47,21 @@ Avant de commencer, munissez-vous de :
 Vous avez deux méthodes au choix :
 
 ### Méthode A (Recommandée - Import direct du template Excel)
-1. Ouvrez votre **Google Drive** ([drive.google.com](https://drive.google.com)).
-2. Glissez-déposez le fichier [`Handball_Bot_Template.xlsx`](Handball_Bot_Template.xlsx) présent à la racine de ce dépôt.
-3. Ouvrez le fichier dans Google Drive, puis cliquez sur **Fichier > Enregistrer au format Google Sheets**.
-4. Dans le nouveau classeur Google Sheets, ouvrez **Extensions > Apps Script**.
-5. Supprimez le code par défaut, copiez l'intégralité du fichier [`code.gs`](code.gs) de ce dépôt et collez-le.
-6. Cliquez sur l'icône de disquette 💾 pour enregistrer le projet Apps Script.
-7. Rechargez la page de votre classeur Google Sheets : un menu **« ⚡ Handball Bot »** apparaît dans la barre d'outils.
+1. **Téléchargez le fichier modèle** :
+   - Depuis votre dépôt GitHub, cliquez sur le fichier [`Handball_Bot_Template.xlsx`](Handball_Bot_Template.xlsx).
+   - Cliquez sur le bouton de téléchargement **« Download raw file »** (icône ⬇️ en haut à droite) pour enregistrer le fichier sur votre ordinateur.
+2. **Importez-le dans Google Drive** :
+   - Ouvrez votre **Google Drive** ([drive.google.com](https://drive.google.com)).
+   - Glissez-déposez le fichier `Handball_Bot_Template.xlsx` fraîchement téléchargé dans votre Google Drive (ou cliquez sur *Nouveau > Importer un fichier*).
+3. **Convertissez-le au format Google Sheets** :
+   - Double-cliquez sur le fichier pour l'ouvrir dans Google Drive.
+   - Dans le menu supérieur, cliquez sur **Fichier > Enregistrer au format Google Sheets**.
+   > *(Un nouveau classeur Google Sheets s'ouvre, c'est lui qui servira de tableau de bord)*.
+4. **Installez le code du bot** :
+   - Dans ce classeur Google Sheets, allez dans **Extensions > Apps Script**.
+   - Supprimez le code par défaut, copiez l'intégralité du fichier [`code.gs`](code.gs) de ce dépôt et collez-le.
+   - Cliquez sur l'icône de disquette 💾 pour enregistrer le projet Apps Script.
+5. Rechargez la page de votre classeur Google Sheets : un menu **« ⚡ Handball Bot »** apparaît dans la barre d'outils.
 
 ### Méthode B (Création depuis une feuille vierge)
 1. Créez un classeur vierge sur [sheets.new](https://sheets.new).
