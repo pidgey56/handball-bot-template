@@ -58,16 +58,22 @@ jobs:
         run: node send-poll.js
 
       - name: Sauvegarde automatique de la session et des votes
-        if: always() && github.ref == 'refs/heads/main'
+        if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A auth_info last_poll.json votes_semaine.json 2>/dev/null || true
-          git diff --staged --quiet && exit 0
+          [ -d "auth_info" ] && git add -A auth_info
+          [ -f "last_poll.json" ] && git add last_poll.json
+          [ -f "votes_semaine.json" ] && git add votes_semaine.json
+          if git diff --staged --quiet; then
+            echo "Aucune modification de session ou de votes à enregistrer."
+            exit 0
+          fi
           git commit -m "Mise à jour session et votes WhatsApp"
-          git checkout -- .
+          git checkout -- . 2>/dev/null || true
+          BRANCH="${GITHUB_REF_NAME:-main}"
           for i in 1 2 3 4 5; do
-            git pull --rebase -X theirs origin main && git push && exit 0
+            git pull --rebase -X theirs origin "$BRANCH" && git push && exit 0
             git rebase --abort 2>/dev/null || true
             sleep 5
           done
