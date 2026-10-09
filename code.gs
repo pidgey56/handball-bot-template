@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.3.1';
+const APP_VERSION = '1.3.2';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -125,7 +125,34 @@ function getClubConfig(ss) {
     }
   });
 
-  const nbEquipes = Math.min(3, Math.max(1, equipes.length));
+  // Lecture du nombre d'équipes configuré dans les paramètres (C31 ou scan B18:D35)
+  let nbEquipesCfg = 3;
+  const valC31 = parseInt(getVal('C31', ''), 10);
+  if ([1, 2, 3].includes(valC31)) {
+    nbEquipesCfg = valC31;
+  } else {
+    try {
+      const rowsParam = shCfg.getRange('B18:C35').getValues();
+      for (let i = 0; i < rowsParam.length; i++) {
+        const pLabel = String(rowsParam[i][0] || '').toLowerCase();
+        if (pLabel.indexOf("nombre d'équipe") !== -1 || pLabel.indexOf("nombre d'equipe") !== -1 || pLabel.indexOf("nb equipe") !== -1) {
+          const v = parseInt(rowsParam[i][1], 10);
+          if ([1, 2, 3].includes(v)) {
+            nbEquipesCfg = v;
+            break;
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Compléter ou ajuster la liste des équipes actives
+  while (equipes.length < nbEquipesCfg) {
+    const idx = equipes.length + 1;
+    equipes.push({ code: 'Équipe ' + idx, motCle: 'MON CLUB', labelSondage: 'Équipe ' + idx, delaiRdv: 1, urlPoule: '' });
+  }
+  const equipesActives = equipes.slice(0, nbEquipesCfg);
+  const nbEquipes = nbEquipesCfg;
 
   // Lecture des entraînements configurés (Lignes 9 à 14)
   const rowsTrain = shCfg.getRange('B9:D14').getValues();
@@ -162,9 +189,9 @@ function getClubConfig(ss) {
 
   const logoFinal = (logoUrlRaw && logoUrlRaw !== LOGO_DEFAULT && !logoUrlRaw.includes('data:image/svg+xml')) ? convertirUrlPhoto(logoUrlRaw) : genererLogoDefaut(couleurPrimaire);
 
-  const labelEq1 = (equipes[0] && equipes[0].labelSondage) ? equipes[0].labelSondage : 'Équipe 1';
-  const labelEq2 = (equipes[1] && equipes[1].labelSondage) ? equipes[1].labelSondage : 'Équipe 2';
-  const labelEq3 = (equipes[2] && equipes[2].labelSondage) ? equipes[2].labelSondage : 'Équipe 3';
+  const labelEq1 = (equipesActives[0] && equipesActives[0].labelSondage) ? equipesActives[0].labelSondage : 'Équipe 1';
+  const labelEq2 = (equipesActives[1] && equipesActives[1].labelSondage) ? equipesActives[1].labelSondage : 'Équipe 2';
+  const labelEq3 = (equipesActives[2] && equipesActives[2].labelSondage) ? equipesActives[2].labelSondage : 'Équipe 3';
 
   return {
     nomClub: nomClub,
@@ -175,7 +202,7 @@ function getClubConfig(ss) {
     githubRepo: githubRepo,
     githubToken: githubToken,
     webappUrl: webappUrl,
-    equipes: equipes,
+    equipes: equipesActives,
     nbEquipes: nbEquipes,
     entrainements: entrainements,
     nomEquipe1: labelEq1,
@@ -289,9 +316,29 @@ function genererSondageHebdo() {
 /**
  * Initialise ou met à jour les en-têtes des onglets essentiels
  */
-function initialiserOngletsWebApp() {
+function initialiserOngletsWebApp(nbEquipesForce) {
   const ss = getSpreadsheet();
-  const cfg = getClubConfig(ss);
+  let cfg = getClubConfig(ss);
+
+  if (nbEquipesForce && [1, 2, 3].includes(nbEquipesForce)) {
+    cfg.nbEquipes = nbEquipesForce;
+    const shCfg = ss.getSheetByName('Configuration');
+    if (shCfg) {
+      shCfg.getRange('B31:D31').setValues([
+        ['Nombre d\'Équipes dans le groupe', nbEquipesForce, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']
+      ]);
+    }
+  } else {
+    const shCfg = ss.getSheetByName('Configuration');
+    if (shCfg) {
+      const vC31 = shCfg.getRange('C31').getValue();
+      if (!vC31 || ![1, 2, 3].includes(parseInt(vC31, 10))) {
+        shCfg.getRange('B31:D31').setValues([
+          ['Nombre d\'Équipes dans le groupe', cfg.nbEquipes || 3, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']
+        ]);
+      }
+    }
+  }
 
   let shEff = ss.getSheetByName('Effectif');
   if (!shEff) {
@@ -379,6 +426,10 @@ function initialiserOngletsWebApp() {
           shCfg.getRange('D30').setBackground('#10b981').setFontColor('#ffffff').setValue('Aperçu');
         } catch (e) {}
       }
+      const valB31 = String(shCfg.getRange('B31').getValue() || '').trim();
+      if (!valB31) {
+        shCfg.getRange('B31:D31').setValues([['Nombre d\'Équipes dans le groupe', 3, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']]);
+      }
     }
   }
 }
@@ -388,6 +439,25 @@ function initialiserOngletsWebApp() {
  */
 function initialiserClasseurComplet() {
   const ss = getSpreadsheet();
+
+  let nbEquipesChoisi = 3;
+  try {
+    const ui = SpreadsheetApp.getUi();
+    const rep = ui.prompt(
+      '🏉 Handball Bot - Initialisation',
+      'Combien d\'équipes séniors sont gérées dans ce groupe WhatsApp ?\n\n' +
+      'Entrez 1, 2 ou 3 (par défaut : 3) :',
+      ui.ButtonSet.OK_CANCEL
+    );
+    if (rep.getSelectedButton() === ui.Button.OK) {
+      const saisie = parseInt(rep.getResponseText().trim(), 10);
+      if ([1, 2, 3].includes(saisie)) {
+        nbEquipesChoisi = saisie;
+      }
+    }
+  } catch (e) {
+    nbEquipesChoisi = 3;
+  }
 
   let shCfg = ss.getSheetByName('Configuration');
   if (!shCfg) {
@@ -413,7 +483,7 @@ function initialiserClasseurComplet() {
   ]);
 
   shCfg.getRange('B17:D17').setValues([['Paramètre', 'Valeur', 'Aperçu / Description']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  shCfg.getRange('B18:D30').setValues([
+  shCfg.getRange('B18:D31').setValues([
     ['ID du Groupe WhatsApp', '120363xxxxxxxxx@g.us', 'Identifiant du groupe WhatsApp (...@g.us)'],
     ['Dépôt GitHub (owner/repo)', 'votre-pseudo/handball-bot', 'Format: utilisateur/depot'],
     ['Token GitHub (PAT)', 'ghp_VOTRE_TOKEN_ICI', 'Token GitHub classic avec droit repo'],
@@ -426,7 +496,8 @@ function initialiserClasseurComplet() {
     ['Couleur Secondaire Club (Hex)', '#fbbf24', 'Couleur d\'accent (dégradés, badges, notes)'],
     ['Couleur Équipe 1 (Hex)', '#3b82f6', 'Couleur des maillots / colonne Équipe 1'],
     ['Couleur Équipe 2 (Hex)', '#f97316', 'Couleur des maillots / colonne Équipe 2'],
-    ['Couleur Équipe 3 (Hex)', '#10b981', 'Couleur des maillots / colonne Équipe 3']
+    ['Couleur Équipe 3 (Hex)', '#10b981', 'Couleur des maillots / colonne Équipe 3'],
+    ['Nombre d\'Équipes dans le groupe', nbEquipesChoisi, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']
   ]);
 
   try {
@@ -437,7 +508,7 @@ function initialiserClasseurComplet() {
     shCfg.getRange('D30').setBackground('#10b981').setFontColor('#ffffff').setValue('Aperçu');
   } catch (e) {}
 
-  initialiserOngletsWebApp();
+  initialiserOngletsWebApp(nbEquipesChoisi);
 
   const shEff = ss.getSheetByName('Effectif');
   if (shEff && shEff.getLastRow() <= 1) {
@@ -472,6 +543,7 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
   const c1 = normaliserCouleurHex(nouvellesCouleurs.equipe1, cp);
   const c2 = normaliserCouleurHex(nouvellesCouleurs.equipe2, cs);
   const c3 = normaliserCouleurHex(nouvellesCouleurs.equipe3, '#10b981');
+  const nbEq = parseInt(nouvellesCouleurs.nbEquipes, 10);
 
   shCfg.getRange('B26:C30').setValues([
     ['Couleur Principale Club (Hex)', cp],
@@ -480,6 +552,12 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
     ['Couleur Équipe 2 (Hex)', c2],
     ['Couleur Équipe 3 (Hex)', c3]
   ]);
+
+  if ([1, 2, 3].includes(nbEq)) {
+    shCfg.getRange('B31:D31').setValues([
+      ['Nombre d\'Équipes dans le groupe', nbEq, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']
+    ]);
+  }
 
   try {
     shCfg.getRange('D26').setBackground(cp).setFontColor(getContrastColor(cp)).setValue('Aperçu');
@@ -499,6 +577,10 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
     if (shComp) shComp.setTabColor(c1);
   } catch (e) {}
 
+  if ([1, 2, 3].includes(nbEq)) {
+    initialiserOngletsWebApp(nbEq);
+  }
+
   return {
     ok: true,
     couleurs: {
@@ -507,7 +589,8 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
       equipe1: c1,
       equipe2: c2,
       equipe3: c3
-    }
+    },
+    nbEquipes: [1, 2, 3].includes(nbEq) ? nbEq : undefined
   };
 }
 
@@ -1592,6 +1675,16 @@ function construireHtmlWebApp() {
           '[[/div]]',
           '[[div id="modalLogoStatus" style="font-size:0.75rem;color:var(--color-secondary);min-height:1.2em;margin-top:6px;text-align:center;"]][[/div]]',
         '[[/div]]',
+        '[[div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;"]]',
+          '[[div style="font-weight:800;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;color:#f8fafc;"]]🤾 Nombre d\'Équipes dans le groupe WhatsApp[[/div]]',
+          '[[div style="font-size:0.75rem;color:#94a3b8;margin-bottom:10px;"]]Adapte les colonnes de présence, les compositions et les sélections (1, 2 ou 3 équipes).[[/div]]',
+          '[[div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"]]',
+            '[[button type="button" class="btn-reset" id="btnNbEq1" style="padding:8px 4px;font-size:0.8rem;border:1px solid #334155;border-radius:8px;" onclick="choisirNbEquipesModal(1)"]]1 Équipe[[/button]]',
+            '[[button type="button" class="btn-reset" id="btnNbEq2" style="padding:8px 4px;font-size:0.8rem;border:1px solid #334155;border-radius:8px;" onclick="choisirNbEquipesModal(2)"]]2 Équipes[[/button]]',
+            '[[button type="button" class="btn-reset" id="btnNbEq3" style="padding:8px 4px;font-size:0.8rem;border:1px solid #334155;border-radius:8px;" onclick="choisirNbEquipesModal(3)"]]3 Équipes[[/button]]',
+          '[[/div]]',
+          '[[input type="hidden" id="inpNbEquipesModal" value="3"]]',
+        '[[/div]]',
         '[[div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"]]',
           '[[div style="display:flex;align-items:center;justify-content:space-between;background:#0a0a0a;padding:8px 12px;border-radius:10px;border:1px solid #2e2e2e;"]]',
             '[[div style="text-align:left;"]][[div style="font-size:0.85rem;font-weight:700;"]]Couleur Principale[[/div]][[div style="font-size:0.72rem;color:#a3a3a3;"]]Boutons, en-têtes, navigation[[/div]][[/div]]',
@@ -1601,15 +1694,15 @@ function construireHtmlWebApp() {
             '[[div style="text-align:left;"]][[div style="font-size:0.85rem;font-weight:700;"]]Couleur Secondaire[[/div]][[div style="font-size:0.72rem;color:#a3a3a3;"]]Dégradés, badges, notes coach[[/div]][[/div]]',
             '[[div style="display:flex;align-items:center;gap:8px;"]][[input type="color" id="inpColSecondaire" style="width:38px;height:34px;border:none;border-radius:6px;cursor:pointer;background:transparent;" onchange="majCouleursLive()"]][[input type="text" id="txtColSecondaire" class="inp-field" style="width:78px;padding:5px;text-align:center;font-size:0.8rem;text-transform:uppercase;" maxlength="7" oninput="synchroColorInput(\'Secondaire\')"]][[/div]]',
           '[[/div]]',
-          '[[div style="display:flex;align-items:center;justify-content:space-between;background:#0a0a0a;padding:8px 12px;border-radius:10px;border:1px solid #2e2e2e;"]]',
+          '[[div id="rowColEq1" style="display:flex;align-items:center;justify-content:space-between;background:#0a0a0a;padding:8px 12px;border-radius:10px;border:1px solid #2e2e2e;"]]',
             '[[div style="text-align:left;"]][[div style="font-size:0.85rem;font-weight:700;"]]Couleur Équipe 1[[/div]][[div style="font-size:0.72rem;color:#a3a3a3;"]]Colonne & badges Équipe 1[[/div]][[/div]]',
             '[[div style="display:flex;align-items:center;gap:8px;"]][[input type="color" id="inpColEq1" style="width:38px;height:34px;border:none;border-radius:6px;cursor:pointer;background:transparent;" onchange="majCouleursLive()"]][[input type="text" id="txtColEq1" class="inp-field" style="width:78px;padding:5px;text-align:center;font-size:0.8rem;text-transform:uppercase;" maxlength="7" oninput="synchroColorInput(\'Eq1\')"]][[/div]]',
           '[[/div]]',
-          '[[div style="display:flex;align-items:center;justify-content:space-between;background:#0a0a0a;padding:8px 12px;border-radius:10px;border:1px solid #2e2e2e;"]]',
+          '[[div id="rowColEq2" style="display:flex;align-items:center;justify-content:space-between;background:#0a0a0a;padding:8px 12px;border-radius:10px;border:1px solid #2e2e2e;"]]',
             '[[div style="text-align:left;"]][[div style="font-size:0.85rem;font-weight:700;"]]Couleur Équipe 2[[/div]][[div style="font-size:0.72rem;color:#a3a3a3;"]]Colonne & badges Équipe 2[[/div]][[/div]]',
             '[[div style="display:flex;align-items:center;gap:8px;"]][[input type="color" id="inpColEq2" style="width:38px;height:34px;border:none;border-radius:6px;cursor:pointer;background:transparent;" onchange="majCouleursLive()"]][[input type="text" id="txtColEq2" class="inp-field" style="width:78px;padding:5px;text-align:center;font-size:0.8rem;text-transform:uppercase;" maxlength="7" oninput="synchroColorInput(\'Eq2\')"]][[/div]]',
           '[[/div]]',
-          '[[div style="display:flex;align-items:center;justify-content:space-between;background:#0a0a0a;padding:8px 12px;border-radius:10px;border:1px solid #2e2e2e;"]]',
+          '[[div id="rowColEq3" style="display:flex;align-items:center;justify-content:space-between;background:#0a0a0a;padding:8px 12px;border-radius:10px;border:1px solid #2e2e2e;"]]',
             '[[div style="text-align:left;"]][[div style="font-size:0.85rem;font-weight:700;"]]Couleur Équipe 3[[/div]][[div style="font-size:0.72rem;color:#a3a3a3;"]]Colonne & badges Équipe 3[[/div]][[/div]]',
             '[[div style="display:flex;align-items:center;gap:8px;"]][[input type="color" id="inpColEq3" style="width:38px;height:34px;border:none;border-radius:6px;cursor:pointer;background:transparent;" onchange="majCouleursLive()"]][[input type="text" id="txtColEq3" class="inp-field" style="width:78px;padding:5px;text-align:center;font-size:0.8rem;text-transform:uppercase;" maxlength="7" oninput="synchroColorInput(\'Eq3\')"]][[/div]]',
           '[[/div]]',
@@ -1638,7 +1731,7 @@ function construireHtmlWebApp() {
         '[[div id="statusModalCouleurs" style="font-size:0.8rem;color:var(--color-secondary);min-height:1.2em;text-align:center;margin-bottom:10px;"]][[/div]]',
         '[[div style="display:flex;gap:8px;justify-content:flex-end;"]]',
           '[[button class="btn-reset" onclick="fermerModalCouleurs()"]]Annuler[[/button]]',
-          '[[button class="btn-save" id="btnSaveCouleurs" onclick="sauvegarderCouleursDepuisModal()"]]💾 Enregistrer les couleurs[[/button]]',
+          '[[button class="btn-save" id="btnSaveCouleurs" onclick="sauvegarderCouleursDepuisModal()"]]💾 Enregistrer les modifications[[/button]]',
         '[[/div]]',
       '[[/div]]',
     '[[/div]]',
@@ -1676,7 +1769,7 @@ function construireHtmlWebApp() {
       '[[/main]]',
     '[[/div]]',
     '[[script]]',
-    'var CLUB_CONFIG = { nomClub: "' + cfg.nomClub + '", githubRepo: "' + (cfg.githubRepo || '') + '", nbEquipes: ' + (cfg.nbEquipes || 2) + ', nomEquipe1: "' + cfg.nomEquipe1 + '", nomEquipe2: "' + cfg.nomEquipe2 + '", nomEquipe3: "' + (cfg.nomEquipe3 || 'Équipe 3') + '", couleurPrimaire: "' + cfg.couleurPrimaire + '", couleurSecondaire: "' + cfg.couleurSecondaire + '", couleurEquipe1: "' + cfg.couleurEquipe1 + '", couleurEquipe2: "' + cfg.couleurEquipe2 + '", couleurEquipe3: "' + (cfg.couleurEquipe3 || '#10b981') + '" };',
+    'var CLUB_CONFIG = { nomClub: "' + cfg.nomClub + '", githubRepo: "' + (cfg.githubRepo || '') + '", nbEquipes: ' + (cfg.nbEquipes || 3) + ', nomEquipe1: "' + cfg.nomEquipe1 + '", nomEquipe2: "' + cfg.nomEquipe2 + '", nomEquipe3: "' + (cfg.nomEquipe3 || 'Équipe 3') + '", couleurPrimaire: "' + cfg.couleurPrimaire + '", couleurSecondaire: "' + cfg.couleurSecondaire + '", couleurEquipe1: "' + cfg.couleurEquipe1 + '", couleurEquipe2: "' + cfg.couleurEquipe2 + '", couleurEquipe3: "' + (cfg.couleurEquipe3 || '#10b981') + '" };',
     'var ENTRAINEMENTS = { lun: [], mer: [], jeu: [] }; var SEANCE_COURANTE = "lun";',
     'var TRAIN_CONFIG = {',
       'lun: { label: "Lundi", type: "separe", max: 20 },',
@@ -1757,6 +1850,22 @@ function construireHtmlWebApp() {
         'if(img) img.src = nouvelleUrl;',
       '});',
     '}',
+    'function choisirNbEquipesModal(n){',
+      'var num = parseInt(n, 10) || 3;',
+      'var inp = document.getElementById("inpNbEquipesModal"); if(inp) inp.value = num;',
+      '[1, 2, 3].forEach(function(i){',
+        'var b = document.getElementById("btnNbEq" + i); if(!b) return;',
+        'if(i === num){',
+          'b.style.background = "var(--color-primary)"; b.style.borderColor = "var(--color-primary)"; b.style.color = "#ffffff"; b.style.fontWeight = "800";',
+        '} else {',
+          'b.style.background = "#0f172a"; b.style.borderColor = "#334155"; b.style.color = "#94a3b8"; b.style.fontWeight = "500";',
+        '}',
+      '});',
+      'var rowEq3 = document.getElementById("rowColEq3"); if(rowEq3) rowEq3.style.display = (num >= 3) ? "flex" : "none";',
+      'var rowEq2 = document.getElementById("rowColEq2"); if(rowEq2) rowEq2.style.display = (num >= 2) ? "flex" : "none";',
+      'var prevE3 = document.getElementById("prevBadgeE3"); if(prevE3) prevE3.style.display = (num >= 3) ? "inline-block" : "none";',
+      'var prevE2 = document.getElementById("prevBadgeE2"); if(prevE2) prevE2.style.display = (num >= 2) ? "inline-block" : "none";',
+    '}',
     'function ouvrirModalCouleurs(){',
       'var cp = CLUB_CONFIG.couleurPrimaire || "' + cfg.couleurPrimaire + '";',
       'var cs = CLUB_CONFIG.couleurSecondaire || "' + cfg.couleurSecondaire + '";',
@@ -1776,6 +1885,8 @@ function construireHtmlWebApp() {
       'document.getElementById("modalLogoStatus").textContent = "";',
       'if(document.getElementById("modalClubLogoPreview")) document.getElementById("modalClubLogoPreview").src = CLUB_CONFIG.logoUrl || "' + cfg.logoUrl + '";',
       'if(document.getElementById("inpClubLogoUrl")) document.getElementById("inpClubLogoUrl").value = "";',
+      'var curNb = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 3;',
+      'choisirNbEquipesModal(curNb);',
       'majApercuModalCouleurs(cp, cs, c1, c2, c3);',
       'document.getElementById("modalCouleursBg").style.display = "flex";',
     '}',
@@ -1824,22 +1935,28 @@ function construireHtmlWebApp() {
       'var c1 = document.getElementById("inpColEq1").value;',
       'var c2 = document.getElementById("inpColEq2").value;',
       'var c3 = document.getElementById("inpColEq3") ? document.getElementById("inpColEq3").value : "#10b981";',
+      'var nbEq = parseInt(document.getElementById("inpNbEquipesModal") ? document.getElementById("inpNbEquipesModal").value : 3, 10) || 3;',
       'document.getElementById("statusModalCouleurs").textContent = "Enregistrement dans Google Sheet...";',
       'document.getElementById("btnSaveCouleurs").disabled = true;',
       'google.script.run.withSuccessHandler(function(res){',
         'document.getElementById("btnSaveCouleurs").disabled = false;',
-        'document.getElementById("statusModalCouleurs").textContent = "Couleurs enregistrées avec succès !";',
+        'document.getElementById("statusModalCouleurs").textContent = "Paramètres enregistrés avec succès !";',
         'CLUB_CONFIG.couleurPrimaire = cp;',
         'CLUB_CONFIG.couleurSecondaire = cs;',
         'CLUB_CONFIG.couleurEquipe1 = c1;',
         'CLUB_CONFIG.couleurEquipe2 = c2;',
         'CLUB_CONFIG.couleurEquipe3 = c3;',
+        'var ancienNb = CLUB_CONFIG.nbEquipes;',
+        'CLUB_CONFIG.nbEquipes = nbEq;',
         'if(typeof confetti === "function") confetti({ particleCount: 70, spread: 60 });',
-        'setTimeout(function(){ fermerModalCouleurs(); }, 900);',
+        'setTimeout(function(){',
+          'fermerModalCouleurs();',
+          'if(ancienNb !== nbEq) { chargerDonneesCoach(); }',
+        '}, 900);',
       '}).withFailureHandler(function(err){',
         'document.getElementById("btnSaveCouleurs").disabled = false;',
         'document.getElementById("statusModalCouleurs").textContent = err.message;',
-      '}).enregistrerCouleursClub(SESSION_TEL, SESSION_PIN, { primaire: cp, secondaire: cs, equipe1: c1, equipe2: c2, equipe3: c3 });',
+      '}).enregistrerCouleursClub(SESSION_TEL, SESSION_PIN, { primaire: cp, secondaire: cs, equipe1: c1, equipe2: c2, equipe3: c3, nbEquipes: nbEq });',
     '}',
     'function ouvrirSelecteurPhotoJoueur(){ document.getElementById("filePhoto").click(); }',
     'function ouvrirSelecteurPhotoCoach(){ document.getElementById("fileCoachPhoto").click(); }',

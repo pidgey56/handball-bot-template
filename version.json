@@ -1,12 +1,12 @@
 {
-  "version": "1.3.1",
-  "releaseDate": "2026-10-09",
-  "title": "Optimisation des Crédits GitHub Actions & Synchronisation Express",
+  "version": "1.3.2",
+  "releaseDate": "2026-10-10",
+  "title": "Choix du nombre d'équipes (1, 2 ou 3) à l'initialisation & 3 équipes par défaut",
   "changelog": [
-    "⚡ Écoute ultra-rapide des votes (25s au lieu de 240s) : économise 80% des crédits GitHub Actions",
-    "🛡️ Sauvegarde fiable et robuste de auth_info/ dès le premier setup",
-    "🔄 Synchronisation 1-clic des mises à jour 100% compatible avec les restrictions de sécurité GitHub",
-    "🤾 Support complet 1, 2 ou 3 équipes avec mode Tinder adaptatif et gestion des entraînements"
+    "👥 3 équipes gérées par défaut dans le modèle Excel Handball_Bot_Template.xlsx",
+    "⚙️ Invite interactive lors de l'initialisation Google Sheets pour choisir le nombre d'équipes (1, 2 ou 3)",
+    "🎨 Sélecteur du nombre d'équipes directement accessible dans la WebApp coach (modal Identité & Couleurs)",
+    "⚡ Écoute optimisée des votes WhatsApp (25s) et synchronisation fluide"
   ],
   "repoUrl": "https://github.com/pidgey56/handball-bot-template",
   "codeGsRawUrl": "https://raw.githubusercontent.com/pidgey56/handball-bot-template/main/code.gs"
