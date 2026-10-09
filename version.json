@@ -1,12 +1,14 @@
 {
-  "version": "1.3.2",
+  "version": "1.4.0",
   "releaseDate": "2026-10-10",
-  "title": "Choix du nombre d'équipes (1, 2 ou 3) à l'initialisation & 3 équipes par défaut",
+  "title": "Gestion du repos, Brouillon, Compo précédente, Terrain tactique et Horaires",
   "changelog": [
-    "👥 3 équipes gérées par défaut dans le modèle Excel Handball_Bot_Template.xlsx",
-    "⚙️ Invite interactive lors de l'initialisation Google Sheets pour choisir le nombre d'équipes (1, 2 ou 3)",
-    "🎨 Sélecteur du nombre d'équipes directement accessible dans la WebApp coach (modal Identité & Couleurs)",
-    "⚡ Écoute optimisée des votes WhatsApp (25s) et synchronisation fluide"
+    "Gestion complète des joueurs au repos / non retenus avec zone dédiée et réintégration en 1 clic",
+    "Mémoire de sélection automatique (brouillon local et distant) avec reprise en un clic",
+    "Rechargement automatique de la composition de la semaine précédente depuis l'historique",
+    "Terrain de handball tactique interactif (attaque placée et gardien) avant la prévisualisation du message",
+    "Configuration personnalisée des jours et horaires d'entraînements depuis la WebApp",
+    "Suppression des émojis sur le site web et dans les messages WhatsApp pour un rendu sobre et professionnel"
   ],
   "repoUrl": "https://github.com/pidgey56/handball-bot-template",
   "codeGsRawUrl": "https://raw.githubusercontent.com/pidgey56/handball-bot-template/main/code.gs"
