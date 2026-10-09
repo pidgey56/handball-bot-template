@@ -134,3 +134,4 @@ Dans l'onglet **👥 Effectif & Notes** :
 
 - **Actualisation des votes** : Si un joueur vote en retard sur WhatsApp, cliquez sur le bouton **📥 Actualiser WhatsApp** dans l'en-tête pour synchroniser les nouveaux votes sans quitter la page.
 - **Mises à jour du code** : Si une nouvelle version de Handball Bot sort, une notification s'affiche sur votre accueil. Vous pouvez synchroniser le robot en 1 clic via GitHub Actions.
+

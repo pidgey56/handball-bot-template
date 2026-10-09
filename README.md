@@ -37,11 +37,12 @@ Pour installer le bot dans votre club en moins de 15 minutes, consultez le guide
 👉 **[📖 Guide d'Installation Pas à Pas (GUIDE_INSTALLATION.md)](GUIDE_INSTALLATION.md)** : Installation initiale en 15 minutes.  
 👉 **[🤾 Guide d'Utilisation au Quotidien (GUIDE_UTILISATION.md)](GUIDE_UTILISATION.md)** : Fonctionnement hebdomadaire pour les coachs (matchs, entraînements, mode Tinder) et joueurs.
 
-### Résumé des 4 étapes d'installation :
+### Résumé des 5 étapes d'installation :
 1. **Créer votre dépôt** : Cliquez sur **« Use this template »** (visibilité **Privée** requise).
-2. **Importer le Google Sheet** : Téléchargez [`Handball_Bot_Template.xlsx`](Handball_Bot_Template.xlsx), glissez-le dans Google Drive, enregistrez-le au format Google Sheets et collez [`code.gs`](code.gs) dans *Extensions > Apps Script*.
-3. **Connecter WhatsApp** : Lancez le workflow GitHub Actions en mode `setup` et associez votre téléphone avec le code à 8 chiffres.
-4. **Déployer la WebApp** : Déployez l'application web dans Google Apps Script et collez son URL dans votre feuille de configuration.
+2. **Activer les permissions GitHub Actions** : Dans *Settings > Actions > General > Workflow permissions*, cochez **« Read and write permissions »** (indispensable pour sauvegarder la session WhatsApp).
+3. **Importer le Google Sheet** : Téléchargez [`Handball_Bot_Template.xlsx`](Handball_Bot_Template.xlsx), glissez-le dans Google Drive, enregistrez-le au format Google Sheets et collez [`code.gs`](code.gs) dans *Extensions > Apps Script*.
+4. **Connecter WhatsApp** : Lancez le workflow GitHub Actions en mode `setup` et associez votre téléphone avec le code à 8 chiffres.
+5. **Déployer la WebApp** : Déployez l'application web dans Google Apps Script et collez son URL dans votre feuille de configuration.
 
 ---
 

@@ -33,12 +33,26 @@ Avant de commencer, munissez-vous de :
 
 ---
 
-## Étape 1 : Créer votre dépôt GitHub
+## Étape 1 : Créer votre dépôt GitHub & Activer les permissions
 
 1. Sur GitHub, utilisez ce template en cliquant sur le bouton vert **« Use this template »** > **« Create a new repository »** (ou dupliquez ce dossier dans un nouveau dépôt).
 2. **Très important** : Choisissez la visibilité **Private** (Dépôt Privé).
    > [!IMPORTANT]
    > Le dépôt doit rester **Privé** afin de protéger la session WhatsApp de votre bot (`auth_info/`) ainsi que les numéros et votes de vos joueurs.
+
+3. **Activer les permissions d'écriture pour GitHub Actions (Indispensable)** :
+   Par défaut sur un nouveau dépôt, GitHub bride les automatisations en lecture seule. Pour que le robot puisse sauvegarder votre session WhatsApp (`auth_info/`), mettre à jour les scripts et enregistrer les votes :
+   - Dans votre dépôt GitHub, cliquez sur l'onglet **Settings** (tout à droite).
+   - Dans le menu de gauche, allez dans **Actions > General**.
+   - Faites défiler jusqu'à la section **Workflow permissions** :
+     - Cochez **« Read and write permissions »** (au lieu de *Read repository contents and packages permissions*).
+     - Cochez également **« Allow GitHub Actions to create and approve pull requests »**.
+   - Cliquez sur le bouton vert **Save**.
+
+![Permissions des Workflows GitHub](docs/images/github_workflow_permissions.png)
+
+> [!WARNING]
+> Sans cette case cochée, GitHub Actions rejettera la sauvegarde de votre session WhatsApp (`auth_info/`) et les votes reçus ne pourront pas être enregistrés sur le dépôt !
 
 ---
 
