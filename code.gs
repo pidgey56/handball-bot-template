@@ -2058,7 +2058,7 @@ function construireHtmlWebApp() {
       '}).withFailureHandler(function(err){',
         'if(btn) btn.textContent = "🔄 Vérifier les mises à jour du Bot";',
         'alert("Impossible de vérifier les mises à jour : " + err.message);',
-      }).verifierMiseAJour();',
+      '}).verifierMiseAJour();',
     '}',
     'function ouvrirModalMiseAJour(){',
       'if(!UPDATE_INFO) return;',
