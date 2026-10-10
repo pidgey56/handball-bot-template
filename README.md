@@ -49,6 +49,7 @@ Handball Bot est né d'un constat simple dans les clubs amateurs :
 
 Pour installer le bot dans votre club en moins de 15 minutes, consultez le guide pas à pas :
 
+👉 **[🌟 Guide des Fonctionnalités Coach (FONCTIONNALITES.md)](FONCTIONNALITES.md)** : Présentation visuelle et facile à lire de toutes les fonctionnalités disponibles.  
 👉 **[📖 Guide d'Installation Pas à Pas (GUIDE_INSTALLATION.md)](GUIDE_INSTALLATION.md)** : Installation initiale en 15 minutes.  
 👉 **[🤾 Guide d'Utilisation au Quotidien (GUIDE_UTILISATION.md)](GUIDE_UTILISATION.md)** : Fonctionnement hebdomadaire pour les coachs (matchs, entraînements, mode Tinder) et joueurs.
 

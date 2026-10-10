@@ -3,6 +3,9 @@
 Bienvenue dans le guide pratique d'utilisation de **Handball Bot** !  
 Ce document détaille le fonctionnement de l'application dans la vie de tous les jours pour les **entraîneurs** et les **joueurs**.
 
+> [!TIP]
+> Pour une présentation complète, visuelle et synthétique de toutes les options disponibles (Terrain 2D, Mode Tinder, Renforts, Joueurs au repos, PWA, Chiffrement...), consultez également le **[🌟 Guide Complet des Fonctionnalités Coach (FONCTIONNALITES.md)](FONCTIONNALITES.md)**.
+
 ---
 
 ## 📅 Le Rythme Hebdomadaire d'une Saison
