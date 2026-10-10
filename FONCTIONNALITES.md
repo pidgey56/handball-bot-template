@@ -26,7 +26,7 @@ Ce document a été pensé **spécifiquement pour les entraîneurs, capitaines e
    - [Multi-Collectifs & Multi-Groupes WhatsApp](#-multi-collectifs--gérer-plusieurs-groupes-sur-la-même-page)
 6. [🔒 Sécurité, Codes PIN & Chiffrement des Numéros (Ados / RGPD)](#-6-sécurité-codes-pin--chiffrement-des-numéros-ados--rgpd)
 7. [🎨 Personnalisation du Club & Couleurs](#-7-personnalisation-du-club--couleurs)
-8. [🔔 Notifications & Mises à Jour en 1 Clic](#-8-notifications--mises-à-jour-en-1-clic)
+8. [🔄 Mises à Jour en 1 Clic](#-8-mises-à-jour-en-1-clic)
 
 ---
 
@@ -199,10 +199,9 @@ Vous coachez les **Séniors Garçons (SG1 & SG2)** ET les **-15 Filles (-15F1 & 
 
 ---
 
-## 🔔 8. Notifications & Mises à Jour en 1 Clic
+## 🔄 8. Mises à Jour en 1 Clic
 
-* **Notifications sur mobile** : Recevez des alertes pour les confirmations de présence et les clôtures de sondage.
-* **Détection automatique des mises à jour** : Si une nouvelle version de Handball Bot sort, un badge vert discret vous prévient sur l'accueil.
+* **Détection automatique des mises à jour** : Si une nouvelle version de Handball Bot sort, un badge discret vous prévient sur l'accueil.
 * **Synchronisation en 1 clic** : Cliquez sur le bouton de mise à jour pour rapatrier les dernières améliorations sans aucune manipulation technique.
 
 ---
