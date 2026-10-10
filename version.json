@@ -1,15 +1,16 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "releaseDate": "2026-10-10",
-  "title": "Gestion du repos, Brouillon, Compo précédente, Terrain tactique et Horaires",
+  "title": "Gestion effectif et équipes, Joueurs renforts, Multi-collectifs, PWA et Notifications",
   "changelog": [
-    "Gestion complète des joueurs au repos / non retenus avec zone dédiée et réintégration en 1 clic",
-    "Mémoire de sélection automatique (brouillon local et distant) avec reprise en un clic",
-    "Rechargement automatique de la composition de la semaine précédente depuis l'historique",
-    "Terrain de handball tactique interactif (attaque placée et gardien) avant la prévisualisation du message",
-    "Configuration personnalisée des jours et horaires d'entraînements depuis la WebApp",
-    "Suppression des émojis sur le site web et dans les messages WhatsApp pour un rendu sobre et professionnel"
+    "Gestion de l'effectif complète : ajout et suppression de joueurs directement depuis la WebApp",
+    "Gestion des équipes (1 à 3) : modification des codes, noms, mots-clés et URLs FFHB depuis la WebApp",
+    "Ajout de renforts et joueurs hors sondage (ex: joueurs descendant d'une équipe supérieure ou invités)",
+    "Support multi-collectifs et multi-groupes WhatsApp depuis la même page via le sélecteur de collectifs",
+    "Installation PWA sur mobile (iOS / Android) pour un usage en plein écran sans barre d'adresse",
+    "Système de notifications visuelles Toast et support des alertes Web du navigateur"
   ],
   "repoUrl": "https://github.com/pidgey56/handball-bot-template",
   "codeGsRawUrl": "https://raw.githubusercontent.com/pidgey56/handball-bot-template/main/code.gs"
 }
+

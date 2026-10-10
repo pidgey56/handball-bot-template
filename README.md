@@ -12,19 +12,33 @@ Elle combine un **robot WhatsApp officiel** (sans API payante), un **scraping au
 
 ---
 
+## 💡 Pourquoi ce projet ? Souveraineté des données & Gratuité totale
+
+Handball Bot est né d'un constat simple dans les clubs amateurs :
+1. **Gestion des données interne au club et souveraineté des données** : Les coordonnées des joueurs, des entraîneurs et des parents (numéros de téléphone, présences, indisponibilités, notes privées et photos) sont des informations hautement confidentielles, concernant souvent des licenciés mineurs. Les plateformes commerciales propriétaires (SaaS privés) imposent le stockage de ces données sur des serveurs tiers dont vous ne maîtrisez ni la politique de confidentialité, ni l'usage commercial. Avec Handball Bot, **aucune donnée ne transite par un serveur externe inconnu** : 100% de vos données restent stockées dans **votre compte Google Drive** et dans **votre dépôt GitHub privé**.
+2. **Volonté que l'outil soit gratuit et open-source** : Les finances d'un club associatif doivent financer les ballons, les maillots et la formation des jeunes et arbitres, pas des abonnements mensuels récurrents à des applications sportives. L'outil repose à 100% sur les quotas gratuits permanents de Google Sheets et GitHub Actions. Il restera **0 € à vie**, sans publicité et sans abonnement.
+3. **Pourquoi le maintenir soi-même (auto-hébergement)** : Maintenir son propre modèle garantit votre indépendance totale. Aucun prestataire externe ne peut décider de fermer son service, de restreindre les fonctionnalités ou d'augmenter ses tarifs au milieu de votre championnat. Vous restez maître absolu de votre outil, et le système de détection des mises à jour en 1 clic vous assure de bénéficier de toutes les évolutions sans effort technique.
+
+---
+
 ## ⚡ Fonctionnalités clés
 
 * 🤖 **Sondages WhatsApp hebdomadaires automatiques** : Détection des matchs de vos équipes sur `ffhandball.fr`, calcul automatique des heures de rendez-vous (domicile ou extérieur avec temps de trajet), et publication du sondage à choix multiples dans votre groupe d'équipe (support de 1, 2 ou 3 équipes maximum).
 * 📥 **Déchiffrement et synchronisation des votes** : Lecture des votes chiffrés AES-GCM multi-appareils (Baileys), mise en correspondance automatique avec le répertoire des joueurs via leur numéro de téléphone. Nettoyage automatique des fichiers de session temporaires (`auth_info/`) sans déconnexion.
 * 🤾 **WebApp mobile de composition d'équipe (1 à 3 équipes)** :
-  * **Mode Classique** : Tableau responsive en colonnes (Équipe 1, Équipe 2, Équipe 3, Joueurs disponibles) avec glisser-déposer (Drag & Drop) intuitif.
+  * **Mode Classique** : Tableau responsive en colonnes (Équipe 1, Équipe 2, Équipe 3, Joueurs disponibles, Au repos) avec glisser-déposer (Drag & Drop) intuitif.
   * **Mode Tinder adaptatif** :
     * **1 équipe** : 👈 Gauche = Repos | 👉 Droite = Sélectionné
     * **2 équipes** : 👈 Gauche = Équipe 1 | 👉 Droite = Équipe 2 | 👇 Bas = Repos
     * **3 équipes** : 👆 Haut = Équipe 1 | 👈 Gauche = Équipe 2 | 👉 Droite = Équipe 3 | 👇 Bas = Repos
-  * **Gestion des entraînements** : Répartition des présents en groupes de niveau ou sélection d'effectif restreint.
+  * **Gestion des entraînements** : Répartition des présents en 2 groupes distincts, effectif réduit avec quota max ou effectif complet.
+  * **Terrain tactique interactif** : Visualisation d'un demi-terrain de handball réglementaire avec les 7 postes en attaque + gardien dans les cages et banc interactif pour ajuster le 7 majeur avant convocation.
+  * **Gestion des renforts** : Ajout en un clic de joueurs hors sondage ou descendant d'une équipe supérieure.
+  * **Gestion d'effectif et d'équipes intégrée** : Ajout, modification et suppression de joueurs ou d'équipes directement depuis la WebApp sans ouvrir Google Sheets.
+  * **Multi-collectifs & Multi-groupes WhatsApp** : Sélecteur instantané pour basculer d'une catégorie à une autre (ex: Séniors Garçons et -15 Filles) depuis la même page.
+  * **Installation PWA sur mobile (Android & iPhone)** : Mode plein écran sans barre d'adresse pour une expérience digne d'une application native.
 * 📤 **Convocations WhatsApp en 1 clic** : Mise en forme instantanée de la liste des convoqués avec adversaire, lieu et heure de rendez-vous, envoyée directement dans le groupe WhatsApp depuis la WebApp.
-* 🎨 **Identité visuelle & Couleurs personnalisées** : Adaptation automatique de la WebApp et du classeur aux couleurs de votre club (couleur primaire, secondaire, équipe 1, équipe 2 et équipe 3). Sélecteur de couleurs interactif avec nuanciers de clubs professionnels (HBC Nantes, PSG, Montpellier MHB, etc.) ou codes hexadécimaux libres.
+* 🎨 **Identité visuelle & Couleurs personnalisées** : Adaptation automatique de la WebApp et du classeur aux couleurs de votre club. Nuanciers de clubs professionnels (HBC Nantes, PSG, Montpellier MHB, etc.) ou codes hexadécimaux libres.
 * 🔄 **Mises à jour faciles & Détection de version** : Détection automatique des nouvelles versions du modèle dans la WebApp et Google Sheets, avec synchronisation de votre robot GitHub Actions en 1 clic.
 * 💸 **0 € de frais d'hébergement** : Fonctionne entièrement sur les quotas gratuits de Google Sheets et de GitHub Actions. Aucun serveur ni base de données à administrer.
 

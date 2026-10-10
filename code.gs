@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -589,6 +589,20 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
     ]);
   }
 
+  if (Array.isArray(nouvellesCouleurs.equipes)) {
+    for (let idx = 0; idx < 3; idx++) {
+      const eq = nouvellesCouleurs.equipes[idx];
+      const rowNum = 4 + idx;
+      if (eq) {
+        if (eq.code !== undefined) shCfg.getRange('B' + rowNum).setValue(eq.code);
+        if (eq.motCle !== undefined) shCfg.getRange('C' + rowNum).setValue(eq.motCle);
+        if (eq.labelSondage !== undefined) shCfg.getRange('D' + rowNum).setValue(eq.labelSondage);
+        if (eq.delaiRdv !== undefined) shCfg.getRange('E' + rowNum).setValue(Number(eq.delaiRdv) || 1);
+        if (eq.urlPoule !== undefined) shCfg.getRange('F' + rowNum).setValue(eq.urlPoule);
+      }
+    }
+  }
+
   try {
     shCfg.getRange('D26').setBackground(cp).setFontColor(getContrastColor(cp)).setValue('Aperçu');
     shCfg.getRange('D27').setBackground(cs).setFontColor(getContrastColor(cs)).setValue('Aperçu');
@@ -862,6 +876,8 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
   const nouveauPoste = String(joueurCible.poste || '').trim();
   let nouvellePhoto = String(joueurCible.photo || '').trim();
   const nouvelleNote = String(joueurCible.note || '').trim();
+  const nouveauTel = joueurCible.tel ? normaliserNumero(joueurCible.tel) : '';
+  const nouvelleEquipe = String(joueurCible.equipe || '').trim();
 
   for (let i = 1; i < rows.length; i++) {
     const nomExistant = String(rows[i][0] || '').trim();
@@ -880,7 +896,9 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
         } catch (e) {}
       }
 
+      if (nouveauTel) shEff.getRange(i + 1, 2).setValue(nouveauTel);
       if (nouveauPoste) shEff.getRange(i + 1, 3).setValue(nouveauPoste);
+      if (nouvelleEquipe) shEff.getRange(i + 1, 4).setValue(nouvelleEquipe);
       if (nouvellePhoto) shEff.getRange(i + 1, 5).setValue(nouvellePhoto);
       shEff.getRange(i + 1, 7).setValue(nouvelleNote);
 
@@ -901,7 +919,9 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
         ok: true,
         joueur: {
           nom: nomPropre,
+          tel: nouveauTel || String(rows[i][1] || ''),
           poste: nouveauPoste || String(rows[i][2] || 'Demi-Centre'),
+          equipe: nouvelleEquipe || String(rows[i][3] || ''),
           photo: convertirUrlPhoto(nouvellePhoto || rows[i][4]),
           note: nouvelleNote
         }
@@ -912,16 +932,168 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
   throw new Error('Joueur non trouvé dans l\'effectif.');
 }
 
+/**
+ * Permet au coach d'ajouter un nouveau joueur dans l'onglet Effectif
+ */
+function ajouterJoueurParCoach(telCoach, pinCoach, joueurData) {
+  const ss = getSpreadsheet();
+  if (!verifierDroitsCoachOuDev(ss, normaliserNumero(telCoach), String(pinCoach || '').trim())) {
+    throw new Error('Action réservée aux coachs autorisés.');
+  }
+  if (!joueurData || !joueurData.nom) throw new Error('Veuillez renseigner le nom du joueur.');
+
+  const shEff = ss.getSheetByName('Effectif');
+  if (!shEff) throw new Error('Onglet Effectif introuvable.');
+
+  const nomNettoye = String(joueurData.nom).replace(/\s*\([^)]*\)\s*/g, '').trim();
+  if (!nomNettoye) throw new Error('Nom de joueur invalide.');
+
+  const rows = shEff.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    const nomExistant = String(rows[i][0] || '').replace(/\s*\([^)]*\)\s*/g, '').trim();
+    if (nomExistant.toLowerCase() === nomNettoye.toLowerCase()) {
+      throw new Error('Un joueur avec le nom "' + nomNettoye + '" existe déjà dans l\'effectif.');
+    }
+  }
+
+  const telNormalise = normaliserNumero(joueurData.tel || '');
+  const poste = String(joueurData.poste || 'Demi-Centre').trim();
+  const equipe = String(joueurData.equipe || 'Équipe 1').trim();
+  const photo = String(joueurData.photo || '').trim();
+  const pin = String(joueurData.pin || ('0000' + Math.floor(Math.random() * 9000 + 1000)).slice(-4));
+  const note = String(joueurData.note || '').trim();
+
+  shEff.appendRow([nomNettoye, telNormalise || String(joueurData.tel || '').trim(), poste, equipe, photo, pin, note]);
+
+  // Ajouter également dans Votes_Semaine pour qu'il apparaisse dans les disponibilités
+  const cfg = getClubConfig(ss);
+  const shVotes = ss.getSheetByName('Votes_Semaine');
+  if (shVotes) {
+    if (cfg.nbEquipes === 1) {
+      shVotes.appendRow([nomNettoye, poste, 0, 'NON', 'NON', 'NON', 'NON']);
+    } else if (cfg.nbEquipes === 3) {
+      shVotes.appendRow([nomNettoye, poste, 0, 'NON', 'NON', 'NON', 'NON', 'NON', 'NON']);
+    } else {
+      shVotes.appendRow([nomNettoye, poste, 0, 'NON', 'NON', 'NON', 'NON', 'NON']);
+    }
+  }
+
+  return {
+    ok: true,
+    joueur: {
+      nom: nomNettoye,
+      tel: telNormalise,
+      poste: poste,
+      equipe: equipe,
+      photo: convertirUrlPhoto(photo),
+      pin: pin,
+      note: note
+    }
+  };
+}
+
+/**
+ * Permet au coach de supprimer un joueur de l'effectif
+ */
+function supprimerJoueurParCoach(telCoach, pinCoach, nomJoueur) {
+  const ss = getSpreadsheet();
+  if (!verifierDroitsCoachOuDev(ss, normaliserNumero(telCoach), String(pinCoach || '').trim())) {
+    throw new Error('Action réservée aux coachs autorisés.');
+  }
+  const nomCible = String(nomJoueur || '').replace(/\s*\([^)]*\)\s*/g, '').trim().toLowerCase();
+  if (!nomCible) throw new Error('Nom de joueur non spécifié.');
+
+  const shEff = ss.getSheetByName('Effectif');
+  if (!shEff) throw new Error('Onglet Effectif introuvable.');
+
+  const rows = shEff.getDataRange().getValues();
+  let trouve = false;
+  for (let i = rows.length - 1; i >= 1; i--) {
+    const nomExistant = String(rows[i][0] || '').replace(/\s*\([^)]*\)\s*/g, '').trim().toLowerCase();
+    if (nomExistant === nomCible) {
+      shEff.deleteRow(i + 1);
+      trouve = true;
+      break;
+    }
+  }
+
+  const shVotes = ss.getSheetByName('Votes_Semaine');
+  if (shVotes && shVotes.getLastRow() > 1) {
+    const rowsV = shVotes.getDataRange().getValues();
+    for (let k = rowsV.length - 1; k >= 1; k--) {
+      const nomV = String(rowsV[k][0] || '').trim().toLowerCase();
+      if (nomV === nomCible) {
+        shVotes.deleteRow(k + 1);
+        break;
+      }
+    }
+  }
+
+  if (!trouve) throw new Error('Joueur introuvable dans l\'effectif.');
+  return { ok: true, nom: nomJoueur };
+}
+
+/**
+ * Permet au coach de modifier la configuration des équipes (1 à 3 équipes)
+ */
+function enregistrerConfigEquipes(telCoach, pinCoach, configEquipes) {
+  const ss = getSpreadsheet();
+  if (!verifierDroitsCoachOuDev(ss, normaliserNumero(telCoach), String(pinCoach || '').trim())) {
+    throw new Error('Action réservée aux coachs autorisés.');
+  }
+  if (!configEquipes || !configEquipes.nbEquipes) {
+    throw new Error('Configuration des équipes invalide.');
+  }
+
+  const shCfg = ss.getSheetByName('Configuration');
+  if (!shCfg) throw new Error('Onglet Configuration introuvable.');
+
+  const nbEq = Math.max(1, Math.min(3, parseInt(configEquipes.nbEquipes, 10) || 3));
+  shCfg.getRange('C31').setValue(nbEq);
+
+  if (Array.isArray(configEquipes.equipes)) {
+    for (let idx = 0; idx < 3; idx++) {
+      const eq = configEquipes.equipes[idx];
+      const rowNum = 4 + idx;
+      if (eq) {
+        if (eq.code !== undefined) shCfg.getRange('B' + rowNum).setValue(eq.code);
+        if (eq.motCle !== undefined) shCfg.getRange('C' + rowNum).setValue(eq.motCle);
+        if (eq.labelSondage !== undefined) shCfg.getRange('D' + rowNum).setValue(eq.labelSondage);
+        if (eq.delaiRdv !== undefined) shCfg.getRange('E' + rowNum).setValue(Number(eq.delaiRdv) || 1);
+        if (eq.urlPoule !== undefined) shCfg.getRange('F' + rowNum).setValue(eq.urlPoule);
+      }
+    }
+  }
+
+  initialiserOngletsWebApp();
+
+  const nouvelleCfg = getClubConfig(ss);
+  return {
+    ok: true,
+    nbEquipes: nouvelleCfg.nbEquipes,
+    equipes: nouvelleCfg.equipes,
+    nomEquipe1: nouvelleCfg.nomEquipe1,
+    nomEquipe2: nouvelleCfg.nomEquipe2,
+    nomEquipe3: nouvelleCfg.nomEquipe3
+  };
+}
+
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'sync') {
     const nb = synchroniserDepuisGitHub();
     return ContentService.createTextOutput(JSON.stringify({ status: 'ok', count: nb })).setMimeType(ContentService.MimeType.JSON);
   }
+  const cfg = getClubConfig();
   const html = construireHtmlWebApp();
   return HtmlService.createHtmlOutput(html)
-    .setTitle((getClubConfig().nomClub || 'Handball') + ' - Compo Coach')
+    .setTitle((cfg.nomClub || 'Handball') + ' - Espace Coach')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+    .addMetaTag('mobile-web-app-capable', 'yes')
+    .addMetaTag('apple-mobile-web-app-capable', 'yes')
+    .addMetaTag('apple-mobile-web-app-status-bar-style', 'black-translucent')
+    .addMetaTag('apple-mobile-web-app-title', (cfg.nomClub || 'Handball') + ' Coach')
+    .addMetaTag('theme-color', (cfg.couleurPrimaire || '#0f172a'));
 }
 
 function doPost(e) {
@@ -1127,7 +1299,7 @@ function lireDonneesCoach() {
       if (photo) mapPhotos[cle] = photo;
       if (posteEff) mapPostes[cle] = posteEff;
       if (note) mapNotes[cle] = note;
-      effectifComplet.push({ nom: nomPropre, poste: posteEff, equipe: equipeEff, photo: photo, note: note });
+      effectifComplet.push({ nom: nomPropre, tel: String(r[1] || ''), poste: posteEff, equipe: equipeEff, photo: photo, note: note });
     });
   }
 
@@ -1238,7 +1410,9 @@ function lireDonneesCoach() {
       nomClub: cfg.nomClub,
       logoUrl: cfg.logoUrl,
       githubRepo: cfg.githubRepo,
+      groupId: cfg.groupId,
       nbEquipes: cfg.nbEquipes,
+      equipes: cfg.equipes,
       nomEquipe1: cfg.nomEquipe1,
       nomEquipe2: cfg.nomEquipe2,
       nomEquipe3: cfg.nomEquipe3,
@@ -1361,8 +1535,19 @@ function declencherLectureVotes() {
  */
 function construireHtmlWebApp() {
   const cfg = getClubConfig();
+  const manifestObj = {
+    name: (cfg.nomClub || 'Handball') + ' - Espace Coach',
+    short_name: 'Handball Coach',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#090d16',
+    theme_color: cfg.couleurPrimaire || '#1e293b'
+  };
+  const manifestDataUri = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifestObj));
   const tpl = [
     '[[!DOCTYPE html]][[html]][[head]][[meta charset="utf-8"]]',
+    '[[link rel="manifest" href="' + manifestDataUri + '"]]',
+    '[[link rel="apple-touch-icon" href="' + cfg.logoUrl + '"]]',
     '[[style]]',
     ':root{',
       '--color-primary:' + cfg.couleurPrimaire + ';',
@@ -1517,6 +1702,13 @@ function construireHtmlWebApp() {
     '.rnote{font-size:0.75rem;color:var(--color-secondary);margin-top:4px;font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}',
     '.modal-bg{position:fixed;inset:0;background:rgba(5,9,18,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:16px;}',
     '.modal-box{background:#111927;border:1px solid rgba(148,163,184,0.2);border-top:4px solid var(--color-primary);border-radius:20px;max-width:440px;width:100%;padding:22px;max-height:92vh;overflow-y:auto;box-sizing:border-box;box-shadow:0 24px 60px rgba(0,0,0,0.6);}',
+    '#toastContainer{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:380px;pointer-events:none;}',
+    '.toast-item{color:#ffffff;padding:12px 18px;border-radius:12px;font-size:0.86rem;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,0.5);display:flex;align-items:center;gap:10px;pointer-events:auto;animation:toastIn 0.25s ease;border:1px solid rgba(255,255,255,0.15);}',
+    '.toast-succes{background:#15803d;}',
+    '.toast-erreur{background:#b91c1c;}',
+    '.toast-info{background:#0369a1;}',
+    '@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(0.96);}to{opacity:1;transform:translateY(0) scale(1);}}',
+    '.badge-renfort{background:rgba(234,179,8,0.2);color:#facc15;border:1px solid rgba(234,179,8,0.35);font-size:0.68rem;padding:2px 6px;border-radius:4px;font-weight:800;}',
     '[[/style]]',
     '[[script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"]][[/script]]',
     '[[script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"]][[/script]]',
@@ -1608,9 +1800,14 @@ function construireHtmlWebApp() {
               '[[/div]]',
             '[[/div]]',
             '[[button type="button" class="btn-enter btn-enter-alt" id="btnCheckUpdateCoach" onclick="verifierMiseAJourManuelle()" style="font-size:0.76rem;padding:8px;color:#94a3b8;border-color:rgba(148,163,184,0.2);width:100%;margin-top:8px;"]]Vérifier les mises à jour du Bot[[/button]]',
+            '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;"]]',
+              '[[button type="button" class="btn-enter btn-enter-alt" onclick="ouvrirModalCollectifs()" style="font-size:0.75rem;padding:7px;margin:0;"]]👥 Multi-Collectifs[[/button]]',
+              '[[button type="button" class="btn-enter btn-enter-alt" onclick="ouvrirModalPwa()" style="font-size:0.75rem;padding:7px;margin:0;"]]📲 Installer App[[/button]]',
+            '[[/div]]',
           '[[/div]]',
           '[[button class="btn-reset" style="width:100%;margin-top:6px;" onclick="seDeconnecter()"]]Déconnexion[[/button]]',
         '[[/div]]',
+        '[[button type="button" class="btn-reset" style="font-size:0.74rem;color:#94a3b8;margin-top:12px;width:100%;" onclick="ouvrirModalPwa()"]]📲 Ajouter sur l\'écran d\'accueil mobile (PWA)[[/button]]',
       '[[/div]]',
     '[[/div]]',
     '[[div id="appView"]]',
@@ -1618,10 +1815,12 @@ function construireHtmlWebApp() {
       '[[div class="logo" id="headerLogo"]][[img class="logo-img" id="appHeaderLogoImg" src="' + cfg.logoUrl + '" alt="Logo"]] <span id="headerClubTitle">' + cfg.nomClub + ' - Compo Coach</span>[[/div]]',
       '[[div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"]]',
         '[[button class="btn-reset" onclick="retourAccueil()"]]Accueil[[/button]]',
+        '[[button class="btn-reset" id="btnCollectifsAppHeader" onclick="ouvrirModalCollectifs()"]]Collectifs ▾[[/button]]',
         '[[button class="btn-reset" onclick="entrerEffectif()"]]Effectif & Notes[[/button]]',
         '[[button class="btn-reset" onclick="ouvrirModalCouleurs()"]]Couleurs & Équipes[[/button]]',
         '[[button class="btn-sync js-sync-wa" onclick="forcerActualisationWhatsApp()"]]Actualiser WhatsApp[[/button]]',
         '[[button class="btn-tinder" id="btnSwitchMode" onclick="basculerMode()"]]Mode Tinder[[/button]]',
+        '[[button class="btn-reset" onclick="demanderPermissionNotification()" title="Activer les alertes et notifications"]]🔔[[/button]]',
         '[[span class="badge-mode js-statut" id="statutChargement"]]Chargement...[[/span]]',
       '[[/div]]',
     '[[/header]]',
@@ -1644,7 +1843,10 @@ function construireHtmlWebApp() {
       '[[/div]]',
       '[[div class="col col-pool" id="colBoxPool"]]',
         '[[div class="col-title"]][[span]]Joueurs Disponibles[[/span]][[span id="countPool"]]0[[/span]][[/div]]',
-        '[[div class="col-sub"]]Glissez les joueurs vers vos équipes (clic sur carte pour détails)[[/div]]',
+        '[[div class="col-sub" style="display:flex;justify-content:space-between;align-items:center;gap:6px;"]]',
+          '[[span]]Glissez les joueurs vers vos équipes[[/span]]',
+          '[[button type="button" class="btn-mini-edit" style="color:var(--color-secondary);border-color:var(--color-secondary);font-weight:700;" onclick="ouvrirModalRenfort(false)"]]+ Renfort[[/button]]',
+        '[[/div]]',
         '[[div class="dropzone" id="zonePool"]][[/div]]',
       '[[/div]]',
       '[[div class="col col-1c" id="colBox1C"]]',
@@ -1665,6 +1867,7 @@ function construireHtmlWebApp() {
     '[[/div]]',
     '[[div id="tinderView"]]',
       '[[div style="margin-bottom:6px;color:var(--color-secondary);font-weight:800;letter-spacing:0.5px;"]]MODE SÉLECTION TINDER[[/div]]',
+      '[[button type="button" class="btn-mini-edit" style="color:var(--color-secondary);border-color:var(--color-secondary);font-weight:700;margin:0 auto 8px auto;display:block;" onclick="ouvrirModalRenfort(false)"]]+ Ajouter un renfort dans la sélection[[/button]]',
       '[[div class="tscore-bar" id="tscoreBar"]]',
         '[[span id="tBox1B"]][[span class="team-dot team-dot-1"]][[/span]]<span id="labelTinder1B">' + cfg.nomEquipe1 + '</span> : [[b id="tCount1B"]]0[[/b]]/12[[/span]]',
         '[[span id="tBoxPool" style="color:#d4d4d4;"]]Restants : [[b id="tCountPool"]]0[[/b]][[/span]]',
@@ -1695,10 +1898,12 @@ function construireHtmlWebApp() {
       '[[div class="logo"]][[img class="logo-img" id="trainHeaderLogoImg" src="' + cfg.logoUrl + '" alt="Logo"]] Entraînements[[/div]]',
       '[[div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"]]',
         '[[button class="btn-reset" onclick="retourAccueil()"]]Accueil[[/button]]',
+        '[[button class="btn-reset" onclick="ouvrirModalCollectifs()"]]Collectifs ▾[[/button]]',
         '[[button class="btn-reset" onclick="entrerEffectif()"]]Effectif[[/button]]',
         '[[button class="btn-reset" onclick="ouvrirModalConfigEntrainements()"]]Créneaux & Horaires[[/button]]',
         '[[button class="btn-sync js-sync-wa" onclick="forcerActualisationWhatsApp()"]]Actualiser WA[[/button]]',
         '[[button class="btn-tinder" id="btnSwitchModeTrain" onclick="basculerModeTrain()"]]Mode Tinder[[/button]]',
+        '[[button class="btn-reset" onclick="demanderPermissionNotification()" title="Activer les alertes et notifications"]]🔔[[/button]]',
         '[[span class="badge-mode js-statut" id="statutTrain"]][[/span]]',
       '[[/div]]',
     '[[/header]]',
@@ -1728,13 +1933,17 @@ function construireHtmlWebApp() {
     '[[div class="board" id="trainBoardClassic"]]',
       '[[div class="col col-pool" id="trColPool"]]',
         '[[div class="col-title"]][[span id="trTitlePool"]]Dispos à répartir[[/span]][[span id="trCountPool"]]0[[/span]][[/div]]',
-        '[[div class="col-sub" id="trSubPool"]]Glissez les joueurs vers les groupes[[/div]]',
+        '[[div class="col-sub" style="display:flex;justify-content:space-between;align-items:center;gap:6px;"]]',
+          '[[span id="trSubPool"]]Glissez les joueurs vers les groupes[[/span]]',
+          '[[button type="button" class="btn-mini-edit" style="color:var(--color-secondary);border-color:var(--color-secondary);font-weight:700;" onclick="ouvrirModalRenfort(true)"]]+ Renfort[[/button]]',
+        '[[/div]]',
         '[[div class="dropzone" id="trZonePool"]][[/div]]',
       '[[/div]]',
       '[[div id="trDynamicZones" style="display:contents;"]][[/div]]',
     '[[/div]]',
     '[[div id="trainTinderView" style="display:none;max-width:420px;margin:10px auto 30px auto;padding:12px;text-align:center;"]]',
       '[[div style="margin-bottom:6px;color:var(--color-secondary);font-weight:800;letter-spacing:0.5px;"]]MODE ENTRAÎNEMENT TINDER[[/div]]',
+      '[[button type="button" class="btn-mini-edit" style="color:var(--color-secondary);border-color:var(--color-secondary);font-weight:700;margin:0 auto 8px auto;display:block;" onclick="ouvrirModalRenfort(true)"]]+ Ajouter un renfort / hors sondage[[/button]]',
       '[[div class="tscore-bar" id="trainTscoreBar"]][[/div]]',
       '[[div class="tdeck" id="trainTinderContainer"]][[/div]]',
       '[[div class="tcontrols" id="trainTControlsContainer"]][[/div]]',
@@ -1757,13 +1966,14 @@ function construireHtmlWebApp() {
       '[[div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"]]',
         '[[button class="btn-reset" onclick="retourAccueil()"]]Accueil[[/button]]',
         '[[button class="btn-reset" onclick="entrer()"]]← Retour Compo[[/button]]',
+        '[[button type="button" class="btn-save" style="background:#16a34a;padding:5px 12px;font-size:0.78rem;" onclick="ouvrirModalNouveauJoueur()"]]+ Ajouter un joueur[[/button]]',
         '[[span class="badge-mode" id="rosterCount"]]0 joueurs[[/span]]',
       '[[/div]]',
     '[[/header]]',
     '[[main class="roster-wrap"]]',
       '[[div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;"]]',
         '[[input id="inpSearchRoster" class="inp-field" style="max-width:320px;" type="text" placeholder="Rechercher un joueur..." oninput="filtrerRoster(this.value)"]]',
-        '[[div style="font-size:0.8rem;color:#a3a3a3;"]]Cliquez sur une fiche pour modifier la photo, le poste ou la note coach[[/div]]',
+        '[[div style="font-size:0.8rem;color:#a3a3a3;"]]Cliquez sur une fiche pour modifier la photo, le poste, l\'équipe ou la note coach[[/div]]',
       '[[/div]]',
       '[[div class="roster-grid" id="rosterGrid"]][[/div]]',
     '[[/main]]',
@@ -1783,6 +1993,10 @@ function construireHtmlWebApp() {
           '[[button class="btn-enter" style="font-size:0.8rem;padding:7px 14px;width:auto;" onclick="ouvrirSelecteurPhotoCoach()"]]Modifier la photo[[/button]]',
         '[[/div]]',
         '[[div style="display:flex;flex-direction:column;gap:10px;text-align:left;"]]',
+          '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
+            '[[div]][[label style="font-size:0.75rem;color:#d4d4d4;display:block;margin-bottom:3px;"]]Téléphone :[[/label]][[input type="tel" id="modalJoueurTel" class="inp-field" placeholder="06..."]][[/div]]',
+            '[[div]][[label style="font-size:0.75rem;color:#d4d4d4;display:block;margin-bottom:3px;"]]Équipe :[[/label]][[select id="modalJoueurEquipe" class="inp-field"]][[option value="Équipe 1"]]Équipe 1[[/option]][[option value="Équipe 2"]]Équipe 2[[/option]][[option value="Équipe 3"]]Équipe 3[[/option]][[/select]][[/div]]',
+          '[[/div]]',
           '[[label style="font-size:0.8rem;color:#d4d4d4;"]]Poste sur le terrain :[[/label]]',
           '[[select id="modalJoueurPoste" class="inp-field"]]',
             '[[option value="Gardien"]]Gardien[[/option]]',
@@ -1796,10 +2010,98 @@ function construireHtmlWebApp() {
           '[[label style="font-size:0.8rem;color:#d4d4d4;"]]Notes du Coach (privé) :[[/label]]',
           '[[textarea id="modalJoueurNote" class="inp-field" rows="3" placeholder="Ex : Blessé au genou, revient semaine prochaine..."]][[/textarea]]',
           '[[div id="modalJoueurStatus" style="font-size:0.8rem;color:var(--color-secondary);min-height:1.2em;text-align:center;"]][[/div]]',
-          '[[div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;"]]',
-            '[[button class="btn-reset" onclick="fermerModalJoueur()"]]Annuler[[/button]]',
-            '[[button class="btn-save" onclick="sauvegarderFicheDepuisModal()"]]Enregistrer[[/button]]',
+          '[[div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;"]]',
+            '[[button type="button" class="btn-reset" style="color:#f87171;border-color:rgba(239,68,68,0.3);font-size:0.75rem;padding:5px 8px;" onclick="supprimerJoueurCourant()"]]Supprimer de l\'effectif[[/button]]',
+            '[[div style="display:flex;gap:6px;"]]',
+              '[[button type="button" class="btn-reset" onclick="fermerModalJoueur()"]]Annuler[[/button]]',
+              '[[button type="button" class="btn-save" onclick="sauvegarderFicheDepuisModal()"]]Enregistrer[[/button]]',
+            '[[/div]]',
           '[[/div]]',
+        '[[/div]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalNouveauJoueurBg" onclick="fermerModalNouveauJoueurSurBg(event)"]]',
+      '[[div class="modal-box" style="max-width:440px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[h2 style="margin:0;font-size:1.15rem;color:#f8fafc;"]]Ajouter un Nouveau Joueur[[/h2]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalNouveauJoueur()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[div style="display:flex;flex-direction:column;gap:10px;text-align:left;"]]',
+          '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Nom et Prénom * :[[/label]][[input type="text" id="inpNouvNom" class="inp-field" placeholder="Ex : Thomas Dubois" required]][[/div]]',
+          '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Numéro de téléphone (optionnel) :[[/label]][[input type="tel" id="inpNouvTel" class="inp-field" placeholder="Ex : 06 12 34 56 78"]][[/div]]',
+          '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
+            '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Poste :[[/label]][[select id="selNouvPoste" class="inp-field"]][[option value="Gardien"]]Gardien[[/option]][[option value="Ailier Gauche"]]Ailier Gauche[[/option]][[option value="Arrière Gauche"]]Arrière Gauche[[/option]][[option value="Demi-Centre" selected]]Demi-Centre[[/option]][[option value="Pivot"]]Pivot[[/option]][[option value="Arrière Droit"]]Arrière Droit[[/option]][[option value="Ailier Droit"]]Ailier Droit[[/option]][[/select]][[/div]]',
+            '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Équipe :[[/label]][[select id="selNouvEquipe" class="inp-field"]][[option value="Équipe 1"]]Équipe 1[[/option]][[option value="Équipe 2"]]Équipe 2[[/option]][[option value="Équipe 3"]]Équipe 3[[/option]][[/select]][[/div]]',
+          '[[/div]]',
+          '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Notes Coach (confidentiel) :[[/label]][[textarea id="inpNouvNote" class="inp-field" rows="2" placeholder="Ex : Joue aussi arrière, retour blessure..."]][[/textarea]][[/div]]',
+          '[[div id="statusNouvJoueur" style="font-size:0.8rem;color:var(--color-secondary);min-height:1.2em;text-align:center;"]][[/div]]',
+          '[[div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px;"]]',
+            '[[button type="button" class="btn-reset" onclick="fermerModalNouveauJoueur()"]]Annuler[[/button]]',
+            '[[button type="button" class="btn-save" style="background:#16a34a;" onclick="creerNouveauJoueurClient()"]]Créer le Joueur[[/button]]',
+          '[[/div]]',
+        '[[/div]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalRenfortBg" onclick="fermerModalRenfortSurBg(event)"]]',
+      '[[div class="modal-box" style="max-width:480px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[h2 style="margin:0;font-size:1.15rem;color:#f8fafc;"]]Ajouter un Renfort / Hors sondage[[/h2]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalRenfort()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[p style="font-size:0.78rem;color:#94a3b8;margin:0 0 10px 0;text-align:left;"]]Sélectionnez un joueur de l\'effectif absent du sondage (descente d\'équipe, retardataire) ou ajoutez un joueur invité.[[/p]]',
+        '[[div style="margin-bottom:10px;"]][[input type="text" id="inpFiltreRenfort" class="inp-field" placeholder="Rechercher dans l\'effectif..." oninput="filtrerListeRenforts(this.value)"]][[/div]]',
+        '[[div id="listeRenfortsDispos" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:14px;text-align:left;"]][[/div]]',
+        '[[div style="border-top:1px solid rgba(148,163,184,0.15);padding-top:10px;text-align:left;"]]',
+          '[[div style="font-size:0.8rem;font-weight:700;color:#cbd5e1;margin-bottom:6px;"]]Ou ajouter un joueur invité / extérieur :[[/div]]',
+          '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;"]]',
+            '[[input type="text" id="inpInviteNom" class="inp-field" placeholder="Nom Prénom"]]',
+            '[[select id="selInvitePoste" class="inp-field"]][[option value="Gardien"]]Gardien[[/option]][[option value="Ailier Gauche"]]Ailier Gauche[[/option]][[option value="Arrière Gauche"]]Arrière Gauche[[/option]][[option value="Demi-Centre" selected]]Demi-Centre[[/option]][[option value="Pivot"]]Pivot[[/option]][[option value="Arrière Droit"]]Arrière Droit[[/option]][[option value="Ailier Droit"]]Ailier Droit[[/option]][[/select]]',
+          '[[/div]]',
+          '[[button type="button" class="btn-enter" style="width:100%;font-size:0.78rem;padding:7px;" onclick="ajouterInviteClient()"]]Ajouter cet invité dans les disponibles[[/button]]',
+        '[[/div]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalCollectifsBg" onclick="fermerModalCollectifsSurBg(event)"]]',
+      '[[div class="modal-box" style="max-width:480px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[h2 style="margin:0;font-size:1.15rem;color:#f8fafc;"]]Collectifs & Multi-Groupes[[/h2]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalCollectifs()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[p style="font-size:0.78rem;color:#94a3b8;margin:0 0 12px 0;text-align:left;"]]Gérez plusieurs collectifs (ex: SG1-SG2 et -15 Filles) et basculez instantanément de l\'un à l\'autre sans vous reconnecter.[[/p]]',
+        '[[div style="font-size:0.8rem;font-weight:700;color:#cbd5e1;margin-bottom:6px;text-align:left;"]]Collectifs enregistrés :[[/div]]',
+        '[[div id="listeCollectifs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;text-align:left;"]][[/div]]',
+        '[[div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:12px;padding:12px;text-align:left;"]]',
+          '[[div style="font-size:0.8rem;font-weight:800;color:#f8fafc;margin-bottom:6px;"]]Lier un autre collectif / catégorie :[[/div]]',
+          '[[div style="display:flex;flex-direction:column;gap:8px;"]]',
+            '[[input type="text" id="inpNouvCollectifNom" class="inp-field" placeholder="Nom du collectif (ex : -15 Filles)"]]',
+            '[[input type="url" id="inpNouvCollectifUrl" class="inp-field" placeholder="URL de la WebApp Google Apps Script"]]',
+            '[[button type="button" class="btn-enter" style="font-size:0.78rem;padding:7px;" onclick="ajouterCollectifLie()"]]Enregistrer ce collectif[[/button]]',
+          '[[/div]]',
+        '[[/div]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalPwaInstallBg" onclick="fermerModalPwaSurBg(event)"]]',
+      '[[div class="modal-box" style="max-width:440px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[h2 style="margin:0;font-size:1.15rem;color:#f8fafc;"]]Installer sur votre smartphone[[/h2]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalPwa()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[p style="font-size:0.8rem;color:#94a3b8;margin:0 0 12px 0;text-align:left;"]]Installez Handball Bot sur votre écran d\'accueil pour l\'utiliser en plein écran sans barre d\'adresse, comme une application native.[[/p]]',
+        '[[div id="pwaIosGuide" style="display:none;background:#0e1626;padding:14px;border-radius:14px;border:1px solid rgba(148,163,184,0.18);text-align:left;font-size:0.82rem;line-height:1.45;color:#e2e8f0;"]]',
+          '[[div style="font-weight:800;color:var(--color-primary);margin-bottom:8px;"]]Sur iPhone / iPad (Safari) :[[/div]]',
+          '[[div style="margin-bottom:6px;"]]1. Touchez l\'icône Partager (carré avec flèche vers le haut ⎋) en bas de Safari.[[/div]]',
+          '[[div style="margin-bottom:6px;"]]2. Faites défiler et choisissez « Sur l\'écran d\'accueil » ➕.[[/div]]',
+          '[[div]]3. Appuyez sur « Ajouter » en haut à droite. L\'application est installée ![[/div]]',
+        '[[/div]]',
+        '[[div id="pwaAndroidGuide" style="display:none;background:#0e1626;padding:14px;border-radius:14px;border:1px solid rgba(148,163,184,0.18);text-align:left;font-size:0.82rem;line-height:1.45;color:#e2e8f0;"]]',
+          '[[div style="font-weight:800;color:var(--color-primary);margin-bottom:8px;"]]Sur Android (Chrome) :[[/div]]',
+          '[[div style="margin-bottom:8px;"]]1. Appuyez sur le menu des 3 points verticaux ⋮ en haut à droite.[[/div]]',
+          '[[div style="margin-bottom:8px;"]]2. Sélectionnez « Ajouter à l\'écran d\'accueil » ou « Installer l\'application ».[[/div]]',
+          '[[div]]3. Validez l\'installation.[[/div]]',
+          '[[button type="button" id="btnPwaNativeInstall" class="btn-enter" style="width:100%;margin-top:10px;display:none;" onclick="declencherPwaNative()"]]Installer maintenant[[/button]]',
+        '[[/div]]',
+        '[[div style="margin-top:14px;display:flex;justify-content:flex-end;"]]',
+          '[[button type="button" class="btn-reset" onclick="fermerModalPwa()"]]Fermer[[/button]]',
         '[[/div]]',
       '[[/div]]',
     '[[/div]]',
@@ -1838,6 +2140,44 @@ function construireHtmlWebApp() {
             '[[button type="button" class="btn-reset" id="btnNbEq3" style="padding:8px 4px;font-size:0.8rem;border:1px solid #334155;border-radius:8px;" onclick="choisirNbEquipesModal(3)"]]3 Équipes[[/button]]',
           '[[/div]]',
           '[[input type="hidden" id="inpNbEquipesModal" value="3"]]',
+          '[[div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;"]]',
+            '[[div id="boxCfgEq1" style="background:#090d16;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,0.15);"]]',
+              '[[div style="font-weight:700;font-size:0.8rem;color:var(--color-team1);margin-bottom:6px;"]]Équipe 1[[/div]]',
+              '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Code :[[/label]][[input type="text" id="cfgEqCode1" class="inp-field" placeholder="SG1" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Libellé :[[/label]][[input type="text" id="cfgEqLabel1" class="inp-field" placeholder="Équipe 1" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
+              '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Mot-clé FFHB :[[/label]][[input type="text" id="cfgEqMotCle1" class="inp-field" placeholder="MON CLUB" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Délai RDV (h) :[[/label]][[input type="number" id="cfgEqDelai1" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
+              '[[div style="margin-top:4px;"]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Poule FFHB :[[/label]][[input type="url" id="cfgEqUrl1" class="inp-field" placeholder="https://www.ffhandball.fr/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+            '[[/div]]',
+            '[[div id="boxCfgEq2" style="background:#090d16;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,0.15);"]]',
+              '[[div style="font-weight:700;font-size:0.8rem;color:var(--color-team2);margin-bottom:6px;"]]Équipe 2[[/div]]',
+              '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Code :[[/label]][[input type="text" id="cfgEqCode2" class="inp-field" placeholder="SG2" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Libellé :[[/label]][[input type="text" id="cfgEqLabel2" class="inp-field" placeholder="Équipe 2" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
+              '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Mot-clé FFHB :[[/label]][[input type="text" id="cfgEqMotCle2" class="inp-field" placeholder="MON CLUB 2" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Délai RDV (h) :[[/label]][[input type="number" id="cfgEqDelai2" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
+              '[[div style="margin-top:4px;"]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Poule FFHB :[[/label]][[input type="url" id="cfgEqUrl2" class="inp-field" placeholder="https://www.ffhandball.fr/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+            '[[/div]]',
+            '[[div id="boxCfgEq3" style="background:#090d16;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,0.15);"]]',
+              '[[div style="font-weight:700;font-size:0.8rem;color:var(--color-team3);margin-bottom:6px;"]]Équipe 3[[/div]]',
+              '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Code :[[/label]][[input type="text" id="cfgEqCode3" class="inp-field" placeholder="SG3" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Libellé :[[/label]][[input type="text" id="cfgEqLabel3" class="inp-field" placeholder="Équipe 3" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
+              '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Mot-clé FFHB :[[/label]][[input type="text" id="cfgEqMotCle3" class="inp-field" placeholder="MON CLUB 3" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Délai RDV (h) :[[/label]][[input type="number" id="cfgEqDelai3" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
+              '[[div style="margin-top:4px;"]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Poule FFHB :[[/label]][[input type="url" id="cfgEqUrl3" class="inp-field" placeholder="https://www.ffhandball.fr/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+            '[[/div]]',
+          '[[/div]]',
         '[[/div]]',
         '[[div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"]]',
           '[[div style="display:flex;align-items:center;justify-content:space-between;background:#0a0a0a;padding:8px 12px;border-radius:10px;border:1px solid #2e2e2e;"]]',
@@ -2109,6 +2449,8 @@ function construireHtmlWebApp() {
       '});',
       'var rowEq3 = document.getElementById("rowColEq3"); if(rowEq3) rowEq3.style.display = (num >= 3) ? "flex" : "none";',
       'var rowEq2 = document.getElementById("rowColEq2"); if(rowEq2) rowEq2.style.display = (num >= 2) ? "flex" : "none";',
+      'var boxEq3 = document.getElementById("boxCfgEq3"); if(boxEq3) boxEq3.style.display = (num >= 3) ? "block" : "none";',
+      'var boxEq2 = document.getElementById("boxCfgEq2"); if(boxEq2) boxEq2.style.display = (num >= 2) ? "block" : "none";',
       'var prevE3 = document.getElementById("prevBadgeE3"); if(prevE3) prevE3.style.display = (num >= 3) ? "inline-block" : "none";',
       'var prevE2 = document.getElementById("prevBadgeE2"); if(prevE2) prevE2.style.display = (num >= 2) ? "inline-block" : "none";',
     '}',
@@ -2132,6 +2474,18 @@ function construireHtmlWebApp() {
       'if(document.getElementById("modalClubLogoPreview")) document.getElementById("modalClubLogoPreview").src = CLUB_CONFIG.logoUrl || "' + cfg.logoUrl + '";',
       'if(document.getElementById("inpClubLogoUrl")) document.getElementById("inpClubLogoUrl").value = "";',
       'var curNb = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 3;',
+      'var cEqs = (CLUB_CONFIG && CLUB_CONFIG.equipes) || [];',
+      '[1, 2, 3].forEach(function(i){',
+        'var eq = cEqs[i - 1] || {};',
+        'var defC = (i === 1 ? "SG1" : (i === 2 ? "SG2" : "SG3"));',
+        'var defL = (i === 1 ? "Équipe 1" : (i === 2 ? "Équipe 2" : "Équipe 3"));',
+        'var defM = (CLUB_CONFIG.nomClub || "MON CLUB") + (i > 1 ? (" " + i) : "");',
+        'if(document.getElementById("cfgEqCode" + i)) document.getElementById("cfgEqCode" + i).value = eq.code || defC;',
+        'if(document.getElementById("cfgEqLabel" + i)) document.getElementById("cfgEqLabel" + i).value = eq.nomSondage || defL;',
+        'if(document.getElementById("cfgEqMotCle" + i)) document.getElementById("cfgEqMotCle" + i).value = eq.motCleFfhb || defM;',
+        'if(document.getElementById("cfgEqDelai" + i)) document.getElementById("cfgEqDelai" + i).value = (eq.delaiRdvHeures !== undefined ? eq.delaiRdvHeures : 1);',
+        'if(document.getElementById("cfgEqUrl" + i)) document.getElementById("cfgEqUrl" + i).value = eq.urlPoule || "";',
+      '});',
       'choisirNbEquipesModal(curNb);',
       'majApercuModalCouleurs(cp, cs, c1, c2, c3);',
       'document.getElementById("modalCouleursBg").style.display = "flex";',
@@ -2182,6 +2536,15 @@ function construireHtmlWebApp() {
       'var c2 = document.getElementById("inpColEq2").value;',
       'var c3 = document.getElementById("inpColEq3") ? document.getElementById("inpColEq3").value : "#10b981";',
       'var nbEq = parseInt(document.getElementById("inpNbEquipesModal") ? document.getElementById("inpNbEquipesModal").value : 3, 10) || 3;',
+      'var eqList = [];',
+      'for(var i = 1; i <= nbEq; i++){',
+        'var cCode = (document.getElementById("cfgEqCode" + i) ? document.getElementById("cfgEqCode" + i).value.trim() : "") || ("E" + i);',
+        'var cLabel = (document.getElementById("cfgEqLabel" + i) ? document.getElementById("cfgEqLabel" + i).value.trim() : "") || ("Équipe " + i);',
+        'var cMotCle = (document.getElementById("cfgEqMotCle" + i) ? document.getElementById("cfgEqMotCle" + i).value.trim() : "") || cLabel;',
+        'var cDelai = parseFloat(document.getElementById("cfgEqDelai" + i) ? document.getElementById("cfgEqDelai" + i).value : "1") || 1;',
+        'var cUrl = (document.getElementById("cfgEqUrl" + i) ? document.getElementById("cfgEqUrl" + i).value.trim() : "");',
+        'eqList.push({ num: i, code: cCode, nomSondage: cLabel, motCleFfhb: cMotCle, motCle: cMotCle, labelSondage: cLabel, delaiRdvHeures: cDelai, delaiRdv: cDelai, urlPoule: cUrl });',
+      '}',
       'document.getElementById("statusModalCouleurs").textContent = "Enregistrement dans Google Sheet...";',
       'document.getElementById("btnSaveCouleurs").disabled = true;',
       'google.script.run.withSuccessHandler(function(res){',
@@ -2192,17 +2555,20 @@ function construireHtmlWebApp() {
         'CLUB_CONFIG.couleurEquipe1 = c1;',
         'CLUB_CONFIG.couleurEquipe2 = c2;',
         'CLUB_CONFIG.couleurEquipe3 = c3;',
+        'CLUB_CONFIG.equipes = eqList;',
         'var ancienNb = CLUB_CONFIG.nbEquipes;',
         'CLUB_CONFIG.nbEquipes = nbEq;',
+        'afficherToast("Configuration des équipes et couleurs enregistrée !", "succes");',
         'if(typeof confetti === "function") confetti({ particleCount: 70, spread: 60 });',
         'setTimeout(function(){',
           'fermerModalCouleurs();',
-          'if(ancienNb !== nbEq) { chargerDonneesCoach(); }',
+          'chargerDonneesCoach();',
         '}, 900);',
       '}).withFailureHandler(function(err){',
         'document.getElementById("btnSaveCouleurs").disabled = false;',
         'document.getElementById("statusModalCouleurs").textContent = err.message;',
-      '}).enregistrerCouleursClub(SESSION_TEL, SESSION_PIN, { primaire: cp, secondaire: cs, equipe1: c1, equipe2: c2, equipe3: c3, nbEquipes: nbEq });',
+        'afficherToast(err.message, "erreur");',
+      '}).enregistrerCouleursClub(SESSION_TEL, SESSION_PIN, { primaire: cp, secondaire: cs, equipe1: c1, equipe2: c2, equipe3: c3, nbEquipes: nbEq, equipes: eqList });',
     '}',
     'function ouvrirSelecteurPhotoJoueur(){ document.getElementById("filePhoto").click(); }',
     'function ouvrirSelecteurPhotoCoach(){ document.getElementById("fileCoachPhoto").click(); }',
@@ -2393,6 +2759,7 @@ function construireHtmlWebApp() {
       'pleft.appendChild(pmini);',
       'var pinfo = document.createElement("div");',
       'var pname = document.createElement("div"); pname.className = "pname"; pname.textContent = j.nom;',
+      'if(j.renfort){ var rB = document.createElement("span"); rB.className = "badge-renfort"; rB.textContent = "Renfort"; pname.appendChild(rB); }',
       'pinfo.appendChild(pname);',
       'var pmeta = document.createElement("div"); pmeta.className = "pmeta"; pmeta.textContent = (j.poste || "Demi-Centre") + " • " + (j.entrainements || 0) + " tr";',
       'pinfo.appendChild(pmeta);',
@@ -2647,7 +3014,7 @@ function construireHtmlWebApp() {
         'var ban = document.getElementById("banniereBrouillon"); if(ban) ban.style.display = "none";',
         'document.getElementById("statutChargement").textContent = "Brouillon restauré !";',
       '} catch(e){',
-        'alert("Impossible de restaurer le brouillon : " + e.message);',
+        'afficherToast("Impossible de restaurer le brouillon : " + e.message, "erreur");',
       '}',
     '}',
     'function effacerBrouillon(){',
@@ -2655,7 +3022,7 @@ function construireHtmlWebApp() {
       'var ban = document.getElementById("banniereBrouillon"); if(ban) ban.style.display = "none";',
     '}',
     'function rechargerCompoPrecedente(){',
-      'if(!DERNIERE_COMPO){ alert("Aucune composition précédente enregistrée."); return; }',
+      'if(!DERNIERE_COMPO){ afficherToast("Aucune composition précédente enregistrée.", "info"); return; }',
       'var dateStr = DERNIERE_COMPO.date ? (" du " + DERNIERE_COMPO.date) : "";',
       'if(!confirm("Recharger la composition précédente" + dateStr + " ?")) return;',
       'appliquerRepartitionsCompo(DERNIERE_COMPO);',
@@ -2953,11 +3320,11 @@ function construireHtmlWebApp() {
           'UPDATE_INFO = res;',
           'ouvrirModalMiseAJour();',
         '} else {',
-          'alert("Votre Handball Bot est parfaitement à jour (Version v" + (res ? res.versionActuelle : "' + APP_VERSION + '") + ") !");',
+          'afficherToast("Votre Handball Bot est parfaitement à jour (Version v" + (res ? res.versionActuelle : "' + APP_VERSION + '") + ") !", "succes");',
         '}',
       '}).withFailureHandler(function(err){',
         'if(btn) btn.textContent = "Vérifier les mises à jour";',
-        'alert("Impossible de vérifier les mises à jour : " + err.message);',
+        'afficherToast("Impossible de vérifier les mises à jour : " + err.message, "erreur");',
       '}).verifierMiseAJour();',
     '}',
     'function ouvrirModalMiseAJour(){',
@@ -3399,10 +3766,12 @@ function construireHtmlWebApp() {
     '}',
     'function ouvrirModalJoueur(nom){',
       'JOUEUR_MODAL_COURANT = nom;',
-      'var p = EFFECTIF_COMPLET.find(function(x){ return x.nom.toLowerCase() === nom.toLowerCase(); }) || { nom: nom, poste: "Demi-Centre", photo: "", note: "" };',
+      'var p = EFFECTIF_COMPLET.find(function(x){ return x.nom.toLowerCase() === nom.toLowerCase(); }) || { nom: nom, poste: "Demi-Centre", photo: "", note: "", tel: "", equipe: "Équipe 1" };',
       'document.getElementById("modalJoueurNom").textContent = p.nom;',
       'document.getElementById("modalJoueurPoste").value = p.poste || "Demi-Centre";',
       'document.getElementById("modalJoueurNote").value = p.note || "";',
+      'if(document.getElementById("modalJoueurTel")) document.getElementById("modalJoueurTel").value = p.tel || "";',
+      'if(document.getElementById("modalJoueurEquipe")) document.getElementById("modalJoueurEquipe").value = p.equipe || "Équipe 1";',
       'document.getElementById("modalJoueurStatus").textContent = "";',
       'PHOTO_MODAL_DATA = undefined;',
       'if(p.photo){ document.getElementById("modalJoueurImg").src = p.photo; document.getElementById("modalJoueurImg").style.display = "block"; document.getElementById("modalJoueurInitiale").style.display = "none"; }',
@@ -3427,19 +3796,256 @@ function construireHtmlWebApp() {
       'if(!JOUEUR_MODAL_COURANT) return;',
       'document.getElementById("modalJoueurStatus").textContent = "Enregistrement...";',
       'var np = document.getElementById("modalJoueurPoste").value, nn = document.getElementById("modalJoueurNote").value;',
-      'var jCible = { nom: JOUEUR_MODAL_COURANT, poste: np, photo: PHOTO_MODAL_DATA || "", note: nn };',
+      'var nTel = document.getElementById("modalJoueurTel") ? document.getElementById("modalJoueurTel").value.trim() : "";',
+      'var nEq = document.getElementById("modalJoueurEquipe") ? document.getElementById("modalJoueurEquipe").value : "Équipe 1";',
+      'var jCible = { nom: JOUEUR_MODAL_COURANT, poste: np, photo: PHOTO_MODAL_DATA || "", note: nn, tel: nTel, equipe: nEq };',
       'google.script.run.withSuccessHandler(function(res){',
         'document.getElementById("modalJoueurStatus").textContent = "Enregistré avec succès !";',
+        'afficherToast("Fiche de " + res.joueur.nom + " mise à jour !", "succes");',
         'var idx = EFFECTIF_COMPLET.findIndex(function(x){ return x.nom.toLowerCase() === res.joueur.nom.toLowerCase(); });',
         'if(idx !== -1) EFFECTIF_COMPLET[idx] = res.joueur;',
-        'rendreRosterGrid();',
+        'var jObj = JOUEURS.find(function(x){ return x.nom.toLowerCase() === res.joueur.nom.toLowerCase(); });',
+        'if(jObj){ jObj.poste = res.joueur.poste; jObj.photo = res.joueur.photo; jObj.note = res.joueur.note; }',
+        'rendreRosterGrid(); initialiserColonnes();',
         'setTimeout(function(){ fermerModalJoueur(); }, 800);',
       '}).withFailureHandler(function(err){',
         'document.getElementById("modalJoueurStatus").textContent = err.message;',
+        'afficherToast(err.message, "erreur");',
       '}).enregistrerFicheJoueurParCoach(SESSION_TEL, SESSION_PIN, jCible);',
+    '}',
+    'function supprimerJoueurCourant(){',
+      'if(!JOUEUR_MODAL_COURANT) return;',
+      'if(!confirm("Voulez-vous vraiment supprimer " + JOUEUR_MODAL_COURANT + " de l\'effectif du club ?")) return;',
+      'document.getElementById("modalJoueurStatus").textContent = "Suppression en cours...";',
+      'google.script.run.withSuccessHandler(function(res){',
+        'afficherToast("Joueur " + JOUEUR_MODAL_COURANT + " supprimé de l\'effectif.", "info");',
+        'EFFECTIF_COMPLET = EFFECTIF_COMPLET.filter(function(x){ return x.nom.toLowerCase() !== JOUEUR_MODAL_COURANT.toLowerCase(); });',
+        'JOUEURS = JOUEURS.filter(function(x){ return x.nom.toLowerCase() !== JOUEUR_MODAL_COURANT.toLowerCase(); });',
+        'rendreRosterGrid(); initialiserColonnes();',
+        'fermerModalJoueur();',
+      '}).withFailureHandler(function(err){',
+        'document.getElementById("modalJoueurStatus").textContent = err.message;',
+        'afficherToast(err.message, "erreur");',
+      '}).supprimerJoueurParCoach(SESSION_TEL, SESSION_PIN, JOUEUR_MODAL_COURANT);',
+    '}',
+    'function ouvrirModalNouveauJoueur(){',
+      'document.getElementById("inpNouvNom").value = "";',
+      'document.getElementById("inpNouvTel").value = "";',
+      'document.getElementById("inpNouvNote").value = "";',
+      'document.getElementById("selNouvPoste").value = "Demi-Centre";',
+      'document.getElementById("selNouvEquipe").value = "Équipe 1";',
+      'document.getElementById("statusNouvJoueur").textContent = "";',
+      'document.getElementById("modalNouveauJoueurBg").style.display = "flex";',
+    '}',
+    'function fermerModalNouveauJoueur(){ document.getElementById("modalNouveauJoueurBg").style.display = "none"; }',
+    'function fermerModalNouveauJoueurSurBg(e){ if(e.target.id === "modalNouveauJoueurBg") fermerModalNouveauJoueur(); }',
+    'function creerNouveauJoueurClient(){',
+      'var nom = document.getElementById("inpNouvNom").value.trim();',
+      'if(!nom){ document.getElementById("statusNouvJoueur").textContent = "Le nom est obligatoire."; return; }',
+      'var tel = document.getElementById("inpNouvTel").value.trim();',
+      'var poste = document.getElementById("selNouvPoste").value;',
+      'var eq = document.getElementById("selNouvEquipe").value;',
+      'var note = document.getElementById("inpNouvNote").value.trim();',
+      'document.getElementById("statusNouvJoueur").textContent = "Création du joueur...";',
+      'google.script.run.withSuccessHandler(function(res){',
+        'afficherToast("Joueur " + res.joueur.nom + " ajouté à l\'effectif !", "succes");',
+        'EFFECTIF_COMPLET.push(res.joueur);',
+        'rendreRosterGrid();',
+        'fermerModalNouveauJoueur();',
+      '}).withFailureHandler(function(err){',
+        'document.getElementById("statusNouvJoueur").textContent = err.message;',
+        'afficherToast(err.message, "erreur");',
+      '}).ajouterJoueurParCoach(SESSION_TEL, SESSION_PIN, { nom: nom, tel: tel, poste: poste, equipe: eq, note: note });',
+    '}',
+    'var MODAL_RENFORT_IS_TRAIN = false;',
+    'function ouvrirModalRenfort(estTrain){',
+      'MODAL_RENFORT_IS_TRAIN = !!estTrain;',
+      'document.getElementById("inpFiltreRenfort").value = "";',
+      'if(document.getElementById("inpInviteNom")) document.getElementById("inpInviteNom").value = "";',
+      'rendreListeRenforts("");',
+      'document.getElementById("modalRenfortBg").style.display = "flex";',
+    '}',
+    'function fermerModalRenfort(){ document.getElementById("modalRenfortBg").style.display = "none"; }',
+    'function fermerModalRenfortSurBg(e){ if(e.target.id === "modalRenfortBg") fermerModalRenfort(); }',
+    'function filtrerListeRenforts(filtre){ rendreListeRenforts(filtre); }',
+    'function rendreListeRenforts(filtre){',
+      'var container = document.getElementById("listeRenfortsDispos"); if(!container) return;',
+      'container.innerHTML = "";',
+      'var q = String(filtre || "").toLowerCase().trim();',
+      'var dejaNoms = [];',
+      'if(MODAL_RENFORT_IS_TRAIN){',
+        'dejaNoms = (ENTRAINEMENTS[SEANCE_COURANTE] || []).map(function(x){ return x.nom.toLowerCase(); });',
+      '} else {',
+        'dejaNoms = (JOUEURS || []).map(function(x){ return x.nom.toLowerCase(); });',
+      '}',
+      'var dispoAjout = EFFECTIF_COMPLET.filter(function(x){',
+        'if(dejaNoms.indexOf(x.nom.toLowerCase()) !== -1) return false;',
+        'if(q && !x.nom.toLowerCase().includes(q)) return false;',
+        'return true;',
+      '});',
+      'if(dispoAjout.length === 0){',
+        'container.innerHTML = "<div style=\'color:#94a3b8;font-size:0.75rem;padding:8px;text-align:center;\'>Aucun autre joueur disponible dans l\'effectif.</div>";',
+        'return;',
+      '}',
+      'dispoAjout.forEach(function(j){',
+        'var row = document.createElement("div");',
+        'row.style.display = "flex"; row.style.alignItems = "center"; row.style.justifyContent = "space-between";',
+        'row.style.background = "#090d16"; row.style.padding = "8px 10px"; row.style.borderRadius = "8px"; row.style.border = "1px solid rgba(148,163,184,0.12)";',
+        'var info = document.createElement("div");',
+        'info.innerHTML = "<div style=\'font-weight:700;font-size:0.82rem;color:#f8fafc;\'>" + j.nom + "</div><div style=\'font-size:0.7rem;color:#94a3b8;\'>" + (j.poste || "Demi-Centre") + (j.equipe ? (" • " + j.equipe) : "") + "</div>";',
+        'var btn = document.createElement("button");',
+        'btn.className = "btn-enter"; btn.style.padding = "5px 10px"; btn.style.fontSize = "0.75rem"; btn.style.width = "auto"; btn.style.margin = "0";',
+        'btn.textContent = "+ Sélectionner";',
+        'btn.onclick = function(){ ajouterRenfortClient(j.nom); };',
+        'row.appendChild(info); row.appendChild(btn); container.appendChild(row);',
+      '});',
+    '}',
+    'function ajouterRenfortClient(nomJoueur){',
+      'var p = EFFECTIF_COMPLET.find(function(x){ return x.nom.toLowerCase() === nomJoueur.toLowerCase(); });',
+      'if(!p) return;',
+      'var rj = { nom: p.nom, poste: p.poste || "Demi-Centre", photo: p.photo || "", note: p.note || "", entrainements: 0, dispo1B: true, dispo1C: true, dispo1D: true, renfort: true };',
+      'if(MODAL_RENFORT_IS_TRAIN){',
+        'if(!ENTRAINEMENTS[SEANCE_COURANTE]) ENTRAINEMENTS[SEANCE_COURANTE] = [];',
+        'ENTRAINEMENTS[SEANCE_COURANTE].push(rj);',
+        'var trPool = document.getElementById("trZonePool");',
+        'if(trPool) trPool.appendChild(creerCarte(rj));',
+        'majCompteursTrain(); initSortables();',
+      '} else {',
+        'JOUEURS.push(rj);',
+        'var pool = document.getElementById("zonePool");',
+        'if(pool) pool.appendChild(creerCarte(rj));',
+        'majCompteurs(); initSortables(); sauvegarderBrouillonLocal(false);',
+        'if(MODE_TINDER) afficherCarteTinder();',
+      '}',
+      'afficherToast("Renfort " + p.nom + " ajouté !", "succes");',
+      'fermerModalRenfort();',
+    '}',
+    'function ajouterInviteClient(){',
+      'var nom = document.getElementById("inpInviteNom").value.trim();',
+      'if(!nom){ afficherToast("Veuillez saisir le nom de l\'invité.", "erreur"); return; }',
+      'var poste = document.getElementById("selInvitePoste").value;',
+      'var rj = { nom: nom, poste: poste, photo: "", note: "Invité extérieur", entrainements: 0, dispo1B: true, dispo1C: true, dispo1D: true, renfort: true };',
+      'if(MODAL_RENFORT_IS_TRAIN){',
+        'if(!ENTRAINEMENTS[SEANCE_COURANTE]) ENTRAINEMENTS[SEANCE_COURANTE] = [];',
+        'ENTRAINEMENTS[SEANCE_COURANTE].push(rj);',
+        'var trPool = document.getElementById("trZonePool");',
+        'if(trPool) trPool.appendChild(creerCarte(rj));',
+        'majCompteursTrain(); initSortables();',
+      '} else {',
+        'JOUEURS.push(rj);',
+        'var pool = document.getElementById("zonePool");',
+        'if(pool) pool.appendChild(creerCarte(rj));',
+        'majCompteurs(); initSortables(); sauvegarderBrouillonLocal(false);',
+        'if(MODE_TINDER) afficherCarteTinder();',
+      '}',
+      'afficherToast("Invité " + nom + " ajouté !", "succes");',
+      'fermerModalRenfort();',
+    '}',
+    'function getCollectifsSauvegardes(){',
+      'try {',
+        'var s = localStorage.getItem("hb_multi_collectifs");',
+        'if(s) return JSON.parse(s);',
+      '} catch(e){}',
+      'return [];',
+    '}',
+    'function sauvegarderCollectifsLocal(liste){',
+      'try { localStorage.setItem("hb_multi_collectifs", JSON.stringify(liste)); } catch(e){}',
+    '}',
+    'function ouvrirModalCollectifs(){',
+      'rendreListeCollectifs();',
+      'document.getElementById("modalCollectifsBg").style.display = "flex";',
+    '}',
+    'function fermerModalCollectifs(){ document.getElementById("modalCollectifsBg").style.display = "none"; }',
+    'function fermerModalCollectifsSurBg(e){ if(e.target.id === "modalCollectifsBg") fermerModalCollectifs(); }',
+    'function rendreListeCollectifs(){',
+      'var container = document.getElementById("listeCollectifs"); if(!container) return;',
+      'container.innerHTML = "";',
+      'var colls = getCollectifsSauvegardes();',
+      'var itemCur = document.createElement("div");',
+      'itemCur.style.display = "flex"; itemCur.style.alignItems = "center"; itemCur.style.justifyContent = "space-between"; itemCur.style.background = "#0e1626"; itemCur.style.padding = "10px 12px"; itemCur.style.borderRadius = "10px"; itemCur.style.border = "1px solid var(--color-primary)";',
+      'itemCur.innerHTML = "<div><div style=\'font-weight:800;font-size:0.85rem;color:#f8fafc;\'>" + (CLUB_CONFIG.nomClub || "Collectif Actuel") + "</div><div style=\'font-size:0.7rem;color:#94a3b8;\'>Collectif en cours d\'utilisation</div></div><span style=\'font-size:0.72rem;background:var(--color-primary);color:#fff;padding:3px 8px;border-radius:12px;font-weight:700;\'>Actif</span>";',
+      'container.appendChild(itemCur);',
+      'colls.forEach(function(c, idx){',
+        'var row = document.createElement("div");',
+        'row.style.display = "flex"; row.style.alignItems = "center"; row.style.justifyContent = "space-between"; row.style.background = "#090d16"; row.style.padding = "10px 12px"; row.style.borderRadius = "10px"; row.style.border = "1px solid rgba(148,163,184,0.15)";',
+        'var info = document.createElement("div");',
+        'info.innerHTML = "<div style=\'font-weight:700;font-size:0.85rem;color:#e2e8f0;\'>" + c.nom + "</div><div style=\'font-size:0.68rem;color:#94a3b8;word-break:break-all;\'>" + c.url.substring(0, 40) + "...</div>";',
+        'var acts = document.createElement("div"); acts.style.display = "flex"; acts.style.gap = "6px";',
+        'var btnGo = document.createElement("button"); btnGo.className = "btn-enter"; btnGo.style.padding = "5px 10px"; btnGo.style.fontSize = "0.75rem"; btnGo.style.width = "auto"; btnGo.style.margin = "0"; btnGo.textContent = "Basculer";',
+        'btnGo.onclick = function(){ window.location.href = c.url; };',
+        'var btnDel = document.createElement("button"); btnDel.className = "btn-reset"; btnDel.style.padding = "4px 8px"; btnDel.style.fontSize = "0.75rem"; btnDel.textContent = "✕";',
+        'btnDel.onclick = function(){ colls.splice(idx, 1); sauvegarderCollectifsLocal(colls); rendreListeCollectifs(); };',
+        'acts.appendChild(btnGo); acts.appendChild(btnDel); row.appendChild(info); row.appendChild(acts); container.appendChild(row);',
+      '});',
+    '}',
+    'function ajouterCollectifLie(){',
+      'var nom = document.getElementById("inpNouvCollectifNom").value.trim();',
+      'var url = document.getElementById("inpNouvCollectifUrl").value.trim();',
+      'if(!nom || !url){ afficherToast("Veuillez saisir un nom et une URL valide.", "erreur"); return; }',
+      'if(!url.startsWith("http://") && !url.startsWith("https://")){ afficherToast("L\'URL doit commencer par https://", "erreur"); return; }',
+      'var colls = getCollectifsSauvegardes();',
+      'colls.push({ nom: nom, url: url });',
+      'sauvegarderCollectifsLocal(colls);',
+      'document.getElementById("inpNouvCollectifNom").value = "";',
+      'document.getElementById("inpNouvCollectifUrl").value = "";',
+      'afficherToast("Collectif " + nom + " lié avec succès !", "succes");',
+      'rendreListeCollectifs();',
+    '}',
+    'var DEFERRED_PWA_PROMPT = null;',
+    'window.addEventListener("beforeinstallprompt", function(e){',
+      'e.preventDefault();',
+      'DEFERRED_PWA_PROMPT = e;',
+      'var b = document.getElementById("btnPwaNativeInstall");',
+      'if(b) b.style.display = "block";',
+    '});',
+    'function ouvrirModalPwa(){',
+      'var isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;',
+      'var iosG = document.getElementById("pwaIosGuide"), andG = document.getElementById("pwaAndroidGuide");',
+      'if(isIos){',
+        'if(iosG) iosG.style.display = "block";',
+        'if(andG) andG.style.display = "none";',
+      '} else {',
+        'if(iosG) iosG.style.display = "none";',
+        'if(andG) andG.style.display = "block";',
+      '}',
+      'document.getElementById("modalPwaInstallBg").style.display = "flex";',
+    '}',
+    'function fermerModalPwa(){ document.getElementById("modalPwaInstallBg").style.display = "none"; }',
+    'function fermerModalPwaSurBg(e){ if(e.target.id === "modalPwaInstallBg") fermerModalPwa(); }',
+    'function declencherPwaNative(){',
+      'if(DEFERRED_PWA_PROMPT){',
+        'DEFERRED_PWA_PROMPT.prompt();',
+        'DEFERRED_PWA_PROMPT.userChoice.then(function(choice){',
+          'if(choice.outcome === "accepted"){ afficherToast("Application installée avec succès !", "succes"); fermerModalPwa(); }',
+          'DEFERRED_PWA_PROMPT = null;',
+        '});',
+      '} else {',
+        'afficherToast("Suivez les indications de votre navigateur pour installer l\'icône.", "info");',
+      '}',
+    '}',
+    'function afficherToast(msg, type, duree){',
+      'type = type || "info"; duree = duree || 3500;',
+      'var c = document.getElementById("toastContainer");',
+      'if(!c){',
+        'c = document.createElement("div"); c.id = "toastContainer"; document.body.appendChild(c);',
+      '}',
+      'var item = document.createElement("div");',
+      'item.className = "toast-item toast-" + type;',
+      'item.textContent = msg;',
+      'c.appendChild(item);',
+      'setTimeout(function(){',
+        'item.style.opacity = "0"; item.style.transform = "translateY(10px)"; item.style.transition = "all 0.3s ease";',
+        'setTimeout(function(){ if(item.parentNode) item.parentNode.removeChild(item); }, 300);',
+      '}, duree);',
+    '}',
+    'function demanderPermissionNotification(){',
+      'if("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied"){',
+        'Notification.requestPermission();',
+      '}',
     '}',
     'window.onload = function(){',
       'initSortables();',
+      'demanderPermissionNotification();',
       'try {',
         'var t = localStorage.getItem("hb_tel"), p = localStorage.getItem("hb_pin");',
         'if(t) document.getElementById("inpTel").value = t;',
