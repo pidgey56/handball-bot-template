@@ -139,16 +139,20 @@ Une fois la composition validée :
 
 ---
 
-## 🏋️ 4. La Gestion des Entraînements
+## 🏋️ 4. La Gestion des Entraînements (1 à 5 séances par semaine)
+
+### 🗓 Volume hebdomadaire modulable (1 à 5 séances) :
+* **Sélecteur de volume** : Définissez librement le nombre de séances par semaine (de **1 à 5 entraînements**) depuis la fenêtre **« Créneaux & Horaires »**.
+* **Onglets dynamiques** : L'interface d'entraînement adapte instantanément ses onglets au nombre de séances configurées.
+* **Intégration au sondage WhatsApp** : Les séances cochées **« Actif sondage »** sont automatiquement incluses dans le sondage WhatsApp du lundi matin.
 
 ### 3 Formats de séances adaptés :
-
 1. **🔀 Entraînement Séparé** : Deux groupes distincts (ex: *Groupe 1 à 19h30 / Groupe 2 à 21h00*, ou *Équipe 1 vs Équipe 2*).
-2. **🎯 Effectif Réduit** : Séance avec quota maximum de joueurs (ex: séance tactique limitée à 18 joueurs avec liste d'attente).
-3. **👥 Effectif Complet** : Séance ouverte à l'ensemble des joueurs disponibles.
+2. **🎯 Effectif Réduit** : Séance avec quota maximum de joueurs (ex: séance tactique limitée à 18 joueurs avec gestion des réservistes).
+3. **👥 Effectif Complet** : Séance ouverte à l'ensemble des joueurs disponibles (avec distinction des joueurs ménagés/adaptés).
 
-### Paramétrage des jours et horaires :
-* Directement depuis la WebApp (bouton **« ⚙️ Créneaux »**), configurez vos jours d'entraînement (Lundi, Mercredi, Jeudi, etc.), vos horaires et vos gymnases sans jamais ouvrir de fichier Excel !
+### Paramétrage des jours et horaires sans ouvrir Excel :
+* Configurez pour chaque séance le jour (Lundi, Mardi, Mercredi, Jeudi, Vendredi, Samedi, Dimanche) et l'horaire précis en quelques clics directement depuis la WebApp.
 
 ### Option Avec ou Sans Emojis :
 * Vous préférez des convocations sobres sans pictogrammes ? Un interrupteur dans la configuration permet de **désactiver les emojis** sur toute la WebApp et dans les messages WhatsApp générés.

@@ -91,7 +91,7 @@ Tous les réglages s'effectuent sans coder, directement depuis l'onglet **Config
 - **Nom et blason du club** : Nom officiel et URL du logo pour la WebApp.
 - **Couleurs du club et des équipes** : Palette personnalisée (`#HEX`) avec aperçu en temps réel et nuanciers intégrés.
 - **Équipes gérées** : Nom des équipes (ex: `SG1`, `SG2`, `N2`, `-18M`), mots-clés FFHB et URLs de poules.
-- **Créneaux d'entraînement** : Jours, horaires et gymnases personnalisables.
+- **Créneaux d'entraînement (1 à 5 séances / semaine)** : Volume hebdomadaire modulable (1 à 5 entraînements), jours et horaires configurables directement depuis la WebApp coach ou Google Sheets.
 - **Délai de rendez-vous** : Décalage en heures avant le coup d'envoi (ex: 1h pour domicile, 1h30 pour extérieur).
 - **Numéros administrateurs** : Numéros de téléphone des entraîneurs ayant accès à l'espace coach.
 

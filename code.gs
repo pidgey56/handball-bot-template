@@ -154,45 +154,68 @@ function getClubConfig(ss) {
   const equipesActives = equipes.slice(0, nbEquipesCfg);
   const nbEquipes = nbEquipesCfg;
 
-  // Lecture des entraînements configurés (Lignes 9 à 14)
-  const rowsTrain = shCfg.getRange('B9:D14').getValues();
-  const entrainements = [];
-  rowsTrain.forEach(function(r) {
-    const intitule = String(r[1] || '').trim();
-    const actif = String(r[2] || 'NON').trim().toUpperCase() === 'OUI';
-    if (intitule) {
-      entrainements.push({ label: intitule, actif: actif });
-    }
-  });
-
+  // Lecture des entraînements configurés (ScriptProperties ou feuille Configuration B9:D14)
   const extraireHoraire = function(str) {
     const m = String(str || '').match(/(\d{1,2}[h:]\d{0,2})/i);
     return m ? m[1].replace(':', 'h') : '20h30';
   };
 
-  const seancesTrain = [
-    {
-      id: 'lun',
-      jour: 'Lundi',
-      label: (rowsTrain[0] && rowsTrain[0][1]) ? String(rowsTrain[0][1]).trim() : 'Entraînement Lundi 20h30',
-      horaire: extraireHoraire(rowsTrain[0] ? rowsTrain[0][1] : ''),
-      actif: (rowsTrain[0] && String(rowsTrain[0][2]).toUpperCase() === 'OUI')
-    },
-    {
-      id: 'mer',
-      jour: 'Mercredi',
-      label: (rowsTrain[2] && rowsTrain[2][1]) ? String(rowsTrain[2][1]).trim() : 'Entraînement Mercredi 20h30',
-      horaire: extraireHoraire(rowsTrain[2] ? rowsTrain[2][1] : ''),
-      actif: (rowsTrain[2] && String(rowsTrain[2][2]).toUpperCase() === 'OUI')
-    },
-    {
-      id: 'jeu',
-      jour: 'Jeudi',
-      label: (rowsTrain[4] && rowsTrain[4][1]) ? String(rowsTrain[4][1]).trim() : 'Entraînement Jeudi 20h30',
-      horaire: extraireHoraire(rowsTrain[4] ? rowsTrain[4][1] : ''),
-      actif: (rowsTrain[4] && String(rowsTrain[4][2]).toUpperCase() === 'OUI')
+  let seancesTrain = [];
+  try {
+    const rawProp = PropertiesService.getScriptProperties().getProperty('CONFIG_SEANCES_TRAIN');
+    if (rawProp) {
+      const parsed = JSON.parse(rawProp);
+      if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= 5) {
+        seancesTrain = parsed.map(function(s, idx) {
+          const j = String(s.jour || ('Séance ' + (idx + 1))).trim();
+          const h = extraireHoraire(s.horaire || '20h30');
+          return {
+            id: s.id || ('s' + (idx + 1)),
+            jour: j,
+            horaire: h,
+            label: s.label || ('Entraînement ' + j + ' ' + h),
+            actif: s.actif !== false
+          };
+        });
+      }
     }
-  ];
+  } catch (e) {
+    Logger.log('Erreur lecture CONFIG_SEANCES_TRAIN : ' + e.message);
+  }
+
+  if (!seancesTrain.length) {
+    const rowsTrain = shCfg.getRange('B9:D14').getValues();
+    seancesTrain = [
+      {
+        id: 'lun',
+        jour: 'Lundi',
+        label: (rowsTrain[0] && rowsTrain[0][1]) ? String(rowsTrain[0][1]).trim() : 'Entraînement Lundi 20h30',
+        horaire: extraireHoraire(rowsTrain[0] ? rowsTrain[0][1] : ''),
+        actif: (rowsTrain[0] && String(rowsTrain[0][2]).toUpperCase() === 'OUI')
+      },
+      {
+        id: 'mer',
+        jour: 'Mercredi',
+        label: (rowsTrain[2] && rowsTrain[2][1]) ? String(rowsTrain[2][1]).trim() : 'Entraînement Mercredi 20h30',
+        horaire: extraireHoraire(rowsTrain[2] ? rowsTrain[2][1] : ''),
+        actif: (rowsTrain[2] && String(rowsTrain[2][2]).toUpperCase() === 'OUI')
+      },
+      {
+        id: 'jeu',
+        jour: 'Jeudi',
+        label: (rowsTrain[4] && rowsTrain[4][1]) ? String(rowsTrain[4][1]).trim() : 'Entraînement Jeudi 20h30',
+        horaire: extraireHoraire(rowsTrain[4] ? rowsTrain[4][1] : ''),
+        actif: (rowsTrain[4] && String(rowsTrain[4][2]).toUpperCase() === 'OUI')
+      }
+    ];
+  }
+
+  const entrainements = [];
+  seancesTrain.forEach(function(s) {
+    if (s.label) {
+      entrainements.push({ label: s.label, actif: s.actif });
+    }
+  });
 
   const groupId = getVal('C18', '');
   const githubRepo = getVal('C19', '');
@@ -377,14 +400,16 @@ function initialiserOngletsWebApp(nbEquipesForce) {
   }
 
   let shVotes = ss.getSheetByName('Votes_Semaine');
-  let entetesVotes;
-  if (cfg.nbEquipes === 1) {
-    entetesVotes = ['Joueur', 'Poste', 'Nb Entraînements (0-3)', 'Dispo ' + cfg.nomEquipe1, 'Dispo Lundi', 'Dispo Mercredi', 'Dispo Jeudi'];
-  } else if (cfg.nbEquipes === 3) {
-    entetesVotes = ['Joueur', 'Poste', 'Nb Entraînements (0-3)', 'Dispo ' + cfg.nomEquipe1, 'Dispo ' + cfg.nomEquipe2, 'Dispo ' + cfg.nomEquipe3, 'Dispo Lundi', 'Dispo Mercredi', 'Dispo Jeudi'];
-  } else {
-    entetesVotes = ['Joueur', 'Poste', 'Nb Entraînements (0-3)', 'Dispo ' + cfg.nomEquipe1, 'Dispo ' + cfg.nomEquipe2, 'Dispo Lundi', 'Dispo Mercredi', 'Dispo Jeudi'];
-  }
+  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [
+    { jour: 'Lundi' }, { jour: 'Mercredi' }, { jour: 'Jeudi' }
+  ];
+  const maxTrainStr = 'Nb Entraînements (0-' + seances.length + ')';
+  const entetesVotes = ['Joueur', 'Poste', maxTrainStr, 'Dispo ' + cfg.nomEquipe1];
+  if (cfg.nbEquipes >= 2) entetesVotes.push('Dispo ' + cfg.nomEquipe2);
+  if (cfg.nbEquipes >= 3) entetesVotes.push('Dispo ' + cfg.nomEquipe3);
+  seances.forEach(function(s) {
+    entetesVotes.push('Dispo ' + (s.jour || 'Entraînement'));
+  });
   if (!shVotes) {
     shVotes = ss.insertSheet('Votes_Semaine');
     shVotes.getRange(1, 1, 1, entetesVotes.length).setValues([entetesVotes]).setFontWeight('bold');
@@ -1309,50 +1334,31 @@ function enregistrerVotesDansSheet(votes) {
     if (alias) mapNom[alias] = { nom: nomPropre, poste: poste };
   });
 
-  const nbCols = cfg.nbEquipes === 1 ? 7 : (cfg.nbEquipes === 3 ? 9 : 8);
+  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [
+    { jour: 'Lundi' }, { jour: 'Mercredi' }, { jour: 'Jeudi' }
+  ];
+  const nbCols = 3 + cfg.nbEquipes + seances.length;
   const dictionnaireJoueurs = {};
   if (shVotes.getLastRow() > 1) {
-    const lignesExistantes = shVotes.getRange(2, 1, shVotes.getLastRow() - 1, nbCols).getValues();
+    const colCount = Math.max(shVotes.getLastColumn(), nbCols);
+    const lignesExistantes = shVotes.getRange(2, 1, shVotes.getLastRow() - 1, colCount).getValues();
     lignesExistantes.forEach(function(r) {
       const nomExistant = String(r[0] || '').trim();
       if (nomExistant) {
         const ficheEff = mapNom[nomExistant.toLowerCase()];
         let posteExistant = ficheEff ? ficheEff.poste : String(r[1] || 'Demi-Centre').trim();
         if (/polyvalent|joueur/i.test(posteExistant)) posteExistant = 'Demi-Centre';
-        let ligneJoueur;
-        if (cfg.nbEquipes === 1) {
-          ligneJoueur = [
-            nomExistant,
-            posteExistant,
-            Number(r[2]) || 0,
-            String(r[3] || 'NON').trim().toUpperCase(),
-            String(r[4] || 'NON').trim().toUpperCase(),
-            String(r[5] || 'NON').trim().toUpperCase(),
-            String(r[6] || 'NON').trim().toUpperCase()
-          ];
-        } else if (cfg.nbEquipes === 3) {
-          ligneJoueur = [
-            nomExistant,
-            posteExistant,
-            Number(r[2]) || 0,
-            String(r[3] || 'NON').trim().toUpperCase(),
-            String(r[4] || 'NON').trim().toUpperCase(),
-            String(r[5] || 'NON').trim().toUpperCase(),
-            String(r[6] || 'NON').trim().toUpperCase(),
-            String(r[7] || 'NON').trim().toUpperCase(),
-            String(r[8] || 'NON').trim().toUpperCase()
-          ];
-        } else {
-          ligneJoueur = [
-            nomExistant,
-            posteExistant,
-            Number(r[2]) || 0,
-            String(r[3] || 'NON').trim().toUpperCase(),
-            String(r[4] || 'NON').trim().toUpperCase(),
-            String(r[5] || 'NON').trim().toUpperCase(),
-            String(r[6] || 'NON').trim().toUpperCase(),
-            String(r[7] || 'NON').trim().toUpperCase()
-          ];
+        let ligneJoueur = [
+          nomExistant,
+          posteExistant,
+          Number(r[2]) || 0,
+          String(r[3] || 'NON').trim().toUpperCase()
+        ];
+        if (cfg.nbEquipes >= 2) ligneJoueur.push(String(r[4] || 'NON').trim().toUpperCase());
+        if (cfg.nbEquipes >= 3) ligneJoueur.push(String(r[5] || 'NON').trim().toUpperCase());
+        for (let sIdx = 0; sIdx < seances.length; sIdx++) {
+          const colR = 3 + cfg.nbEquipes + sIdx;
+          ligneJoueur.push(String(r[colR] || 'NON').trim().toUpperCase());
         }
         dictionnaireJoueurs[nomExistant.toLowerCase()] = ligneJoueur;
       }
@@ -1364,47 +1370,40 @@ function enregistrerVotesDansSheet(votes) {
     const pushPropre = String(v.pushName || '').trim();
     const fiche = mapTel[telPropre] || mapNom[pushPropre.toLowerCase()] || { nom: pushPropre || telPropre, poste: 'Demi-Centre' };
     const ancien = dictionnaireJoueurs[fiche.nom.toLowerCase()] || [];
-    const oui = function(val, idx) { return val === undefined ? (ancien[idx] || 'NON') : (val ? 'OUI' : 'NON'); };
 
     const selOpts = Array.isArray(v.selectedOptions) ? v.selectedOptions.map(function(s){ return String(s).toUpperCase(); }) : [];
     const eq1Dispo = v.dispoEquipe1 || v.dispo1B || selOpts.some(function(s){ return s.includes(cfg.nomEquipe1.toUpperCase()); });
     const eq2Dispo = v.dispoEquipe2 || v.dispo1C || (cfg.nomEquipe2 ? selOpts.some(function(s){ return s.includes(cfg.nomEquipe2.toUpperCase()); }) : false);
     const eq3Dispo = v.dispoEquipe3 || v.dispo1D || (cfg.nomEquipe3 ? selOpts.some(function(s){ return s.includes(cfg.nomEquipe3.toUpperCase()); }) : false);
 
-    if (cfg.nbEquipes === 1) {
-      dictionnaireJoueurs[fiche.nom.toLowerCase()] = [
-        fiche.nom,
-        fiche.poste,
-        Number(v.nbTrainings) || 0,
-        eq1Dispo ? 'OUI' : 'NON',
-        oui(v.dispoLundi, 4),
-        oui(v.dispoMercredi, 5),
-        oui(v.dispoJeudi, 6)
-      ];
-    } else if (cfg.nbEquipes === 3) {
-      dictionnaireJoueurs[fiche.nom.toLowerCase()] = [
-        fiche.nom,
-        fiche.poste,
-        Number(v.nbTrainings) || 0,
-        eq1Dispo ? 'OUI' : 'NON',
-        eq2Dispo ? 'OUI' : 'NON',
-        eq3Dispo ? 'OUI' : 'NON',
-        oui(v.dispoLundi, 6),
-        oui(v.dispoMercredi, 7),
-        oui(v.dispoJeudi, 8)
-      ];
-    } else {
-      dictionnaireJoueurs[fiche.nom.toLowerCase()] = [
-        fiche.nom,
-        fiche.poste,
-        Number(v.nbTrainings) || 0,
-        eq1Dispo ? 'OUI' : 'NON',
-        eq2Dispo ? 'OUI' : 'NON',
-        oui(v.dispoLundi, 5),
-        oui(v.dispoMercredi, 6),
-        oui(v.dispoJeudi, 7)
-      ];
-    }
+    const ligne = [
+      fiche.nom,
+      fiche.poste,
+      Number(v.nbTrainings) || 0,
+      eq1Dispo ? 'OUI' : 'NON'
+    ];
+    if (cfg.nbEquipes >= 2) ligne.push(eq2Dispo ? 'OUI' : 'NON');
+    if (cfg.nbEquipes >= 3) ligne.push(eq3Dispo ? 'OUI' : 'NON');
+
+    seances.forEach(function(s, sIdx) {
+      const colIdxInRow = 3 + cfg.nbEquipes + sIdx;
+      const ancienVal = ancien[colIdxInRow] || 'NON';
+      const jourUp = (s.jour || '').toUpperCase();
+      let dispoSeance = false;
+      const propDay = 'dispo' + (s.jour || '').charAt(0).toUpperCase() + (s.jour || '').slice(1).toLowerCase();
+      if (v[propDay] !== undefined) {
+        dispoSeance = !!v[propDay];
+      } else if (selOpts.length > 0 && jourUp) {
+        dispoSeance = selOpts.some(function(opt){
+          return opt.includes(jourUp) && (opt.includes('ENTRAÎNEMENT') || opt.includes('ENTRAINEMENT') || opt.includes('TRAINING'));
+        });
+      } else {
+        dispoSeance = (ancienVal === 'OUI');
+      }
+      ligne.push(dispoSeance ? 'OUI' : 'NON');
+    });
+
+    dictionnaireJoueurs[fiche.nom.toLowerCase()] = ligne;
   });
 
   const lignesFinales = Object.values(dictionnaireJoueurs).sort(function(a, b) {
@@ -1478,8 +1477,42 @@ function lireDonneesCoach() {
   }
 
   const rowsVotes = shVotes ? shVotes.getDataRange().getValues().slice(1) : [];
+  const headersVotes = (shVotes && shVotes.getLastRow() >= 1) ? shVotes.getRange(1, 1, 1, shVotes.getLastColumn() || 1).getValues()[0] : [];
   const joueurs = [];
-  const entrainements = { lun: [], mer: [], jeu: [] };
+
+  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [
+    { id: 'lun', jour: 'Lundi', horaire: '20h30', label: 'Entraînement Lundi 20h30', actif: true },
+    { id: 'mer', jour: 'Mercredi', horaire: '20h30', label: 'Entraînement Mercredi 20h30', actif: true },
+    { id: 'jeu', jour: 'Jeudi', horaire: '20h30', label: 'Entraînement Jeudi 20h30', actif: true }
+  ];
+
+  const entrainements = {};
+  seances.forEach(function(s) {
+    entrainements[s.id] = [];
+  });
+  if (!entrainements.lun) entrainements.lun = [];
+  if (!entrainements.mer) entrainements.mer = [];
+  if (!entrainements.jeu) entrainements.jeu = [];
+
+  const mapColSeance = {};
+  seances.forEach(function(s, sIdx) {
+    let colIdx = -1;
+    const jourNorm = (s.jour || '').toLowerCase().trim();
+    if (headersVotes && headersVotes.length) {
+      for (let c = 0; c < headersVotes.length; c++) {
+        const h = String(headersVotes[c] || '').toLowerCase();
+        if (jourNorm && h.includes(jourNorm)) {
+          colIdx = c;
+          break;
+        }
+      }
+    }
+    if (colIdx === -1) {
+      const offset = 3 + (cfg.nbEquipes || 1);
+      colIdx = offset + sIdx;
+    }
+    mapColSeance[s.id] = colIdx;
+  });
 
   rowsVotes.forEach(function(r, idx) {
     if (!r[0]) return;
@@ -1489,33 +1522,19 @@ function lireDonneesCoach() {
     if (/polyvalent|joueur/i.test(posteJoueur)) posteJoueur = 'Demi-Centre';
     const photoJoueur = mapPhotos[cleNom] || '';
     const noteJoueur = mapNotes[cleNom] || '';
+
     const d1B = String(r[3]).trim().toUpperCase() === 'OUI';
-    let d1C = false;
-    let d1D = false;
-    let idxLun = 4;
-    let idxMer = 5;
-    let idxJeu = 6;
-    if (cfg.nbEquipes === 1) {
-      idxLun = 4;
-      idxMer = 5;
-      idxJeu = 6;
-    } else if (cfg.nbEquipes === 3) {
-      d1C = String(r[4]).trim().toUpperCase() === 'OUI';
-      d1D = String(r[5]).trim().toUpperCase() === 'OUI';
-      idxLun = 6;
-      idxMer = 7;
-      idxJeu = 8;
-    } else {
-      d1C = String(r[4]).trim().toUpperCase() === 'OUI';
-      idxLun = 5;
-      idxMer = 6;
-      idxJeu = 7;
-    }
+    const d1C = (cfg.nbEquipes >= 2 && r[4] !== undefined) ? (String(r[4]).trim().toUpperCase() === 'OUI') : false;
+    const d1D = (cfg.nbEquipes >= 3 && r[5] !== undefined) ? (String(r[5]).trim().toUpperCase() === 'OUI') : false;
 
     const fichePresence = { nom: nomJoueur, poste: posteJoueur, entrainements: Number(r[2]) || 0, photo: photoJoueur, note: noteJoueur };
-    if (String(r[idxLun]).trim().toUpperCase() === 'OUI') entrainements.lun.push(fichePresence);
-    if (String(r[idxMer]).trim().toUpperCase() === 'OUI') entrainements.mer.push(fichePresence);
-    if (String(r[idxJeu]).trim().toUpperCase() === 'OUI') entrainements.jeu.push(fichePresence);
+
+    seances.forEach(function(s) {
+      const col = mapColSeance[s.id];
+      if (col !== undefined && r[col] !== undefined && String(r[col]).trim().toUpperCase() === 'OUI') {
+        entrainements[s.id].push(fichePresence);
+      }
+    });
 
     if (d1B || d1C || d1D) {
       joueurs.push({ id: 'j_' + idx, nom: nomJoueur, poste: posteJoueur, entrainements: Number(r[2]) || 0, dispo1B: d1B, dispo1C: d1C, dispo1D: d1D, photo: photoJoueur, note: noteJoueur });
@@ -1524,9 +1543,9 @@ function lireDonneesCoach() {
 
   const trierParNom = function(a, b) { return String(a.nom || '').localeCompare(String(b.nom || ''), 'fr', { sensitivity: 'base' }); };
   joueurs.sort(trierParNom);
-  entrainements.lun.sort(trierParNom);
-  entrainements.mer.sort(trierParNom);
-  entrainements.jeu.sort(trierParNom);
+  Object.keys(entrainements).forEach(function(k) {
+    entrainements[k].sort(trierParNom);
+  });
   effectifComplet.sort(trierParNom);
 
   const rowsMatchs = shMatchs ? shMatchs.getRange('B4:K6').getValues() : [];
@@ -1645,28 +1664,60 @@ function enregistrerEntrainementEtPublier(seance, typeSeance, groupes, nonRetenu
 /**
  * Enregistre les créneaux d'entraînement personnalisés dans la feuille Configuration (B9:D14)
  */
-function enregistrerConfigEntrainements(telCoach, pinCoach, creneaux) {
+function enregistrerConfigEntrainements(telCoach, pinCoach, creneaux, nbSeances) {
   let cList = creneaux;
   if (!Array.isArray(creneaux) && Array.isArray(telCoach)) {
     cList = telCoach;
   }
+  if (!Array.isArray(cList) || cList.length === 0) {
+    return { ok: false, error: 'Liste de séances invalide' };
+  }
+
+  // Limiter entre 1 et 5 séances
+  cList = cList.slice(0, 5);
+
+  // Normaliser les objets
+  cList = cList.map(function(c, i) {
+    const j = String(c.jour || ('Séance ' + (i + 1))).trim();
+    const h = String(c.horaire || '20h30').trim();
+    return {
+      id: c.id || ('s' + (i + 1)),
+      jour: j,
+      horaire: h,
+      label: 'Entraînement ' + j + ' ' + h,
+      actif: (c.actif === true || c.actif === 'OUI')
+    };
+  });
+
+  // Sauvegarder dans ScriptProperties (source de vérité 1 à 5 séances)
+  try {
+    PropertiesService.getScriptProperties().setProperty('CONFIG_SEANCES_TRAIN', JSON.stringify(cList));
+    PropertiesService.getScriptProperties().setProperty('NB_SEANCES_TRAIN', String(cList.length));
+  } catch (e) {
+    Logger.log('Erreur PropertiesService: ' + e.message);
+  }
+
+  // Mettre à jour la feuille Configuration (B9:D14) pour les 3 premières séances
   const ss = getSpreadsheet();
   const shCfg = ss.getSheetByName('Configuration');
-  if (!shCfg) return { ok: false, error: 'Feuille Configuration introuvable' };
-
-  if (Array.isArray(cList)) {
-    cList.forEach(function(c, i) {
+  if (shCfg) {
+    for (let i = 0; i < 3; i++) {
       const rowIdx = 9 + (i * 2);
-      const jourPropre = c.jour || ('Séance ' + (i + 1));
-      const horairePropre = c.horaire ? (' ' + c.horaire.trim()) : '';
-      const labelEnt = 'Entraînement ' + jourPropre + horairePropre;
-      const labelAbs = 'ABS ' + jourPropre;
-      const actif = (c.actif === true || c.actif === 'OUI') ? 'OUI' : 'NON';
-      shCfg.getRange(rowIdx, 3, 1, 2).setValues([[labelEnt, actif]]);
-      shCfg.getRange(rowIdx + 1, 3, 1, 2).setValues([[labelAbs, actif]]);
-    });
+      if (i < cList.length) {
+        const c = cList[i];
+        const labelEnt = c.label;
+        const labelAbs = 'ABS ' + c.jour;
+        const actifStr = c.actif ? 'OUI' : 'NON';
+        shCfg.getRange(rowIdx, 3, 1, 2).setValues([[labelEnt, actifStr]]);
+        shCfg.getRange(rowIdx + 1, 3, 1, 2).setValues([[labelAbs, actifStr]]);
+      } else {
+        shCfg.getRange(rowIdx, 3, 1, 2).setValues([['Désactivé', 'NON']]);
+        shCfg.getRange(rowIdx + 1, 3, 1, 2).setValues([['Désactivé', 'NON']]);
+      }
+    }
   }
-  return { ok: true };
+
+  return { ok: true, count: cList.length, seances: cList };
 }
 
 /**
@@ -2096,11 +2147,7 @@ function construireHtmlWebApp() {
         '[[span class="badge-mode js-statut" id="statutTrain"]][[/span]]',
       '[[/div]]',
     '[[/header]]',
-    '[[div class="tabs"]]',
-      '[[button type="button" class="tab-btn tab-active" id="tabLun" onclick="changerSeance(\'lun\')"]]Lundi[[/button]]',
-      '[[button type="button" class="tab-btn" id="tabMer" onclick="changerSeance(\'mer\')"]]Mercredi[[/button]]',
-      '[[button type="button" class="tab-btn" id="tabJeu" onclick="changerSeance(\'jeu\')"]]Jeudi[[/button]]',
-    '[[/div]]',
+    '[[div class="tabs" id="trainTabsContainer"]][[/div]]',
     '[[div class="train-config-bar"]]',
       '[[div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"]]',
         '[[span style="font-size:0.8rem;color:#94a3b8;font-weight:700;"]]Séance :[[/span]]',
@@ -2424,9 +2471,22 @@ function construireHtmlWebApp() {
           '[[h2 style="margin:0;font-size:1.15rem;color:#f8fafc;"]]Horaires des Entraînements[[/h2]]',
           '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.85rem;" onclick="fermerModalConfigEntrainements()"]]✕[[/button]]',
         '[[/div]]',
-        '[[p style="font-size:0.8rem;color:#94a3b8;margin:0 0 14px 0;text-align:left;"]]Configurez les jours et horaires des 3 créneaux d\'entraînement. Ils s\'appliqueront aux sondages et aux convocations WhatsApp.[[/p]]',
-        '[[div style="display:flex;flex-direction:column;gap:10px;text-align:left;"]]',
-          '[[div style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
+        '[[p style="font-size:0.8rem;color:#94a3b8;margin:0 0 14px 0;text-align:left;"]]Configurez les jours et horaires des créneaux d\'entraînement (1 à 5 séances par semaine). Ils s\'appliqueront aux sondages et aux convocations WhatsApp.[[/p]]',
+        '[[div style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;"]]',
+          '[[div]]',
+            '[[div style="font-weight:800;font-size:0.88rem;color:#f8fafc;"]]Nombre d\'entraînements par semaine[[/div]]',
+            '[[div style="font-size:0.75rem;color:#94a3b8;"]]Choisissez entre 1 et 5 créneaux hebdomadaires[[/div]]',
+          '[[/div]]',
+          '[[select id="cfgNbSeancesTrain" class="inp-field" style="width:auto;padding:6px 12px;font-size:0.9rem;font-weight:700;border-color:var(--color-primary);" onchange="ajusterAffichageNombreSeances()"]]',
+            '[[option value="1"]]1 entraînement[[/option]]',
+            '[[option value="2"]]2 entraînements[[/option]]',
+            '[[option value="3" selected]]3 entraînements[[/option]]',
+            '[[option value="4"]]4 entraînements[[/option]]',
+            '[[option value="5"]]5 entraînements[[/option]]',
+          '[[/select]]',
+        '[[/div]]',
+        '[[div id="cfgListeBoxesTrain" style="display:flex;flex-direction:column;gap:10px;text-align:left;max-height:50vh;overflow-y:auto;padding-right:4px;"]]',
+          '[[div id="boxCfgTrain1" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
             '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
               '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 1[[/span]]',
               '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif1" checked]] Actif sondage[[/label]]',
@@ -2436,7 +2496,7 @@ function construireHtmlWebApp() {
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Horaire :[[/label]][[input type="text" id="cfgTrHoraire1" class="inp-field" value="20h30" style="padding:6px 10px;font-size:0.85rem;"]][[/div]]',
             '[[/div]]',
           '[[/div]]',
-          '[[div style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
+          '[[div id="boxCfgTrain2" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
             '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
               '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 2[[/span]]',
               '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif2" checked]] Actif sondage[[/label]]',
@@ -2446,7 +2506,7 @@ function construireHtmlWebApp() {
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Horaire :[[/label]][[input type="text" id="cfgTrHoraire2" class="inp-field" value="20h30" style="padding:6px 10px;font-size:0.85rem;"]][[/div]]',
             '[[/div]]',
           '[[/div]]',
-          '[[div style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
+          '[[div id="boxCfgTrain3" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
             '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
               '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 3[[/span]]',
               '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif3"]] Actif sondage[[/label]]',
@@ -2454,6 +2514,26 @@ function construireHtmlWebApp() {
             '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Jour :[[/label]][[input type="text" id="cfgTrJour3" class="inp-field" value="Jeudi" style="padding:6px 10px;font-size:0.85rem;"]][[/div]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Horaire :[[/label]][[input type="text" id="cfgTrHoraire3" class="inp-field" value="20h30" style="padding:6px 10px;font-size:0.85rem;"]][[/div]]',
+            '[[/div]]',
+          '[[/div]]',
+          '[[div id="boxCfgTrain4" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);display:none;"]]',
+            '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
+              '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 4[[/span]]',
+              '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif4"]] Actif sondage[[/label]]',
+            '[[/div]]',
+            '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
+              '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Jour :[[/label]][[input type="text" id="cfgTrJour4" class="inp-field" value="Vendredi" style="padding:6px 10px;font-size:0.85rem;"]][[/div]]',
+              '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Horaire :[[/label]][[input type="text" id="cfgTrHoraire4" class="inp-field" value="20h00" style="padding:6px 10px;font-size:0.85rem;"]][[/div]]',
+            '[[/div]]',
+          '[[/div]]',
+          '[[div id="boxCfgTrain5" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);display:none;"]]',
+            '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
+              '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 5[[/span]]',
+              '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif5"]] Actif sondage[[/label]]',
+            '[[/div]]',
+            '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
+              '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Jour :[[/label]][[input type="text" id="cfgTrJour5" class="inp-field" value="Samedi" style="padding:6px 10px;font-size:0.85rem;"]][[/div]]',
+              '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Horaire :[[/label]][[input type="text" id="cfgTrHoraire5" class="inp-field" value="10h00" style="padding:6px 10px;font-size:0.85rem;"]][[/div]]',
             '[[/div]]',
           '[[/div]]',
         '[[/div]]',
@@ -2508,8 +2588,9 @@ function construireHtmlWebApp() {
             '[[/ul]]',
           '[[/div]]',
           '[[div style="background:#171d2b;border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:12px;"]]',
-            '[[div style="font-weight:800;color:#34d399;margin-bottom:6px;font-size:0.9rem;"]]🏋️ 2. Gestion des Entraînements[[/div]]',
+            '[[div style="font-weight:800;color:#34d399;margin-bottom:6px;font-size:0.9rem;"]]🏋️ 2. Gestion des Entraînements (1 à 5 séances / semaine)[[/div]]',
             '[[ul style="margin:0 0 0 16px;padding:0;display:flex;flex-direction:column;gap:4px;"]]',
+              '[[li]][[b style="color:#fff;"]]1 à 5 séances par semaine :[[/b]] Choisissez le volume hebdomadaire de votre collectif (1 à 5 séances) avec onglets dynamiques.[[/li]]',
               '[[li]][[b style="color:#fff;"]]3 Formats adaptés :[[/b]] Séparé (2 groupes), Effectif Réduit (quota max) ou Effectif Complet.[[/li]]',
               '[[li]][[b style="color:#fff;"]]Créneaux personnalisables :[[/b]] Modifiez les jours et horaires via <i>Créneaux & Horaires</i> sans ouvrir Excel.[[/li]]',
               '[[li]][[b style="color:#fff;"]]Option avec/sans emojis :[[/b]] Activez ou masquez les pictogrammes pour des messages plus sobres.[[/li]]',
@@ -2599,12 +2680,17 @@ function construireHtmlWebApp() {
     '  { code: "ARD", label: "Arrière D.", x: 82, y: 20 },',
     '  { code: "ALD", label: "Ailier D.", x: 82, y: 56 }',
     '];',
-    'var ENTRAINEMENTS = { lun: [], mer: [], jeu: [] }; var SEANCE_COURANTE = "lun";',
-    'var TRAIN_CONFIG = {',
-      'lun: { label: (SEANCES_TRAIN[0] && SEANCES_TRAIN[0].label) || "Lundi", type: "separe", max: 20 },',
-      'mer: { label: (SEANCES_TRAIN[1] && SEANCES_TRAIN[1].label) || "Mercredi", type: "complet", max: 25 },',
-      'jeu: { label: (SEANCES_TRAIN[2] && SEANCES_TRAIN[2].label) || "Jeudi", type: "reduit", max: 20 }',
-    '};',
+    'var SEANCE_COURANTE = (SEANCES_TRAIN && SEANCES_TRAIN[0] && SEANCES_TRAIN[0].id) || "lun";',
+    'var ENTRAINEMENTS = {};',
+    'if(SEANCES_TRAIN && SEANCES_TRAIN.length){',
+    '  SEANCES_TRAIN.forEach(function(s){ ENTRAINEMENTS[s.id] = []; });',
+    '}',
+    'var TRAIN_CONFIG = {};',
+    'if(SEANCES_TRAIN && SEANCES_TRAIN.length){',
+    '  SEANCES_TRAIN.forEach(function(s, idx){',
+    '    TRAIN_CONFIG[s.id] = { label: s.label || (s.jour + " " + (s.horaire || "")), type: (idx === 0 ? "separe" : (idx === 1 ? "complet" : "reduit")), max: 20 };',
+    '  });',
+    '}',
     'var TRAIN_MODE_TINDER = false; var TRAIN_SWIPE_HISTORIQUE = []; var TRAIN_ANIM_EN_COURS = false;',
     'var JOUEURS = []; var EFFECTIF_COMPLET = []; var MODE_TINDER = false; var HISTORIQUE_SWIPE = []; var ANIM_EN_COURS = false; var CONTEXTE_APERCU = null; var VUE_PRECEDENTE_APERCU = "appView";',
     'var SESSION_TEL = ""; var SESSION_PIN = ""; var SESSION_NOM = ""; var EST_COACH = false;',
@@ -2954,7 +3040,7 @@ function construireHtmlWebApp() {
           'if(DERNIERE_COMPO.date) btnPrec.title = "Charger la composition du " + DERNIERE_COMPO.date;',
         '}',
       '}',
-      'JOUEURS = data.joueurs || []; EFFECTIF_COMPLET = data.effectif || []; ENTRAINEMENTS = data.entrainements || { lun: [], mer: [], jeu: [] };',
+      'JOUEURS = data.joueurs || []; EFFECTIF_COMPLET = data.effectif || []; ENTRAINEMENTS = data.entrainements || {};',
       'if(data.matchs){',
         'if(document.getElementById("sub1B")) document.getElementById("sub1B").textContent = data.matchs.label1B || "";',
         'if(document.getElementById("sub1C")) document.getElementById("sub1C").textContent = data.matchs.label1C || "";',
@@ -3494,51 +3580,104 @@ function construireHtmlWebApp() {
       '}',
       'surlignerSelectionTactique();',
     '}',
+    'function ajusterAffichageNombreSeances(){',
+    '  var sel = document.getElementById("cfgNbSeancesTrain");',
+    '  var nb = sel ? parseInt(sel.value, 10) : 3;',
+    '  if(isNaN(nb) || nb < 1) nb = 1;',
+    '  if(nb > 5) nb = 5;',
+    '  for(var i = 1; i <= 5; i++){',
+    '    var box = document.getElementById("boxCfgTrain" + i);',
+    '    if(box) box.style.display = (i <= nb) ? "block" : "none";',
+    '  }',
+    '}',
     'function ouvrirModalConfigEntrainements(){',
-      'if(SEANCES_TRAIN && SEANCES_TRAIN.length >= 3){',
-        'var s1 = SEANCES_TRAIN[0] || {}, s2 = SEANCES_TRAIN[1] || {}, s3 = SEANCES_TRAIN[2] || {};',
-        'var j1 = document.getElementById("cfgTrJour1"); if(j1) j1.value = s1.jour || "Lundi";',
-        'var h1 = document.getElementById("cfgTrHoraire1"); if(h1) h1.value = s1.horaire || "20h30";',
-        'var a1 = document.getElementById("cfgTrActif1"); if(a1) a1.checked = s1.actif !== false;',
-        'var j2 = document.getElementById("cfgTrJour2"); if(j2) j2.value = s2.jour || "Mercredi";',
-        'var h2 = document.getElementById("cfgTrHoraire2"); if(h2) h2.value = s2.horaire || "20h30";',
-        'var a2 = document.getElementById("cfgTrActif2"); if(a2) a2.checked = s2.actif !== false;',
-        'var j3 = document.getElementById("cfgTrJour3"); if(j3) j3.value = s3.jour || "Jeudi";',
-        'var h3 = document.getElementById("cfgTrHoraire3"); if(h3) h3.value = s3.horaire || "20h30";',
-        'var a3 = document.getElementById("cfgTrActif3"); if(a3) a3.checked = s3.actif === true;',
-      '}',
-      'document.getElementById("statusConfigEntrainements").textContent = "";',
-      'document.getElementById("modalConfigEntrainementsBg").style.display = "flex";',
+    '  var nb = (SEANCES_TRAIN && SEANCES_TRAIN.length) ? SEANCES_TRAIN.length : 3;',
+    '  if(nb < 1) nb = 1;',
+    '  if(nb > 5) nb = 5;',
+    '  var sel = document.getElementById("cfgNbSeancesTrain");',
+    '  if(sel) sel.value = String(nb);',
+    '  var defJours = ["Lundi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];',
+    '  var defHoraires = ["20h30", "20h30", "20h30", "20h00", "10h00"];',
+    '  for(var i = 1; i <= 5; i++){',
+    '    var s = (SEANCES_TRAIN && SEANCES_TRAIN[i - 1]) ? SEANCES_TRAIN[i - 1] : null;',
+    '    var jInp = document.getElementById("cfgTrJour" + i);',
+    '    var hInp = document.getElementById("cfgTrHoraire" + i);',
+    '    var aInp = document.getElementById("cfgTrActif" + i);',
+    '    if(jInp) jInp.value = s ? (s.jour || defJours[i - 1]) : defJours[i - 1];',
+    '    if(hInp) hInp.value = s ? (s.horaire || defHoraires[i - 1]) : defHoraires[i - 1];',
+    '    if(aInp) aInp.checked = s ? (s.actif !== false) : (i <= 2);',
+    '  }',
+    '  ajusterAffichageNombreSeances();',
+    '  document.getElementById("statusConfigEntrainements").textContent = "";',
+    '  document.getElementById("modalConfigEntrainementsBg").style.display = "flex";',
     '}',
     'function fermerModalConfigEntrainements(){ document.getElementById("modalConfigEntrainementsBg").style.display = "none"; }',
     'function fermerModalConfigEntrainementsSurBg(e){ if(e.target.id === "modalConfigEntrainementsBg") fermerModalConfigEntrainements(); }',
     'function sauvegarderConfigEntrainements(){',
-      'var c1 = { id: "lun", jour: document.getElementById("cfgTrJour1").value.trim() || "Lundi", horaire: document.getElementById("cfgTrHoraire1").value.trim() || "20h30", actif: document.getElementById("cfgTrActif1").checked };',
-      'var c2 = { id: "mer", jour: document.getElementById("cfgTrJour2").value.trim() || "Mercredi", horaire: document.getElementById("cfgTrHoraire2").value.trim() || "20h30", actif: document.getElementById("cfgTrActif2").checked };',
-      'var c3 = { id: "jeu", jour: document.getElementById("cfgTrJour3").value.trim() || "Jeudi", horaire: document.getElementById("cfgTrHoraire3").value.trim() || "20h30", actif: document.getElementById("cfgTrActif3").checked };',
-      'c1.label = c1.jour + " (" + c1.horaire + ")"; c2.label = c2.jour + " (" + c2.horaire + ")"; c3.label = c3.jour + " (" + c3.horaire + ")";',
-      'document.getElementById("statusConfigEntrainements").textContent = "Enregistrement dans Configuration...";',
-      'document.getElementById("btnSaveConfigTrain").disabled = true;',
-      'google.script.run.withSuccessHandler(function(res){',
-        'document.getElementById("btnSaveConfigTrain").disabled = false;',
-        'document.getElementById("statusConfigEntrainements").textContent = "Horaires enregistrés avec succès !";',
-        'SEANCES_TRAIN = [c1, c2, c3]; majLibellesOngletsTrain();',
-        'if(typeof confetti === "function") confetti({ particleCount: 70, spread: 60 });',
-        'setTimeout(function(){ fermerModalConfigEntrainements(); }, 800);',
-      '}).withFailureHandler(function(err){',
-        'document.getElementById("btnSaveConfigTrain").disabled = false;',
-        'document.getElementById("statusConfigEntrainements").textContent = "Erreur : " + err.message;',
-      '}).enregistrerConfigEntrainements(SESSION_TEL, SESSION_PIN, [c1, c2, c3]);',
+    '  var sel = document.getElementById("cfgNbSeancesTrain");',
+    '  var nb = sel ? parseInt(sel.value, 10) : 3;',
+    '  if(isNaN(nb) || nb < 1) nb = 1;',
+    '  if(nb > 5) nb = 5;',
+    '  var creneaux = [];',
+    '  var defIds = ["lun", "mer", "jeu", "ven", "sam"];',
+    '  for(var i = 1; i <= nb; i++){',
+    '    var jVal = (document.getElementById("cfgTrJour" + i) && document.getElementById("cfgTrJour" + i).value.trim()) || ("Séance " + i);',
+    '    var hVal = (document.getElementById("cfgTrHoraire" + i) && document.getElementById("cfgTrHoraire" + i).value.trim()) || "20h30";',
+    '    var aVal = document.getElementById("cfgTrActif" + i) ? document.getElementById("cfgTrActif" + i).checked : true;',
+    '    var idVal = (SEANCES_TRAIN && SEANCES_TRAIN[i - 1] && SEANCES_TRAIN[i - 1].id) ? SEANCES_TRAIN[i - 1].id : (defIds[i - 1] || ("s" + i));',
+    '    var labelVal = "Entraînement " + jVal + " " + hVal;',
+    '    creneaux.push({ id: idVal, jour: jVal, horaire: hVal, label: labelVal, actif: aVal });',
+    '  }',
+    '  document.getElementById("statusConfigEntrainements").textContent = "Enregistrement des " + nb + " séances...";',
+    '  document.getElementById("btnSaveConfigTrain").disabled = true;',
+    '  google.script.run.withSuccessHandler(function(res){',
+    '    document.getElementById("btnSaveConfigTrain").disabled = false;',
+    '    document.getElementById("statusConfigEntrainements").textContent = "Horaires enregistrés avec succès !";',
+    '    SEANCES_TRAIN = creneaux;',
+    '    majLibellesOngletsTrain();',
+    '    majVueEntrainement();',
+    '    if(typeof confetti === "function") confetti({ particleCount: 70, spread: 60 });',
+    '    setTimeout(function(){ fermerModalConfigEntrainements(); }, 800);',
+    '  }).withFailureHandler(function(err){',
+    '    document.getElementById("btnSaveConfigTrain").disabled = false;',
+    '    document.getElementById("statusConfigEntrainements").textContent = "Erreur : " + err.message;',
+    '  }).enregistrerConfigEntrainements(SESSION_TEL, SESSION_PIN, creneaux, nb);',
+    '}',
+    'function rendreOngletsTrain(){',
+    '  var cont = document.getElementById("trainTabsContainer");',
+    '  if(!cont) return;',
+    '  cont.innerHTML = "";',
+    '  if(!SEANCES_TRAIN || !SEANCES_TRAIN.length){',
+    '    SEANCES_TRAIN = [',
+    '      { id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi 20h30", actif: true },',
+    '      { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi 20h30", actif: true },',
+    '      { id: "jeu", jour: "Jeudi", horaire: "20h30", label: "Jeudi 20h30", actif: false }',
+    '    ];',
+    '  }',
+    '  var activeExists = SEANCES_TRAIN.some(function(s){ return s.id === SEANCE_COURANTE; });',
+    '  if(!activeExists && SEANCES_TRAIN.length > 0){',
+    '    SEANCE_COURANTE = SEANCES_TRAIN[0].id;',
+    '  }',
+    '  SEANCES_TRAIN.forEach(function(s, idx){',
+    '    var btn = document.createElement("button");',
+    '    btn.type = "button";',
+    '    btn.className = "tab-btn" + (s.id === SEANCE_COURANTE ? " tab-active" : "");',
+    '    btn.id = "tab_" + s.id;',
+    '    btn.textContent = (s.jour || ("Séance " + (idx + 1))) + (s.horaire ? (" " + s.horaire) : "");',
+    '    btn.onclick = function(){ changerSeance(s.id); };',
+    '    cont.appendChild(btn);',
+    '  });',
     '}',
     'function majLibellesOngletsTrain(){',
-      'if(!SEANCES_TRAIN || !SEANCES_TRAIN.length) return;',
-      'var s1 = SEANCES_TRAIN[0], s2 = SEANCES_TRAIN[1], s3 = SEANCES_TRAIN[2];',
-      'if(s1 && document.getElementById("tabLun")) document.getElementById("tabLun").textContent = s1.label || (s1.jour + " " + s1.horaire);',
-      'if(s2 && document.getElementById("tabMer")) document.getElementById("tabMer").textContent = s2.label || (s2.jour + " " + s2.horaire);',
-      'if(s3 && document.getElementById("tabJeu")) document.getElementById("tabJeu").textContent = s3.label || (s3.jour + " " + s3.horaire);',
-      'if(TRAIN_CONFIG.lun && s1) TRAIN_CONFIG.lun.label = s1.label;',
-      'if(TRAIN_CONFIG.mer && s2) TRAIN_CONFIG.mer.label = s2.label;',
-      'if(TRAIN_CONFIG.jeu && s3) TRAIN_CONFIG.jeu.label = s3.label;',
+    '  if(!SEANCES_TRAIN || !SEANCES_TRAIN.length) return;',
+    '  SEANCES_TRAIN.forEach(function(s, idx){',
+    '    if(!TRAIN_CONFIG[s.id]){',
+    '      TRAIN_CONFIG[s.id] = { label: s.label || (s.jour + " " + (s.horaire || "")), type: (idx === 0 ? "separe" : (idx === 1 ? "complet" : "reduit")), max: 20 };',
+    '    } else {',
+    '      TRAIN_CONFIG[s.id].label = s.label || (s.jour + " " + (s.horaire || ""));',
+    '    }',
+    '  });',
+    '  rendreOngletsTrain();',
     '}',
     'function creerMessageMatch(compo){',
       'var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;',
@@ -3634,6 +3773,8 @@ function construireHtmlWebApp() {
       'if(demarrerEnTinder !== undefined) choisirMode(demarrerEnTinder);',
     '}',
     'function entrerEntrainement(demarrerEnTinder){',
+      'rendreOngletsTrain();',
+      'majVueEntrainement();',
       'basculerVue("trainView");',
       'if(demarrerEnTinder !== undefined) choisirModeTrain(demarrerEnTinder);',
     '}',
@@ -3761,7 +3902,12 @@ function construireHtmlWebApp() {
       'r.readAsDataURL(f);',
     '}',
     'function majVueEntrainement(){',
-      'var cfgS = TRAIN_CONFIG[SEANCE_COURANTE] || { label: "Séance", type: "separe", max: 20 };',
+      'if(!TRAIN_CONFIG[SEANCE_COURANTE]){',
+        'var curS = (SEANCES_TRAIN || []).find(function(x){ return x.id === SEANCE_COURANTE; });',
+        'var curLbl = curS ? (curS.jour + " " + (curS.horaire || "")) : "Séance";',
+        'TRAIN_CONFIG[SEANCE_COURANTE] = { label: curLbl, type: "separe", max: 20 };',
+      '}',
+      'var cfgS = TRAIN_CONFIG[SEANCE_COURANTE];',
       'majPillsTypeSeance(cfgS.type);',
       'var explEl = document.getElementById("trainExplication");',
       'var lblMax = document.getElementById("lblMaxJoueurs");',
@@ -3793,14 +3939,12 @@ function construireHtmlWebApp() {
     '}',
     'function changerSeance(seanceKey){',
       'SEANCE_COURANTE = seanceKey;',
-      '["tabLun","tabMer","tabJeu"].forEach(function(id){',
-        'var btn = document.getElementById(id);',
-        'if(btn){',
-          'if((seanceKey === "lun" && id === "tabLun") || (seanceKey === "mer" && id === "tabMer") || (seanceKey === "jeu" && id === "tabJeu")){',
-            'btn.className = "tab-btn tab-active";',
-          '} else { btn.className = "tab-btn"; }',
-        '}',
-      '});',
+      'if(SEANCES_TRAIN && SEANCES_TRAIN.length){',
+        'SEANCES_TRAIN.forEach(function(s){',
+          'var btn = document.getElementById("tab_" + s.id);',
+          'if(btn){ btn.className = (s.id === seanceKey) ? "tab-btn tab-active" : "tab-btn"; }',
+        '});',
+      '}',
       'majVueEntrainement();',
     '}',
     'function changerTypeSeance(nouveauType){',
@@ -4410,6 +4554,7 @@ function construireHtmlWebApp() {
     '}',
     'window.onload = function(){',
       'initSortables();',
+      'rendreOngletsTrain();',
       'demanderPermissionNotification();',
       'try {',
         'var t = localStorage.getItem("hb_tel"), p = localStorage.getItem("hb_pin");',
