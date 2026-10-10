@@ -1267,12 +1267,7 @@ function doGet(e) {
   return HtmlService.createHtmlOutput(html)
     .setTitle((cfg.nomClub || 'Handball') + ' - Espace Coach')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
-    .addMetaTag('mobile-web-app-capable', 'yes')
-    .addMetaTag('apple-mobile-web-app-capable', 'yes')
-    .addMetaTag('apple-mobile-web-app-status-bar-style', 'black-translucent')
-    .addMetaTag('apple-mobile-web-app-title', (cfg.nomClub || 'Handball') + ' Coach')
-    .addMetaTag('theme-color', (cfg.couleurPrimaire || '#0f172a'));
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
 }
 
 function doPost(e) {
@@ -1725,6 +1720,11 @@ function construireHtmlWebApp() {
   const manifestDataUri = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifestObj));
   const tpl = [
     '[[!DOCTYPE html]][[html]][[head]][[meta charset="utf-8"]]',
+    '[[meta name="mobile-web-app-capable" content="yes"]]',
+    '[[meta name="apple-mobile-web-app-capable" content="yes"]]',
+    '[[meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"]]',
+    '[[meta name="apple-mobile-web-app-title" content="' + (cfg.nomClub || 'Handball') + ' Coach"]]',
+    '[[meta name="theme-color" content="' + (cfg.couleurPrimaire || '#1e293b') + '"]]',
     '[[link rel="manifest" href="' + manifestDataUri + '"]]',
     '[[link rel="apple-touch-icon" href="' + cfg.logoUrl + '"]]',
     '[[style]]',
