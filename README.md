@@ -23,6 +23,9 @@ Handball Bot est né d'un constat simple dans les clubs amateurs :
 
 ## ⚡ Fonctionnalités clés
 
+> [!TIP]
+> 📖 Pour découvrir toutes les options en détail avec des explications pas à pas pour le terrain, consultez le **[🌟 Guide Complet des Fonctionnalités Coach (FONCTIONNALITES.md)](FONCTIONNALITES.md)**.
+
 * 🤖 **Sondages WhatsApp hebdomadaires automatiques** : Détection des matchs de vos équipes sur `ffhandball.fr`, calcul automatique des heures de rendez-vous (domicile ou extérieur avec temps de trajet), et publication du sondage à choix multiples dans votre groupe d'équipe (support de 1, 2 ou 3 équipes maximum).
 * 📥 **Déchiffrement et synchronisation des votes** : Lecture des votes chiffrés AES-GCM multi-appareils (Baileys), mise en correspondance automatique avec le répertoire des joueurs via leur numéro de téléphone. Nettoyage automatique des fichiers de session temporaires (`auth_info/`) sans déconnexion.
 * 🤾 **WebApp mobile de composition d'équipe (1 à 3 équipes)** :
@@ -74,7 +77,9 @@ Pour installer le bot dans votre club en moins de 15 minutes, consultez le guide
 ├── send-poll.js                   # Moteur WhatsApp Baileys (envoi sondage, déchiffrement votes)
 ├── package.json                   # Dépendances Node.js (@whiskeysockets/baileys, pino)
 ├── .env.example                   # Exemple de variables d'environnement pour tests locaux
-├── GUIDE_INSTALLATION.md          # Guide pas à pas illustré pour les clubs
+├── FONCTIONNALITES.md             # Guide visuel et complet de toutes les fonctionnalités coach
+├── GUIDE_INSTALLATION.md          # Guide pas à pas illustré pour les clubs (15 min)
+├── GUIDE_UTILISATION.md           # Guide d'utilisation au quotidien pour coachs et joueurs
 └── README.md                      # Présentation du projet
 ```
 
