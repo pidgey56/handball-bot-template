@@ -1,17 +1,17 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "releaseDate": "2026-10-10",
-  "title": "Synchronisation FFHB (Logo & Couleurs automatiques) & Gestion 1 à 5 créneaux d'entraînement",
+  "title": "Menus déroulants des créneaux, URLs FFHB intelligentes, Glisser-déposer tactique & Finitions",
   "changelog": [
-    "Synchronisation FFHB automatique : récupération du blason officiel haute définition depuis monclub.ffhandball.fr en 1 clic",
-    "Extraction automatique de la charte graphique et des couleurs du club depuis les pixels du blason officiel",
-    "Gestion personnalisable de 1 à 5 créneaux d'entraînement hebdomadaires dans la WebApp et sur Google Sheets",
-    "Chiffrement automatique au repos des numéros de téléphone dans Google Sheets (Protection des mineurs & RGPD)",
-    "Gestion complète de l'effectif : ajout et suppression de joueurs directement depuis la WebApp",
-    "Gestion des équipes (1 à 3) : modification des codes, noms, mots-clés et URLs FFHB depuis la WebApp",
-    "Ajout de renforts et joueurs hors sondage (ex: joueurs descendant d'une équipe supérieure ou invités)",
-    "Support multi-collectifs et multi-groupes WhatsApp depuis la même page via le sélecteur de collectifs",
-    "Installation PWA sur smartphone (iOS / Android) pour un usage en plein écran sans barre d'adresse"
+    "Configuration rapide des entraînements : sélection des jours via menu déroulant (Lundi à Dimanche) sans saisie manuelle",
+    "Normalisation automatique des URLs FFHB : support complet des URLs relatives ou partielles collées par les coachs",
+    "Composition des équipes en glisser-déposer (Drag & Drop) fluide sur le terrain tactique",
+    "Synchronisation automatique FFHB : import du blason officiel haute définition et palette de couleurs du club en 1 clic",
+    "Gestion flexible de 1 à 5 séances d'entraînement hebdomadaires dans la WebApp et Google Sheets",
+    "Avatar de secours automatique avec initiales si la photo du joueur est indisponible ou cassée",
+    "Harmonisation visuelle et responsive complète des tableaux d'entraînement et de match",
+    "Interface épurée sans alertes intempestives : notifications remplacées par des Toasts discrets",
+    "Chiffrement automatique au repos des numéros de téléphone dans Google Sheets (Protection des mineurs & RGPD)"
   ],
   "repoUrl": "https://github.com/pidgey56/handball-bot-template",
   "codeGsRawUrl": "https://raw.githubusercontent.com/pidgey56/handball-bot-template/main/code.gs"
