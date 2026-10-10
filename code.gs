@@ -202,7 +202,7 @@ function getClubConfig(ss) {
   const logoUrlRaw = getVal('C23', '');
   const salleDefaut = getVal('C24', 'Domicile');
   const adminPhonesRaw = getVal('C25', '');
-  const adminPhones = adminPhonesRaw.split(',').map(function(t) { return normaliserNumero(t.trim()); }).filter(Boolean);
+  const adminPhones = adminPhonesRaw.split(',').map(function(t) { return normaliserNumero(dechiffrerNumero(t.trim())); }).filter(Boolean);
 
   const cpDef = '#f97316';
   const csDef = '#fbbf24';
@@ -543,12 +543,12 @@ function initialiserClasseurComplet() {
   const shEff = ss.getSheetByName('Effectif');
   if (shEff && shEff.getLastRow() <= 1) {
     shEff.getRange(2, 1, 6, 7).setValues([
-      ['Lucas Martin', '33601020304', 'Gardien', 'Équipe 1', '', '', 'Exemple note coach'],
-      ['Thomas Dupont', '33602030405', 'Demi-Centre', 'Équipe 1', '', '', 'Capitaine'],
-      ['Maxime Bernard', '33603040506', 'Pivot', 'Équipe 2', '', '', ''],
-      ['Julien Robert', '33604050607', 'Ailier Gauche', 'Équipe 2', '', '', ''],
-      ['Alexandre Petit', '33605060708', 'Arrière Droit', 'Équipe 1', '', '', ''],
-      ['Romain Laurent', '33606070809', 'Arrière Gauche', 'Équipe 1', '', '', '']
+      ['Lucas Martin', chiffrerNumero('33601020304'), 'Gardien', 'Équipe 1', '', '', 'Exemple note coach'],
+      ['Thomas Dupont', chiffrerNumero('33602030405'), 'Demi-Centre', 'Équipe 1', '', '', 'Capitaine'],
+      ['Maxime Bernard', chiffrerNumero('33603040506'), 'Pivot', 'Équipe 2', '', '', ''],
+      ['Julien Robert', chiffrerNumero('33604050607'), 'Ailier Gauche', 'Équipe 2', '', '', ''],
+      ['Alexandre Petit', chiffrerNumero('33605060708'), 'Arrière Droit', 'Équipe 1', '', '', ''],
+      ['Romain Laurent', chiffrerNumero('33606070809'), 'Arrière Gauche', 'Équipe 1', '', '', '']
     ]);
   }
 
@@ -732,6 +732,185 @@ function normaliserNumero(t) {
   return chiffres;
 }
 
+/**
+ * Gestion du chiffrement des numéros de téléphone pour la protection des données (RGPD / Mineurs)
+ */
+function getCleSecreteClub() {
+  const props = PropertiesService.getScriptProperties();
+  let cle = props.getProperty('HB_ENCRYPTION_KEY');
+  if (!cle) {
+    cle = Utilities.getUuid() + '-' + Utilities.getUuid();
+    props.setProperty('HB_ENCRYPTION_KEY', cle);
+  }
+  return cle;
+}
+
+function chiffrerNumero(texteClair) {
+  if (!texteClair) return '';
+  const str = String(texteClair).trim();
+  if (!str) return '';
+  if (str.indexOf('enc:') === 0) return str; // Déjà chiffré
+
+  try {
+    const cle = getCleSecreteClub();
+    const iv = Utilities.getUuid().replace(/-/g, '').slice(0, 16);
+    const textBytes = Utilities.newBlob(str).getBytes();
+    const stream = Utilities.computeHmacSha256Signature(iv, cle);
+
+    const cipherBytes = [];
+    for (let i = 0; i < textBytes.length; i++) {
+      cipherBytes.push(textBytes[i] ^ stream[i % stream.length]);
+    }
+    const cipherHex = cipherBytes.map(function(b) {
+      return ('0' + (b & 0xFF).toString(16)).slice(-2);
+    }).join('');
+
+    const macBytes = Utilities.computeHmacSha256Signature(iv + ':' + cipherHex, cle);
+    const macHex = macBytes.slice(0, 8).map(function(b) {
+      return ('0' + (b & 0xFF).toString(16)).slice(-2);
+    }).join('');
+
+    return 'enc:' + iv + ':' + cipherHex + ':' + macHex;
+  } catch (e) {
+    return str;
+  }
+}
+
+function dechiffrerNumero(texteChiffre) {
+  if (!texteChiffre) return '';
+  const str = String(texteChiffre).trim();
+  if (str.indexOf('enc:') !== 0) return str; // Rétrocompatibilité : retourne le numéro en clair s'il n'est pas chiffré
+
+  try {
+    const parts = str.split(':');
+    if (parts.length !== 4) return str;
+    const iv = parts[1];
+    const cipherHex = parts[2];
+    const macHex = parts[3];
+
+    const cle = getCleSecreteClub();
+    const macBytes = Utilities.computeHmacSha256Signature(iv + ':' + cipherHex, cle);
+    const verifMac = macBytes.slice(0, 8).map(function(b) {
+      return ('0' + (b & 0xFF).toString(16)).slice(-2);
+    }).join('');
+
+    if (verifMac !== macHex) return '';
+
+    const cipherBytes = [];
+    for (let i = 0; i < cipherHex.length; i += 2) {
+      cipherBytes.push(parseInt(cipherHex.substr(i, 2), 16));
+    }
+    const stream = Utilities.computeHmacSha256Signature(iv, cle);
+    const plainBytes = [];
+    for (let i = 0; i < cipherBytes.length; i++) {
+      plainBytes.push(cipherBytes[i] ^ stream[i % stream.length]);
+    }
+    return Utilities.newBlob(plainBytes).getDataAsString();
+  } catch (e) {
+    return str;
+  }
+}
+
+/**
+ * Chiffre tous les numéros en clair dans l'onglet Effectif
+ */
+function chiffrerTousLesNumerosEffectif() {
+  const ss = getSpreadsheet();
+  const shEff = ss.getSheetByName('Effectif');
+  if (!shEff) throw new Error('Onglet Effectif introuvable.');
+
+  const lastRow = shEff.getLastRow();
+  if (lastRow <= 1) return { total: 0, chiffrés: 0 };
+
+  const range = shEff.getRange(2, 2, lastRow - 1, 1);
+  const values = range.getValues();
+  let count = 0;
+
+  for (let i = 0; i < values.length; i++) {
+    const rawVal = String(values[i][0] || '').trim();
+    if (rawVal && rawVal.indexOf('enc:') !== 0) {
+      const norm = normaliserNumero(rawVal);
+      if (norm) {
+        values[i][0] = chiffrerNumero(norm);
+        count++;
+      }
+    }
+  }
+
+  if (count > 0) {
+    range.setValues(values);
+  }
+  return { total: values.length, chiffrés: count };
+}
+
+/**
+ * Déchiffre tous les numéros de l'onglet Effectif
+ */
+function dechiffrerTousLesNumerosEffectif() {
+  const ss = getSpreadsheet();
+  const shEff = ss.getSheetByName('Effectif');
+  if (!shEff) throw new Error('Onglet Effectif introuvable.');
+
+  const lastRow = shEff.getLastRow();
+  if (lastRow <= 1) return { total: 0, déchiffrés: 0 };
+
+  const range = shEff.getRange(2, 2, lastRow - 1, 1);
+  const values = range.getValues();
+  let count = 0;
+
+  for (let i = 0; i < values.length; i++) {
+    const rawVal = String(values[i][0] || '').trim();
+    if (rawVal && rawVal.indexOf('enc:') === 0) {
+      const dec = dechiffrerNumero(rawVal);
+      if (dec) {
+        values[i][0] = dec;
+        count++;
+      }
+    }
+  }
+
+  if (count > 0) {
+    range.setValues(values);
+  }
+  return { total: values.length, déchiffrés: count };
+}
+
+function menuChiffrerNumerosEffectif() {
+  const ui = SpreadsheetApp.getUi();
+  const rep = ui.alert(
+    '🔐 Chiffrement de l\'Effectif (Protection RGPD / Mineurs)',
+    'Voulez-vous chiffrer tous les numéros de téléphone dans l\'onglet Effectif ?\n\n' +
+    'Les numéros deviendront illisibles dans Google Sheets (format enc:...) et ne pourront être gérés que depuis la WebApp.\n' +
+    'La synchronisation WhatsApp continuera de fonctionner parfaitement.',
+    ui.ButtonSet.YES_NO
+  );
+  if (rep === ui.Button.YES) {
+    const res = chiffrerTousLesNumerosEffectif();
+    ui.alert(
+      '✅ Chiffrement terminé',
+      res.chiffrés + ' numéro(s) de téléphone ont été chiffrés avec succès.\nVos données sont désormais protégées contre toute fuite.',
+      ui.ButtonSet.OK
+    );
+  }
+}
+
+function menuDechiffrerNumerosEffectif() {
+  const ui = SpreadsheetApp.getUi();
+  const rep = ui.alert(
+    '🔓 Déchiffrement de l\'Effectif',
+    'Voulez-vous rétablir les numéros de téléphone en clair dans l\'onglet Effectif ?',
+    ui.ButtonSet.YES_NO
+  );
+  if (rep === ui.Button.YES) {
+    const res = dechiffrerTousLesNumerosEffectif();
+    ui.alert(
+      'Déchiffrement terminé',
+      res.déchiffrés + ' numéro(s) rétabli(s) en clair.',
+      ui.ButtonSet.OK
+    );
+  }
+}
+
 function verifierDroitsCoachOuDev(ss, tel, pin) {
   if (!tel) return false;
   const cfg = getClubConfig(ss);
@@ -742,7 +921,7 @@ function verifierDroitsCoachOuDev(ss, tel, pin) {
   const rows = shEff.getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
-    if (normaliserNumero(r[1]) === tel) {
+    if (normaliserNumero(dechiffrerNumero(r[1])) === tel) {
       const pinEnregistre = String(r[5] || '').trim();
       if (pinEnregistre && pinEnregistre !== pin) return false;
       const poste = String(r[2] || '').trim();
@@ -769,7 +948,7 @@ function authentifierUtilisateur(telephoneSaisi, pinSaisi) {
   let joueurRow = null;
 
   for (let i = 1; i < rows.length; i++) {
-    if (normaliserNumero(rows[i][1]) === tel) {
+    if (normaliserNumero(dechiffrerNumero(rows[i][1])) === tel) {
       joueurIndex = i + 1;
       joueurRow = rows[i];
       break;
@@ -814,7 +993,7 @@ function enregistrerMaPhoto(telephoneSaisi, pinSaisi, nouvellePhotoDataOuUrl) {
   const rows = shEff.getDataRange().getValues();
 
   for (let i = 1; i < rows.length; i++) {
-    if (normaliserNumero(rows[i][1]) === auth.telephone) {
+    if (normaliserNumero(dechiffrerNumero(rows[i][1])) === auth.telephone) {
       let urlStockee = String(nouvellePhotoDataOuUrl || '').trim();
       if (urlStockee.indexOf('data:image/') === 0) {
         try {
@@ -843,7 +1022,7 @@ function enregistrerMonPoste(telephoneSaisi, pinSaisi, nouveauPoste) {
   const postePropre = String(nouveauPoste || 'Demi-Centre').trim();
 
   for (let i = 1; i < rows.length; i++) {
-    if (normaliserNumero(rows[i][1]) === auth.telephone) {
+    if (normaliserNumero(dechiffrerNumero(rows[i][1])) === auth.telephone) {
       shEff.getRange(i + 1, 3).setValue(postePropre);
       const shVotes = ss.getSheetByName('Votes_Semaine');
       if (shVotes && shVotes.getLastRow() > 1) {
@@ -896,7 +1075,7 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
         } catch (e) {}
       }
 
-      if (nouveauTel) shEff.getRange(i + 1, 2).setValue(nouveauTel);
+      if (nouveauTel) shEff.getRange(i + 1, 2).setValue(chiffrerNumero(nouveauTel));
       if (nouveauPoste) shEff.getRange(i + 1, 3).setValue(nouveauPoste);
       if (nouvelleEquipe) shEff.getRange(i + 1, 4).setValue(nouvelleEquipe);
       if (nouvellePhoto) shEff.getRange(i + 1, 5).setValue(nouvellePhoto);
@@ -919,7 +1098,7 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
         ok: true,
         joueur: {
           nom: nomPropre,
-          tel: nouveauTel || String(rows[i][1] || ''),
+          tel: nouveauTel || dechiffrerNumero(rows[i][1]),
           poste: nouveauPoste || String(rows[i][2] || 'Demi-Centre'),
           equipe: nouvelleEquipe || String(rows[i][3] || ''),
           photo: convertirUrlPhoto(nouvellePhoto || rows[i][4]),
@@ -963,7 +1142,7 @@ function ajouterJoueurParCoach(telCoach, pinCoach, joueurData) {
   const pin = String(joueurData.pin || ('0000' + Math.floor(Math.random() * 9000 + 1000)).slice(-4));
   const note = String(joueurData.note || '').trim();
 
-  shEff.appendRow([nomNettoye, telNormalise || String(joueurData.tel || '').trim(), poste, equipe, photo, pin, note]);
+  shEff.appendRow([nomNettoye, telNormalise ? chiffrerNumero(telNormalise) : '', poste, equipe, photo, pin, note]);
 
   // Ajouter également dans Votes_Semaine pour qu'il apparaisse dans les disponibilités
   const cfg = getClubConfig(ss);
@@ -1127,7 +1306,7 @@ function enregistrerVotesDansSheet(votes) {
     const nomPropre = caseNom.replace(/\s*\([^)]*\)\s*/g, '').trim();
     const matchAlias = caseNom.match(/\(([^)]+)\)/);
     const alias = matchAlias ? matchAlias[1].trim().toLowerCase() : '';
-    const tel = normaliserNumero(r[1]);
+    const tel = normaliserNumero(dechiffrerNumero(r[1]));
     let poste = String(r[2] || 'Demi-Centre').trim();
     if (/polyvalent|joueur/i.test(poste)) poste = 'Demi-Centre';
     if (tel) mapTel[tel] = { nom: nomPropre, poste: poste };
@@ -1299,7 +1478,7 @@ function lireDonneesCoach() {
       if (photo) mapPhotos[cle] = photo;
       if (posteEff) mapPostes[cle] = posteEff;
       if (note) mapNotes[cle] = note;
-      effectifComplet.push({ nom: nomPropre, tel: String(r[1] || ''), poste: posteEff, equipe: equipeEff, photo: photo, note: note });
+      effectifComplet.push({ nom: nomPropre, tel: dechiffrerNumero(r[1]), poste: posteEff, equipe: equipeEff, photo: photo, note: note });
     });
   }
 
@@ -3758,6 +3937,13 @@ function construireHtmlWebApp() {
         'card.appendChild(inf); grid.appendChild(card);',
       '});',
     '}',
+    'function formaterNumeroAffichage(t){',
+      'if(!t) return "";',
+      'var s = String(t).replace(/[^0-9]/g, "");',
+      'if(s.indexOf("33") === 0 && s.length === 11) s = "0" + s.substring(2);',
+      'if(s.length === 10) return s.slice(0,2) + " " + s.slice(2,4) + " " + s.slice(4,6) + " " + s.slice(6,8) + " " + s.slice(8,10);',
+      'return t;',
+    '}',
     'function filtrerRoster(q){',
       'var val = String(q || "").toLowerCase().trim();',
       'Array.from(document.getElementById("rosterGrid").children).forEach(function(c){',
@@ -3770,7 +3956,7 @@ function construireHtmlWebApp() {
       'document.getElementById("modalJoueurNom").textContent = p.nom;',
       'document.getElementById("modalJoueurPoste").value = p.poste || "Demi-Centre";',
       'document.getElementById("modalJoueurNote").value = p.note || "";',
-      'if(document.getElementById("modalJoueurTel")) document.getElementById("modalJoueurTel").value = p.tel || "";',
+      'if(document.getElementById("modalJoueurTel")) document.getElementById("modalJoueurTel").value = formaterNumeroAffichage(p.tel) || "";',
       'if(document.getElementById("modalJoueurEquipe")) document.getElementById("modalJoueurEquipe").value = p.equipe || "Équipe 1";',
       'document.getElementById("modalJoueurStatus").textContent = "";',
       'PHOTO_MODAL_DATA = undefined;',
@@ -4398,6 +4584,9 @@ function onOpen() {
       .addItem('✨ 6. Initialiser le classeur complet (Nouveau club)', 'initialiserClasseurComplet')
       .addItem('🎨 7. Actualiser les couleurs et styles', 'actualiserCouleursClasseur')
       .addItem('🔄 8. Vérifier les mises à jour du modèle', 'menuVerifierMiseAJour')
+      .addSeparator()
+      .addItem('🔐 9. Chiffrer tous les numéros de l\'effectif (RGPD)', 'menuChiffrerNumerosEffectif')
+      .addItem('🔓 10. Déchiffrer tous les numéros de l\'effectif', 'menuDechiffrerNumerosEffectif')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();

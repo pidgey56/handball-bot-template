@@ -40,6 +40,7 @@ Handball Bot est né d'un constat simple dans les clubs amateurs :
 * 📤 **Convocations WhatsApp en 1 clic** : Mise en forme instantanée de la liste des convoqués avec adversaire, lieu et heure de rendez-vous, envoyée directement dans le groupe WhatsApp depuis la WebApp.
 * 🎨 **Identité visuelle & Couleurs personnalisées** : Adaptation automatique de la WebApp et du classeur aux couleurs de votre club. Nuanciers de clubs professionnels (HBC Nantes, PSG, Montpellier MHB, etc.) ou codes hexadécimaux libres.
 * 🔄 **Mises à jour faciles & Détection de version** : Détection automatique des nouvelles versions du modèle dans la WebApp et Google Sheets, avec synchronisation de votre robot GitHub Actions en 1 clic.
+* 🔐 **Protection des données & Chiffrement au repos (RGPD / Mineurs)** : Les numéros de téléphone des joueurs et des adolescents sont chiffrés directement dans Google Sheets (format `enc:...`). Aucun numéro n'apparaît en clair dans le tableur. La gestion des coordonnées s'effectue exclusivement depuis la WebApp sécurisée par code PIN.
 * 💸 **0 € de frais d'hébergement** : Fonctionne entièrement sur les quotas gratuits de Google Sheets et de GitHub Actions. Aucun serveur ni base de données à administrer.
 
 ---

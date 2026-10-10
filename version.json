@@ -1,8 +1,9 @@
 {
   "version": "1.5.0",
   "releaseDate": "2026-10-10",
-  "title": "Gestion effectif et équipes, Joueurs renforts, Multi-collectifs, PWA et Notifications",
+  "title": "Protection RGPD & Chiffrement, Gestion Effectif/Équipes, Renforts, Multi-collectifs, PWA",
   "changelog": [
+    "Chiffrement automatique au repos des numéros de téléphone dans Google Sheets (Protection des mineurs & RGPD)",
     "Gestion de l'effectif complète : ajout et suppression de joueurs directement depuis la WebApp",
     "Gestion des équipes (1 à 3) : modification des codes, noms, mots-clés et URLs FFHB depuis la WebApp",
     "Ajout de renforts et joueurs hors sondage (ex: joueurs descendant d'une équipe supérieure ou invités)",
