@@ -267,8 +267,35 @@ function getClubConfig(ss) {
   const webappUrl = getVal('C21', '');
   const nomClub = getVal('C22', 'Mon Club Handball');
   const logoUrlRaw = getVal('C23', '');
-  const salleDefaut = getVal('C24', 'Domicile');
-  const adminPhonesRaw = getVal('C25', '');
+  let adminPhonesRaw = getVal('C25', '');
+  if (!adminPhonesRaw) {
+    try {
+      const rowsParam = shCfg.getRange('A18:F36').getValues();
+      for (let i = 0; i < rowsParam.length; i++) {
+        const row = rowsParam[i];
+        let foundLbl = false;
+        let cLbl = -1;
+        for (let c = 0; c < row.length; c++) {
+          const lbl = String(row[c] || '').toLowerCase();
+          if (lbl.indexOf('coach') !== -1 || lbl.indexOf('admin') !== -1) {
+            foundLbl = true;
+            cLbl = c;
+            break;
+          }
+        }
+        if (foundLbl) {
+          for (let c2 = cLbl + 1; c2 < row.length; c2++) {
+            const v = String(row[c2] || '').trim();
+            if (v && /\d{9,}/.test(v.replace(/[^0-9]/g, ''))) {
+              adminPhonesRaw = v;
+              break;
+            }
+          }
+        }
+        if (adminPhonesRaw) break;
+      }
+    } catch (e) {}
+  }
   const adminPhones = adminPhonesRaw.split(',').map(function(t) { return normaliserNumero(dechiffrerNumero(t.trim())); }).filter(Boolean);
 
   let urlFfhbClub = getVal('C32', '');
@@ -545,6 +572,27 @@ function initialiserOngletsWebApp(nbEquipesForce) {
         shCfg.getRange('B32:D32').setValues([['Page FFHB du Club (URL)', '', 'Lien vers monclub.ffhandball.fr (logo et couleurs auto)']]);
       }
     }
+
+    // Restaurer les libellés B22 à B25 s'ils ont été effacés ou modifiés par erreur (sans toucher aux valeurs de C22:C25)
+    try {
+      const vB22 = String(shCfg.getRange('B22').getValue() || '').trim();
+      if (!vB22 || vB22.toLowerCase() === 'url_final') shCfg.getRange('B22').setValue('Nom du Club');
+
+      const vB23 = String(shCfg.getRange('B23').getValue() || '').trim();
+      if (!vB23) shCfg.getRange('B23').setValue('Logo du Club (URL)');
+
+      const vB24 = String(shCfg.getRange('B24').getValue() || '').trim();
+      if (!vB24) {
+        shCfg.getRange('B24').setValue('Gymnase / Ville Domicile');
+        shCfg.getRange('D24').setValue('Nom de votre salle pour les matchs à domicile');
+      }
+
+      const vB25 = String(shCfg.getRange('B25').getValue() || '').trim();
+      if (!vB25) {
+        shCfg.getRange('B25').setValue('Numéros Coachs (ex: 336...)');
+        shCfg.getRange('D25').setValue('Numéros des coachs autorisés (séparés par virgules)');
+      }
+    } catch (e) {}
   }
 }
 
