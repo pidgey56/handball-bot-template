@@ -125,26 +125,70 @@ function getClubConfig(ss) {
     }
   });
 
-  // Lecture du nombre d'équipes configuré dans les paramètres (C31 ou scan B18:D35)
-  let nbEquipesCfg = 3;
+  // Lecture du nombre d'équipes configuré dans les paramètres (C31, D31, scan étendu ou ScriptProperties)
+  let nbEquipesCfg = 0;
+
+  // 1. Essai direct cellule C31
   const valC31 = parseInt(getVal('C31', ''), 10);
   if ([1, 2, 3].includes(valC31)) {
     nbEquipesCfg = valC31;
-  } else {
+  }
+
+  // 2. Essai cellule D31 ou B31 si décalage de colonne
+  if (!nbEquipesCfg) {
+    const valD31 = parseInt(getVal('D31', ''), 10);
+    if ([1, 2, 3].includes(valD31)) nbEquipesCfg = valD31;
+  }
+
+  // 3. Scan étendu de toute la zone de configuration (lignes 18 à 36, colonnes A à F)
+  if (!nbEquipesCfg) {
     try {
-      const rowsParam = shCfg.getRange('B18:C35').getValues();
+      const rowsParam = shCfg.getRange('A18:F36').getValues();
       for (let i = 0; i < rowsParam.length; i++) {
-        const pLabel = String(rowsParam[i][0] || '').toLowerCase();
-        if (pLabel.indexOf("nombre d'équipe") !== -1 || pLabel.indexOf("nombre d'equipe") !== -1 || pLabel.indexOf("nb equipe") !== -1) {
-          const v = parseInt(rowsParam[i][1], 10);
-          if ([1, 2, 3].includes(v)) {
-            nbEquipesCfg = v;
+        const row = rowsParam[i];
+        let foundLabel = false;
+        let colLabel = -1;
+        for (let c = 0; c < row.length; c++) {
+          const pLabel = String(row[c] || '').toLowerCase();
+          if (pLabel.indexOf("nombre d'équipe") !== -1 || pLabel.indexOf("nombre d'equipe") !== -1 || pLabel.indexOf("nb equipe") !== -1) {
+            foundLabel = true;
+            colLabel = c;
             break;
           }
         }
+        if (foundLabel) {
+          for (let c2 = colLabel + 1; c2 < row.length; c2++) {
+            const v = parseInt(row[c2], 10);
+            if ([1, 2, 3].includes(v)) {
+              nbEquipesCfg = v;
+              break;
+            }
+          }
+        }
+        if (nbEquipesCfg) break;
       }
     } catch (e) {}
   }
+
+  // 4. Propriété de script en cache
+  if (!nbEquipesCfg) {
+    try {
+      const propNb = parseInt(PropertiesService.getScriptProperties().getProperty('NB_EQUIPES'), 10);
+      if ([1, 2, 3].includes(propNb)) {
+        nbEquipesCfg = propNb;
+      }
+    } catch (e) {}
+  }
+
+  // 5. Déduction : nombre d'équipes définies en lignes 4-6 ou défaut 2
+  if (!nbEquipesCfg) {
+    nbEquipesCfg = (equipes.length > 0 && equipes.length <= 3) ? equipes.length : 2;
+  }
+
+  // Sauvegarder dans ScriptProperties pour les accès rapides
+  try {
+    PropertiesService.getScriptProperties().setProperty('NB_EQUIPES', String(nbEquipesCfg));
+  } catch (e) {}
 
   // Compléter ou ajuster la liste des équipes actives
   while (equipes.length < nbEquipesCfg) {
@@ -276,6 +320,11 @@ function getClubConfig(ss) {
 }
 
 function getDefaultConfig() {
+  let nbDef = 2;
+  try {
+    const propNb = parseInt(PropertiesService.getScriptProperties().getProperty('NB_EQUIPES'), 10);
+    if ([1, 2, 3].includes(propNb)) nbDef = propNb;
+  } catch (e) {}
   return {
     nomClub: 'Mon Club Handball',
     logoUrl: genererLogoDefaut('#f97316'),
@@ -294,8 +343,8 @@ function getDefaultConfig() {
       { code: 'Équipe 1', motCle: 'MON CLUB', labelSondage: 'Équipe 1', delaiRdv: 1, urlPoule: '' },
       { code: 'Équipe 2', motCle: 'MON CLUB', labelSondage: 'Équipe 2', delaiRdv: 1, urlPoule: '' },
       { code: 'Équipe 3', motCle: 'MON CLUB', labelSondage: 'Équipe 3', delaiRdv: 1, urlPoule: '' }
-    ],
-    nbEquipes: 3,
+    ].slice(0, nbDef),
+    nbEquipes: nbDef,
     entrainements: [],
     nomEquipe1: 'Équipe 1',
     nomEquipe2: 'Équipe 2',
@@ -618,6 +667,9 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
     shCfg.getRange('B31:D31').setValues([
       ['Nombre d\'Équipes dans le groupe', nbEq, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']
     ]);
+    try {
+      PropertiesService.getScriptProperties().setProperty('NB_EQUIPES', String(nbEq));
+    } catch (e) {}
   }
 
   if (Array.isArray(nouvellesCouleurs.equipes)) {
@@ -1396,6 +1448,10 @@ function enregistrerConfigEquipes(telCoach, pinCoach, configEquipes) {
 
   const nbEq = Math.max(1, Math.min(3, parseInt(configEquipes.nbEquipes, 10) || 3));
   shCfg.getRange('C31').setValue(nbEq);
+  try {
+    shCfg.getRange('B31:D31').setValues([['Nombre d\'Équipes dans le groupe', nbEq, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']]);
+    PropertiesService.getScriptProperties().setProperty('NB_EQUIPES', String(nbEq));
+  } catch (e) {}
 
   if (Array.isArray(configEquipes.equipes)) {
     for (let idx = 0; idx < 3; idx++) {
@@ -2372,7 +2428,7 @@ function construireHtmlWebApp() {
         '[[div style="display:flex;flex-direction:column;gap:10px;text-align:left;"]]',
           '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
             '[[div]][[label style="font-size:0.75rem;color:#d4d4d4;display:block;margin-bottom:3px;"]]Téléphone :[[/label]][[input type="tel" id="modalJoueurTel" class="inp-field" placeholder="06..."]][[/div]]',
-            '[[div]][[label style="font-size:0.75rem;color:#d4d4d4;display:block;margin-bottom:3px;"]]Équipe :[[/label]][[select id="modalJoueurEquipe" class="inp-field"]][[option value="Équipe 1"]]Équipe 1[[/option]][[option value="Équipe 2"]]Équipe 2[[/option]][[option value="Équipe 3"]]Équipe 3[[/option]][[/select]][[/div]]',
+            '[[div]][[label style="font-size:0.75rem;color:#d4d4d4;display:block;margin-bottom:3px;"]]Équipe :[[/label]][[select id="modalJoueurEquipe" class="inp-field"]][[/select]][[/div]]',
           '[[/div]]',
           '[[label style="font-size:0.8rem;color:#d4d4d4;"]]Poste sur le terrain :[[/label]]',
           '[[select id="modalJoueurPoste" class="inp-field"]]',
@@ -2408,7 +2464,7 @@ function construireHtmlWebApp() {
           '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Numéro de téléphone (optionnel) :[[/label]][[input type="tel" id="inpNouvTel" class="inp-field" placeholder="Ex : 06 12 34 56 78"]][[/div]]',
           '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
             '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Poste :[[/label]][[select id="selNouvPoste" class="inp-field"]][[option value="Gardien"]]Gardien[[/option]][[option value="Ailier Gauche"]]Ailier Gauche[[/option]][[option value="Arrière Gauche"]]Arrière Gauche[[/option]][[option value="Demi-Centre" selected]]Demi-Centre[[/option]][[option value="Pivot"]]Pivot[[/option]][[option value="Arrière Droit"]]Arrière Droit[[/option]][[option value="Ailier Droit"]]Ailier Droit[[/option]][[/select]][[/div]]',
-            '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Équipe :[[/label]][[select id="selNouvEquipe" class="inp-field"]][[option value="Équipe 1"]]Équipe 1[[/option]][[option value="Équipe 2"]]Équipe 2[[/option]][[option value="Équipe 3"]]Équipe 3[[/option]][[/select]][[/div]]',
+            '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Équipe :[[/label]][[select id="selNouvEquipe" class="inp-field"]][[/select]][[/div]]',
           '[[/div]]',
           '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Notes Coach (confidentiel) :[[/label]][[textarea id="inpNouvNote" class="inp-field" rows="2" placeholder="Ex : Joue aussi arrière, retour blessure..."]][[/textarea]][[/div]]',
           '[[div id="statusNouvJoueur" style="font-size:0.8rem;color:var(--color-secondary);min-height:1.2em;text-align:center;"]][[/div]]',
@@ -2812,7 +2868,7 @@ function construireHtmlWebApp() {
       '[[/main]]',
     '[[/div]]',
     '[[script]]',
-    'var CLUB_CONFIG = { nomClub: "' + cfg.nomClub + '", githubRepo: "' + (cfg.githubRepo || '') + '", nbEquipes: ' + (cfg.nbEquipes || 3) + ', nomEquipe1: "' + cfg.nomEquipe1 + '", nomEquipe2: "' + cfg.nomEquipe2 + '", nomEquipe3: "' + (cfg.nomEquipe3 || 'Équipe 3') + '", couleurPrimaire: "' + cfg.couleurPrimaire + '", couleurSecondaire: "' + cfg.couleurSecondaire + '", couleurEquipe1: "' + cfg.couleurEquipe1 + '", couleurEquipe2: "' + cfg.couleurEquipe2 + '", couleurEquipe3: "' + (cfg.couleurEquipe3 || '#10b981') + '", logoUrl: "' + cfg.logoUrl + '", urlFfhbClub: "' + (cfg.urlFfhbClub || '') + '" };',
+    'var CLUB_CONFIG = { nomClub: "' + cfg.nomClub + '", githubRepo: "' + (cfg.githubRepo || '') + '", nbEquipes: ' + (cfg.nbEquipes || 2) + ', equipes: ' + JSON.stringify(cfg.equipes || []) + ', nomEquipe1: "' + cfg.nomEquipe1 + '", nomEquipe2: "' + cfg.nomEquipe2 + '", nomEquipe3: "' + (cfg.nomEquipe3 || 'Équipe 3') + '", couleurPrimaire: "' + cfg.couleurPrimaire + '", couleurSecondaire: "' + cfg.couleurSecondaire + '", couleurEquipe1: "' + cfg.couleurEquipe1 + '", couleurEquipe2: "' + cfg.couleurEquipe2 + '", couleurEquipe3: "' + (cfg.couleurEquipe3 || '#10b981') + '", logoUrl: "' + cfg.logoUrl + '", urlFfhbClub: "' + (cfg.urlFfhbClub || '') + '" };',
     'var NOUVEAU_LOGO_IMPORTE = ""; var NOUVEAU_NOM_CLUB_IMPORTE = ""; var NOUVEAU_SALLE_IMPORTEE = "";',
     'var SEANCES_TRAIN = ' + JSON.stringify(cfg.seancesTrain || [
       { id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi (20h30)", actif: true },
@@ -3305,6 +3361,7 @@ function construireHtmlWebApp() {
           'if(tBox1C) tBox1C.style.display = "inline"; if(tBox1D) tBox1D.style.display = "inline";',
         '}',
         'rendreControlesTinder(nbEq);',
+        'majOptionsEquipesSelects();',
       '}',
       'if(data.seancesTrain){',
         'SEANCES_TRAIN = data.seancesTrain;',
@@ -4547,7 +4604,12 @@ function construireHtmlWebApp() {
         'card.appendChild(av);',
         'var inf = document.createElement("div"); inf.style.flex = "1"; inf.style.minWidth = "0";',
         'var nm = document.createElement("div"); nm.style.fontWeight = "700"; nm.textContent = p.nom; inf.appendChild(nm);',
-        'var pst = document.createElement("div"); pst.style.fontSize = "0.78rem"; pst.style.color = "#d4d4d4"; pst.textContent = p.poste || "Demi-Centre"; inf.appendChild(pst);',
+        'var pst = document.createElement("div"); pst.style.fontSize = "0.78rem"; pst.style.color = "#d4d4d4"; pst.style.display = "flex"; pst.style.alignItems = "center"; pst.style.gap = "6px"; pst.style.flexWrap = "wrap";',
+        'var pstTxt = document.createElement("span"); pstTxt.textContent = p.poste || "Demi-Centre"; pst.appendChild(pstTxt);',
+        'if(p.equipe){',
+        '  var eqTag = document.createElement("span"); eqTag.style.fontSize = "0.7rem"; eqTag.style.padding = "2px 6px"; eqTag.style.borderRadius = "4px"; eqTag.style.background = "rgba(148,163,184,0.18)"; eqTag.style.color = "var(--color-primary)"; eqTag.style.fontWeight = "700"; eqTag.textContent = p.equipe; pst.appendChild(eqTag);',
+        '}',
+        'inf.appendChild(pst);',
         'if(p.note){ var nt = document.createElement("div"); nt.className = "rnote"; nt.textContent = "Note : " + p.note; inf.appendChild(nt); }',
         'card.appendChild(inf); grid.appendChild(card);',
       '});',
@@ -4565,26 +4627,64 @@ function construireHtmlWebApp() {
         'c.style.display = c.textContent.toLowerCase().includes(val) ? "flex" : "none";',
       '});',
     '}',
+    'function majOptionsEquipesSelects(){',
+    '  var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;',
+    '  var cEqs = (CLUB_CONFIG && CLUB_CONFIG.equipes) || [];',
+    '  var selects = ["modalJoueurEquipe", "selNouvEquipe"];',
+    '  selects.forEach(function(selId){',
+    '    var sel = document.getElementById(selId);',
+    '    if(!sel) return;',
+    '    var curVal = sel.value;',
+    '    sel.innerHTML = "";',
+    '    for(var i = 1; i <= nbEq; i++){',
+    '      var eq = cEqs[i - 1] || {};',
+    '      var code = eq.code || ("Équipe " + i);',
+    '      var label = eq.nomSondage || eq.labelSondage || (CLUB_CONFIG && CLUB_CONFIG["nomEquipe" + i]) || ("Équipe " + i);',
+    '      var opt = document.createElement("option");',
+    '      opt.value = label;',
+    '      opt.setAttribute("data-code", code);',
+    '      opt.textContent = (code && code !== label) ? (code + " — " + label) : label;',
+    '      sel.appendChild(opt);',
+    '    }',
+    '    if(curVal) sel.value = curVal;',
+    '  });',
+    '}',
     'function ouvrirModalJoueur(nom){',
-      'JOUEUR_MODAL_COURANT = nom;',
-      'var p = EFFECTIF_COMPLET.find(function(x){ return x.nom.toLowerCase() === nom.toLowerCase(); }) || { nom: nom, poste: "Demi-Centre", photo: "", note: "", tel: "", equipe: "Équipe 1" };',
-      'document.getElementById("modalJoueurNom").textContent = p.nom;',
-      'document.getElementById("modalJoueurPoste").value = p.poste || "Demi-Centre";',
-      'document.getElementById("modalJoueurNote").value = p.note || "";',
-      'if(document.getElementById("modalJoueurTel")) document.getElementById("modalJoueurTel").value = formaterNumeroAffichage(p.tel) || "";',
-      'if(document.getElementById("modalJoueurEquipe")) document.getElementById("modalJoueurEquipe").value = p.equipe || "Équipe 1";',
-      'document.getElementById("modalJoueurStatus").textContent = "";',
-      'PHOTO_MODAL_DATA = undefined;',
-      'var mImg = document.getElementById("modalJoueurImg"), mInit = document.getElementById("modalJoueurInitiale");',
-      'var pInit = (p.nom || "").trim().charAt(0).toUpperCase();',
-      'mInit.textContent = pInit;',
-      'if(p.photo){',
-        'mImg.src = p.photo; mImg.style.display = "block"; mInit.style.display = "none";',
-        'mImg.onerror = function(){ mImg.style.display = "none"; mInit.style.display = "flex"; };',
-      '} else {',
-        'mImg.style.display = "none"; mInit.style.display = "flex";',
-      '}',
-      'document.getElementById("modalJoueurBg").style.display = "flex";',
+    '  JOUEUR_MODAL_COURANT = nom;',
+    '  var p = EFFECTIF_COMPLET.find(function(x){ return x.nom.toLowerCase() === nom.toLowerCase(); }) || { nom: nom, poste: "Demi-Centre", photo: "", note: "", tel: "", equipe: "Équipe 1" };',
+    '  document.getElementById("modalJoueurNom").textContent = p.nom;',
+    '  document.getElementById("modalJoueurPoste").value = p.poste || "Demi-Centre";',
+    '  document.getElementById("modalJoueurNote").value = p.note || "";',
+    '  if(document.getElementById("modalJoueurTel")) document.getElementById("modalJoueurTel").value = formaterNumeroAffichage(p.tel) || "";',
+    '  majOptionsEquipesSelects();',
+    '  var selEq = document.getElementById("modalJoueurEquipe");',
+    '  if(selEq){',
+    '    var eqCherchee = String(p.equipe || "").trim().toLowerCase();',
+    '    var matchOk = false;',
+    '    for(var oi = 0; oi < selEq.options.length; oi++){',
+    '      var opt = selEq.options[oi];',
+    '      var oVal = opt.value.toLowerCase();',
+    '      var oCode = (opt.getAttribute("data-code") || "").toLowerCase();',
+    '      if(oVal === eqCherchee || oCode === eqCherchee || eqCherchee.indexOf(oVal) !== -1 || eqCherchee.indexOf(oCode) !== -1 || oVal.indexOf(eqCherchee) !== -1){',
+    '        selEq.selectedIndex = oi;',
+    '        matchOk = true;',
+    '        break;',
+    '      }',
+    '    }',
+    '    if(!matchOk && selEq.options.length > 0) selEq.selectedIndex = 0;',
+    '  }',
+    '  document.getElementById("modalJoueurStatus").textContent = "";',
+    '  PHOTO_MODAL_DATA = undefined;',
+    '  var mImg = document.getElementById("modalJoueurImg"), mInit = document.getElementById("modalJoueurInitiale");',
+    '  var pInit = (p.nom || "").trim().charAt(0).toUpperCase();',
+    '  mInit.textContent = pInit;',
+    '  if(p.photo){',
+    '    mImg.src = p.photo; mImg.style.display = "block"; mInit.style.display = "none";',
+    '    mImg.onerror = function(){ mImg.style.display = "none"; mInit.style.display = "flex"; };',
+    '  } else {',
+    '    mImg.style.display = "none"; mInit.style.display = "flex";',
+    '  }',
+    '  document.getElementById("modalJoueurBg").style.display = "flex";',
     '}',
     'function fermerModalJoueur(){ document.getElementById("modalJoueurBg").style.display = "none"; }',
     'function fermerModalSurBg(e){ if(e.target.id === "modalJoueurBg") fermerModalJoueur(); }',
@@ -4641,7 +4741,10 @@ function construireHtmlWebApp() {
       'document.getElementById("inpNouvTel").value = "";',
       'document.getElementById("inpNouvNote").value = "";',
       'document.getElementById("selNouvPoste").value = "Demi-Centre";',
-      'document.getElementById("selNouvEquipe").value = "Équipe 1";',
+      'majOptionsEquipesSelects();',
+      'if(document.getElementById("selNouvEquipe") && document.getElementById("selNouvEquipe").options.length > 0){',
+        'document.getElementById("selNouvEquipe").selectedIndex = 0;',
+      '}',
       'document.getElementById("statusNouvJoueur").textContent = "";',
       'document.getElementById("modalNouveauJoueurBg").style.display = "flex";',
     '}',
