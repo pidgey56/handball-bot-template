@@ -1,8 +1,10 @@
 {
-  "version": "1.7.0",
+  "version": "1.7.1",
   "releaseDate": "2026-10-10",
-  "title": "Menus déroulants des créneaux, URLs FFHB intelligentes, Glisser-déposer tactique & Finitions",
+  "title": "Mise à jour du modèle Excel Handball_Bot_Template.xlsx & synchronisation dynamique des équipes",
   "changelog": [
+    "Modèle Excel Handball_Bot_Template.xlsx remis à niveau : intégration du paramètre URL Club FFHB, en-têtes des matchs FFHB et encodage UTF-8",
+    "Synchronisation dynamique du nombre d'équipes : les listes déroulantes de l'effectif s'adaptent automatiquement au groupe (1 à 3 équipes)",
     "Configuration rapide des entraînements : sélection des jours via menu déroulant (Lundi à Dimanche) sans saisie manuelle",
     "Normalisation automatique des URLs FFHB : support complet des URLs relatives ou partielles collées par les coachs",
     "Composition des équipes en glisser-déposer (Drag & Drop) fluide sur le terrain tactique",

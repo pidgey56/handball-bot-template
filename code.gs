@@ -540,6 +540,10 @@ function initialiserOngletsWebApp(nbEquipesForce) {
       if (!valB31) {
         shCfg.getRange('B31:D31').setValues([['Nombre d\'Équipes dans le groupe', 3, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']]);
       }
+      const valB32 = String(shCfg.getRange('B32').getValue() || '').trim();
+      if (!valB32) {
+        shCfg.getRange('B32:D32').setValues([['Page FFHB du Club (URL)', '', 'Lien vers monclub.ffhandball.fr (logo et couleurs auto)']]);
+      }
     }
   }
 }
@@ -593,7 +597,7 @@ function initialiserClasseurComplet() {
   ]);
 
   shCfg.getRange('B17:D17').setValues([['Paramètre', 'Valeur', 'Aperçu / Description']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  shCfg.getRange('B18:D31').setValues([
+  shCfg.getRange('B18:D32').setValues([
     ['ID du Groupe WhatsApp', '120363xxxxxxxxx@g.us', 'Identifiant du groupe WhatsApp (...@g.us)'],
     ['Dépôt GitHub (owner/repo)', 'votre-pseudo/handball-bot', 'Format: utilisateur/depot'],
     ['Token GitHub (PAT)', 'ghp_VOTRE_TOKEN_ICI', 'Token GitHub classic avec droit repo'],
@@ -607,7 +611,8 @@ function initialiserClasseurComplet() {
     ['Couleur Équipe 1 (Hex)', '#3b82f6', 'Couleur des maillots / colonne Équipe 1'],
     ['Couleur Équipe 2 (Hex)', '#f97316', 'Couleur des maillots / colonne Équipe 2'],
     ['Couleur Équipe 3 (Hex)', '#10b981', 'Couleur des maillots / colonne Équipe 3'],
-    ['Nombre d\'Équipes dans le groupe', nbEquipesChoisi, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)']
+    ['Nombre d\'Équipes dans le groupe', nbEquipesChoisi, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)'],
+    ['Page FFHB du Club (URL)', '', 'Lien vers monclub.ffhandball.fr (logo et couleurs auto)']
   ]);
 
   try {
