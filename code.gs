@@ -4972,8 +4972,18 @@ function interpreterDateHeure(dateStr, heureStr) {
 
 function extraireMatchFFHB(urlPoule, motCleClub, dateDebutSemaine, dateFinSemaine) {
   try {
-    const motCle = motCleClub.toUpperCase();
-    const urlBase = urlPoule.replace(/\/journee-\d+\/?\(/i, '/').replace(/\/?\)/, '/');
+    let urlPropre = String(urlPoule || '').trim();
+    if (!urlPropre.startsWith('http://') && !urlPropre.startsWith('https://')) {
+      if (urlPropre.startsWith('/competitions/')) {
+        urlPropre = 'https://www.ffhandball.fr' + urlPropre;
+      } else if (urlPropre.startsWith('competitions/')) {
+        urlPropre = 'https://www.ffhandball.fr/' + urlPropre;
+      } else {
+        urlPropre = 'https://www.ffhandball.fr/competitions/' + urlPropre;
+      }
+    }
+    const motCle = String(motCleClub || '').toUpperCase().trim();
+    const urlBase = urlPropre.replace(/\/journee-\d+\/?\(/i, '/').replace(/\/?\)/, '/');
 
     function scannerUrl(urlCible) {
       const resp = UrlFetchApp.fetch(urlCible, {
