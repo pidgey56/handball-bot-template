@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   sync-template:
+    if: github.repository != 'pidgey56/handball-bot-template'
     runs-on: ubuntu-latest
     steps:
       - name: Récupération du dépôt du club
