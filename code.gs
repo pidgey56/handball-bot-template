@@ -554,6 +554,34 @@ function initialiserOngletsWebApp(nbEquipesForce) {
 function initialiserClasseurComplet() {
   const ss = getSpreadsheet();
 
+  // Sécurité anti-écrasement : vérifier si la configuration contient déjà des données réelles du club
+  const shCfgCheck = ss.getSheetByName('Configuration');
+  if (shCfgCheck) {
+    const idExistant = String(shCfgCheck.getRange('C18').getValue() || '').trim();
+    const repoExistant = String(shCfgCheck.getRange('C19').getValue() || '').trim();
+    const eq1Existant = String(shCfgCheck.getRange('B4').getValue() || '').trim();
+    const hasData = (idExistant && idExistant !== '120363xxxxxxxxx@g.us') || 
+                    (repoExistant && repoExistant !== 'votre-pseudo/handball-bot') ||
+                    (eq1Existant && eq1Existant !== 'Équipe 1');
+    if (hasData) {
+      try {
+        const ui = SpreadsheetApp.getUi();
+        const conf = ui.alert(
+          '⚠️ Configuration personnalisée détectée',
+          'Votre feuille "Configuration" contient déjà des paramètres enregistrés (ID WhatsApp, équipes, créneaux...).\n\n' +
+          '• Cliquez sur OUI pour mettre à jour la structure et les onglets SANS écraser vos données.\n' +
+          '• Cliquez sur NON pour annuler.',
+          ui.ButtonSet.YES_NO
+        );
+        if (conf === ui.Button.YES) {
+          initialiserOngletsWebApp();
+          SpreadsheetApp.getActiveSpreadsheet().toast('Onglets et structure mis à jour avec succès (vos paramètres ont été conservés).', 'Handball Bot');
+        }
+        return;
+      } catch (e) {}
+    }
+  }
+
   let nbEquipesChoisi = 3;
   try {
     const ui = SpreadsheetApp.getUi();
@@ -5318,8 +5346,8 @@ function onOpen() {
       .addSeparator()
       .addItem('📥 3. Récupérer les votes WhatsApp (Pipeline)', 'declencherLectureVotes')
       .addItem('⚡ 4. Importer les votes depuis GitHub (1 sec)', 'synchroniserDepuisGitHub')
-      .addItem('🛠️ 5. Initialiser / Mettre à jour les onglets', 'initialiserOngletsWebApp')
-      .addItem('✨ 6. Initialiser le classeur complet (Nouveau club)', 'initialiserClasseurComplet')
+      .addItem('🛠️ 5. Mettre à jour les onglets (Conserver mes données)', 'initialiserOngletsWebApp')
+      .addItem('⚠️ 6. Réinitialiser à zéro (Nouveau club vierge uniquement)', 'initialiserClasseurComplet')
       .addItem('🎨 7. Actualiser les couleurs et styles', 'actualiserCouleursClasseur')
       .addItem('🔄 8. Vérifier les mises à jour du modèle', 'menuVerifierMiseAJour')
       .addSeparator()
