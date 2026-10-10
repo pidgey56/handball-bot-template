@@ -267,6 +267,10 @@ function getClubConfig(ss) {
   const webappUrl = getVal('C21', '');
   const nomClub = getVal('C22', 'Mon Club Handball');
   const logoUrlRaw = getVal('C23', '');
+  let salleDefaut = getVal('C24', '');
+  if (!salleDefaut) {
+    try { salleDefaut = PropertiesService.getScriptProperties().getProperty('SALLE_DEFAUT_CLUB') || 'Domicile'; } catch (e) { salleDefaut = 'Domicile'; }
+  }
   let adminPhonesRaw = getVal('C25', '');
   if (!adminPhonesRaw) {
     try {
@@ -296,7 +300,7 @@ function getClubConfig(ss) {
       }
     } catch (e) {}
   }
-  const adminPhones = adminPhonesRaw.split(',').map(function(t) { return normaliserNumero(dechiffrerNumero(t.trim())); }).filter(Boolean);
+  const adminPhones = String(adminPhonesRaw || '').split(',').map(function(t) { return normaliserNumero(dechiffrerNumero(t.trim())); }).filter(Boolean);
 
   let urlFfhbClub = getVal('C32', '');
   if (!urlFfhbClub) {
