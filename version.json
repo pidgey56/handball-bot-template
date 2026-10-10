@@ -1,18 +1,18 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "releaseDate": "2026-10-10",
-  "title": "Protection RGPD & Chiffrement, Gestion Effectif/Équipes, Renforts, Multi-collectifs, PWA",
+  "title": "Synchronisation FFHB (Logo & Couleurs automatiques) & Gestion 1 à 5 créneaux d'entraînement",
   "changelog": [
+    "Synchronisation FFHB automatique : récupération du blason officiel haute définition depuis monclub.ffhandball.fr en 1 clic",
+    "Extraction automatique de la charte graphique et des couleurs du club depuis les pixels du blason officiel",
+    "Gestion personnalisable de 1 à 5 créneaux d'entraînement hebdomadaires dans la WebApp et sur Google Sheets",
     "Chiffrement automatique au repos des numéros de téléphone dans Google Sheets (Protection des mineurs & RGPD)",
-    "Gestion de l'effectif complète : ajout et suppression de joueurs directement depuis la WebApp",
+    "Gestion complète de l'effectif : ajout et suppression de joueurs directement depuis la WebApp",
     "Gestion des équipes (1 à 3) : modification des codes, noms, mots-clés et URLs FFHB depuis la WebApp",
     "Ajout de renforts et joueurs hors sondage (ex: joueurs descendant d'une équipe supérieure ou invités)",
     "Support multi-collectifs et multi-groupes WhatsApp depuis la même page via le sélecteur de collectifs",
-    "Installation PWA sur mobile (iOS / Android) pour un usage en plein écran sans barre d'adresse",
-    "Système de notifications visuelles Toast et support des alertes Web du navigateur",
-    "Guide complet des fonctionnalités coach (FONCTIONNALITES.md) et aide interactive intégrée dans la WebApp"
+    "Installation PWA sur smartphone (iOS / Android) pour un usage en plein écran sans barre d'adresse"
   ],
   "repoUrl": "https://github.com/pidgey56/handball-bot-template",
   "codeGsRawUrl": "https://raw.githubusercontent.com/pidgey56/handball-bot-template/main/code.gs"
 }
-

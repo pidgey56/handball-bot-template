@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -227,6 +227,11 @@ function getClubConfig(ss) {
   const adminPhonesRaw = getVal('C25', '');
   const adminPhones = adminPhonesRaw.split(',').map(function(t) { return normaliserNumero(dechiffrerNumero(t.trim())); }).filter(Boolean);
 
+  let urlFfhbClub = getVal('C32', '');
+  if (!urlFfhbClub) {
+    try { urlFfhbClub = PropertiesService.getScriptProperties().getProperty('URL_PAGE_FFHB_CLUB') || ''; } catch (e) {}
+  }
+
   const cpDef = '#f97316';
   const csDef = '#fbbf24';
   const c1Def = '#3b82f6';
@@ -265,7 +270,8 @@ function getClubConfig(ss) {
     couleurSecondaire: couleurSecondaire,
     couleurEquipe1: couleurEquipe1,
     couleurEquipe2: couleurEquipe2,
-    couleurEquipe3: couleurEquipe3
+    couleurEquipe3: couleurEquipe3,
+    urlFfhbClub: urlFfhbClub
   };
 }
 
@@ -650,6 +656,21 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
     initialiserOngletsWebApp(nbEq);
   }
 
+  if (nouvellesCouleurs.logoUrl) {
+    shCfg.getRange('C23').setValue(nouvellesCouleurs.logoUrl);
+  }
+  if (nouvellesCouleurs.nomClub) {
+    shCfg.getRange('C22').setValue(nouvellesCouleurs.nomClub);
+  }
+  if (nouvellesCouleurs.urlFfhbClub) {
+    shCfg.getRange('B32:D32').setValues([['Page FFHB du Club (URL)', nouvellesCouleurs.urlFfhbClub, 'Lien vers monclub.ffhandball.fr']]);
+    try {
+      PropertiesService.getScriptProperties().setProperty('URL_PAGE_FFHB_CLUB', nouvellesCouleurs.urlFfhbClub);
+    } catch (eProp) {}
+  }
+
+  const cfgActuelle = getClubConfig(ss);
+
   return {
     ok: true,
     couleurs: {
@@ -659,7 +680,10 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
       equipe2: c2,
       equipe3: c3
     },
-    nbEquipes: [1, 2, 3].includes(nbEq) ? nbEq : undefined
+    nbEquipes: [1, 2, 3].includes(nbEq) ? nbEq : undefined,
+    logoUrl: cfgActuelle.logoUrl,
+    nomClub: cfgActuelle.nomClub,
+    urlFfhbClub: cfgActuelle.urlFfhbClub
   };
 }
 
@@ -709,6 +733,124 @@ function reinitialiserLogoClub(telCoach, pinCoach) {
   shCfg.getRange('C23').setValue('');
   const cfg = getClubConfig(ss);
   return { ok: true, logoUrl: cfg.logoUrl };
+}
+
+/**
+ * Normalise l'URL d'une page club FFHB
+ */
+function normaliserUrlClubFFHB(urlBrute) {
+  let str = String(urlBrute || '').trim();
+  if (!str) throw new Error('Veuillez saisir l\'adresse de la page FFHB de votre club.');
+  if (!str.includes('/') && !str.includes('.')) {
+    return 'https://monclub.ffhandball.fr/clubs/' + str + '/';
+  }
+  if (!/^https?:\/\//i.test(str)) {
+    str = 'https://' + str;
+  }
+  if (!str.endsWith('/')) {
+    str += '/';
+  }
+  str = str.replace(/https?:\/\/(?:www\.)?ffhandball\.fr\/clubs\//i, 'https://monclub.ffhandball.fr/clubs/');
+  return str;
+}
+
+/**
+ * Récupère le nom du club, son logo officiel et ses informations depuis sa page monclub.ffhandball.fr
+ */
+function importerInfosClubFFHB(telCoach, pinCoach, urlClub) {
+  let urlCible = urlClub;
+  if (!urlCible && typeof telCoach === 'string' && (telCoach.includes('http') || telCoach.includes('club'))) {
+    urlCible = telCoach;
+  }
+
+  if (pinCoach && typeof pinCoach === 'string' && /^\d{4,8}$/.test(pinCoach)) {
+    const ss = getSpreadsheet();
+    if (!verifierDroitsCoachOuDev(ss, normaliserNumero(telCoach), String(pinCoach).trim())) {
+      throw new Error('Action réservée aux coachs autorisés.');
+    }
+  }
+
+  const urlPropre = normaliserUrlClubFFHB(urlCible);
+  let html = '';
+  try {
+    const res = UrlFetchApp.fetch(urlPropre, {
+      muteHttpExceptions: true,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    if (res.getResponseCode() !== 200) {
+      throw new Error('Impossible d\'accéder à la page FFHB (Code HTTP ' + res.getResponseCode() + ')');
+    }
+    html = res.getContentText('UTF-8');
+  } catch (e) {
+    throw new Error('Erreur de connexion à FFHB : ' + e.message);
+  }
+
+  let nomClub = '';
+  let logoFile = '';
+  let salleDefaut = '';
+
+  const matchHero = html.match(/<smartfire-component[^>]+name=['"]single-club---home-hero-club['"][^>]+attributes=['"]([^'"]+)['"]/i);
+  if (matchHero) {
+    try {
+      let rawJson = matchHero[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#039;/g, "'")
+        .replace(/&#39;/g, "'");
+      const data = JSON.parse(rawJson);
+      const post = data.post || {};
+      nomClub = String(post.post_title || '').trim();
+      const acf = post.acf || {};
+      logoFile = String(acf.logo_club || '').trim();
+      if (Array.isArray(acf.gyms_club) && acf.gyms_club.length > 0) {
+        salleDefaut = String(acf.gyms_club[0].name_gym || '').trim();
+      }
+    } catch (e) {
+      Logger.log('Erreur parsing JSON smartfire: ' + e.message);
+    }
+  }
+
+  // Fallbacks si le format a varié
+  if (!logoFile) {
+    const matchLogoRaw = html.match(/(?:&quot;|")logo_club(?:&quot;|")\s*:\s*(?:&quot;|")([^"&]+)(?:&quot;|")/i);
+    if (matchLogoRaw) logoFile = matchLogoRaw[1].trim();
+  }
+  if (!nomClub) {
+    const matchTitle = html.match(/<title>([^<]+?)(?:\s*-\s*Mon Club|\s*-\s*FFHandball|\s*-\s*Fédération)?<\/title>/i);
+    if (matchTitle) nomClub = matchTitle[1].trim();
+  }
+
+  if (!logoFile) {
+    throw new Error('Logo introuvable sur cette page FFHB. Vérifiez l\'URL du club.');
+  }
+
+  const logoClean = logoFile.replace(/\.[^.]+$/, '');
+  const logoUrl = 'https://media-logos-clubs.ffhandball.fr/256/' + logoClean + '.webp';
+
+  // Récupération de l'image en Base64 pour permettre à l'élément canvas côté client d'analyser les pixels sans restriction CORS
+  let logoDataUri = '';
+  try {
+    const imgRes = UrlFetchApp.fetch(logoUrl, { muteHttpExceptions: true });
+    if (imgRes.getResponseCode() === 200) {
+      const blob = imgRes.getBlob();
+      logoDataUri = 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes());
+    }
+  } catch (errImg) {
+    Logger.log('Erreur fetch image base64: ' + errImg.message);
+  }
+
+  return {
+    ok: true,
+    urlClub: urlPropre,
+    nomClub: nomClub || 'Club FFHB',
+    logoUrl: logoUrl,
+    logoDataUri: logoDataUri,
+    salleDefaut: salleDefaut
+  };
 }
 
 /**
@@ -2346,6 +2488,15 @@ function construireHtmlWebApp() {
           '[[button class="btn-reset" style="padding:4px 10px;" onclick="fermerModalCouleurs()"]]✕[[/button]]',
         '[[/div]]',
         '[[p style="font-size:0.8rem;color:#94a3b8;margin:0 0 14px 0;text-align:left;"]]Personnalisez l\'identité visuelle et le blason de votre club. Ces éléments s\'appliquent immédiatement et sont enregistrés dans Google Sheets.[[/p]]',
+        '[[div style="background:#0e1726;border:1px solid rgba(249,115,22,0.4);border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,0.25);"]]',
+          '[[div style="font-weight:800;font-size:0.88rem;color:#fb923c;display:flex;align-items:center;gap:6px;margin-bottom:4px;"]]⚡ Synchronisation Page Club FFHB[[/div]]',
+          '[[div style="font-size:0.74rem;color:#cbd5e1;margin-bottom:8px;line-height:1.35;"]]Renseignez l\'URL de votre club sur monclub.ffhandball.fr pour importer automatiquement son blason officiel et extraire la charte graphique de l\'application.[[/div]]',
+          '[[div style="display:flex;gap:6px;align-items:center;"]]',
+            '[[input type="url" id="inpFfhbClubUrl" class="inp-field" placeholder="https://monclub.ffhandball.fr/clubs/..." style="font-size:0.76rem;padding:7px 10px;flex:1;min-width:0;"]]',
+            '[[button type="button" id="btnImportFfhb" class="btn-enter" style="font-size:0.76rem;padding:7px 12px;white-space:nowrap;margin:0;width:auto;" onclick="importerDepuisFfhbClient()"]]⚡ Importer[[/button]]',
+          '[[/div]]',
+          '[[div id="ffhbImportStatus" style="font-size:0.73rem;color:var(--color-secondary);min-height:1.2em;margin-top:6px;line-height:1.3;"]][[/div]]',
+        '[[/div]]',
         '[[div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;"]]',
           '[[div style="font-weight:800;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;color:#f8fafc;"]]Blason & Photo du Club[[/div]]',
           '[[div style="font-size:0.75rem;color:#94a3b8;margin-bottom:10px;"]]Téléversez le logo du club ou collez un lien URL direct.[[/div]]',
@@ -2660,7 +2811,8 @@ function construireHtmlWebApp() {
       '[[/main]]',
     '[[/div]]',
     '[[script]]',
-    'var CLUB_CONFIG = { nomClub: "' + cfg.nomClub + '", githubRepo: "' + (cfg.githubRepo || '') + '", nbEquipes: ' + (cfg.nbEquipes || 3) + ', nomEquipe1: "' + cfg.nomEquipe1 + '", nomEquipe2: "' + cfg.nomEquipe2 + '", nomEquipe3: "' + (cfg.nomEquipe3 || 'Équipe 3') + '", couleurPrimaire: "' + cfg.couleurPrimaire + '", couleurSecondaire: "' + cfg.couleurSecondaire + '", couleurEquipe1: "' + cfg.couleurEquipe1 + '", couleurEquipe2: "' + cfg.couleurEquipe2 + '", couleurEquipe3: "' + (cfg.couleurEquipe3 || '#10b981') + '" };',
+    'var CLUB_CONFIG = { nomClub: "' + cfg.nomClub + '", githubRepo: "' + (cfg.githubRepo || '') + '", nbEquipes: ' + (cfg.nbEquipes || 3) + ', nomEquipe1: "' + cfg.nomEquipe1 + '", nomEquipe2: "' + cfg.nomEquipe2 + '", nomEquipe3: "' + (cfg.nomEquipe3 || 'Équipe 3') + '", couleurPrimaire: "' + cfg.couleurPrimaire + '", couleurSecondaire: "' + cfg.couleurSecondaire + '", couleurEquipe1: "' + cfg.couleurEquipe1 + '", couleurEquipe2: "' + cfg.couleurEquipe2 + '", couleurEquipe3: "' + (cfg.couleurEquipe3 || '#10b981') + '", logoUrl: "' + cfg.logoUrl + '", urlFfhbClub: "' + (cfg.urlFfhbClub || '') + '" };',
+    'var NOUVEAU_LOGO_IMPORTE = ""; var NOUVEAU_NOM_CLUB_IMPORTE = ""; var NOUVEAU_SALLE_IMPORTEE = "";',
     'var SEANCES_TRAIN = ' + JSON.stringify(cfg.seancesTrain || [
       { id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi (20h30)", actif: true },
       { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi (20h30)", actif: true },
@@ -2757,11 +2909,110 @@ function construireHtmlWebApp() {
       '}).reinitialiserLogoClub(SESSION_TEL, SESSION_PIN);',
     '}',
     'function majClubLogoClient(nouvelleUrl){',
-      'CLUB_CONFIG.logoUrl = nouvelleUrl;',
-      '["homeLogoImg", "appHeaderLogoImg", "trainHeaderLogoImg", "rosterHeaderLogoImg", "modalClubLogoPreview"].forEach(function(id){',
-        'var img = document.getElementById(id);',
-        'if(img) img.src = nouvelleUrl;',
-      '});',
+    '  CLUB_CONFIG.logoUrl = nouvelleUrl;',
+    '  ["homeLogoImg", "appHeaderLogoImg", "trainHeaderLogoImg", "rosterHeaderLogoImg", "modalClubLogoPreview"].forEach(function(id){',
+    '    var img = document.getElementById(id);',
+    '    if(img) img.src = nouvelleUrl;',
+    '  });',
+    '}',
+    'function extraireCouleursImageCanvas(imgElement, callback){',
+    '  try {',
+    '    var canvas = document.createElement("canvas");',
+    '    var ctx = canvas.getContext("2d");',
+    '    var w = 80, h = 80;',
+    '    canvas.width = w; canvas.height = h;',
+    '    ctx.drawImage(imgElement, 0, 0, w, h);',
+    '    var imgData = ctx.getImageData(0, 0, w, h).data;',
+    '    var buckets = {}, countDark = 0, countTotal = 0;',
+    '    for(var i = 0; i < imgData.length; i += 4){',
+    '      var r = imgData[i], g = imgData[i + 1], b = imgData[i + 2], a = imgData[i + 3];',
+    '      if(a < 128) continue;',
+    '      if(r > 235 && g > 235 && b > 235) continue;',
+    '      if(r < 30 && g < 30 && b < 30){ countDark++; continue; }',
+    '      countTotal++;',
+    '      var qr = Math.floor(r / 16) * 16, qg = Math.floor(g / 16) * 16, qb = Math.floor(b / 16) * 16;',
+    '      var key = qr + "," + qg + "," + qb;',
+    '      if(!buckets[key]) buckets[key] = { r: qr, g: qg, b: qb, count: 0 };',
+    '      buckets[key].count++;',
+    '    }',
+    '    var list = Object.values(buckets);',
+    '    if(!list.length){ callback({ primaire: "#f97316", secondaire: "#fbbf24", equipe1: "#f97316", equipe2: "#fbbf24", equipe3: "#10b981" }); return; }',
+    '    list.forEach(function(item){',
+    '      var max = Math.max(item.r, item.g, item.b), min = Math.min(item.r, item.g, item.b);',
+    '      var sat = max === 0 ? 0 : (max - min) / max;',
+    '      item.score = item.count * (1 + sat * 3);',
+    '    });',
+    '    list.sort(function(a, b){ return b.score - a.score; });',
+    '    function toHex(r, g, b){ return "#" + ("0" + r.toString(16)).slice(-2) + ("0" + g.toString(16)).slice(-2) + ("0" + b.toString(16)).slice(-2); }',
+    '    function colDist(c1, c2){ var dr = c1.r - c2.r, dg = c1.g - c2.g, db = c1.b - c2.b; return Math.sqrt(dr * dr + dg * dg + db * db); }',
+    '    var prim = list[0];',
+    '    var hexP = toHex(prim.r, prim.g, prim.b);',
+    '    var sec = null;',
+    '    for(var k = 1; k < list.length; k++){ if(colDist(prim, list[k]) > 75){ sec = list[k]; break; } }',
+    '    var hexS = "";',
+    '    if(sec){ hexS = toHex(sec.r, sec.g, sec.b); }',
+    '    else { hexS = (countDark > countTotal * 0.15) ? "#1e293b" : "#fbbf24"; }',
+    '    var hexE3 = "#10b981";',
+    '    for(var m = 2; m < list.length; m++){',
+    '      if(colDist(prim, list[m]) > 60 && (!sec || colDist(sec, list[m]) > 60)){ hexE3 = toHex(list[m].r, list[m].g, list[m].b); break; }',
+    '    }',
+    '    callback({ primaire: hexP, secondaire: hexS, equipe1: hexP, equipe2: hexS, equipe3: hexE3 });',
+    '  } catch(e){ console.error("Erreur extraction couleurs:", e); callback(null); }',
+    '}',
+    'function importerDepuisFfhbClient(){',
+    '  var inp = document.getElementById("inpFfhbClubUrl");',
+    '  var url = inp ? inp.value.trim() : "";',
+    '  if(!url){ afficherToast("Veuillez saisir l\'adresse de votre club sur monclub.ffhandball.fr", "erreur"); return; }',
+    '  var btn = document.getElementById("btnImportFfhb");',
+    '  var status = document.getElementById("ffhbImportStatus");',
+    '  if(btn) btn.disabled = true;',
+    '  if(status) status.innerHTML = "<span style=\'color:#38bdf8;\'>⏳ Connexion à FFHB et récupération des données...</span>";',
+    '  google.script.run.withSuccessHandler(function(res){',
+    '    if(btn) btn.disabled = false;',
+    '    if(!res || !res.ok){ if(status) status.innerHTML = "<span style=\'color:#f87171;\'>Erreur lors de l\'importation.</span>"; return; }',
+    '    NOUVEAU_NOM_CLUB_IMPORTE = res.nomClub || "";',
+    '    NOUVEAU_LOGO_IMPORTE = res.logoUrl || "";',
+    '    NOUVEAU_SALLE_IMPORTEE = res.salleDefaut || "";',
+    '    if(document.getElementById("inpClubLogoUrl")) document.getElementById("inpClubLogoUrl").value = res.logoUrl;',
+    '    if(document.getElementById("modalClubLogoPreview")) document.getElementById("modalClubLogoPreview").src = res.logoDataUri || res.logoUrl;',
+    '    if(status) status.innerHTML = "<span style=\'color:#38bdf8;\'>🎨 Détection des couleurs du blason...</span>";',
+    '    var imgTemp = new Image();',
+    '    imgTemp.crossOrigin = "Anonymous";',
+    '    imgTemp.onload = function(){',
+    '      extraireCouleursImageCanvas(imgTemp, function(pal){',
+    '        if(pal){',
+    '          document.getElementById("inpColPrimaire").value = pal.primaire;',
+    '          document.getElementById("txtColPrimaire").value = pal.primaire.toUpperCase();',
+    '          document.getElementById("inpColSecondaire").value = pal.secondaire;',
+    '          document.getElementById("txtColSecondaire").value = pal.secondaire.toUpperCase();',
+    '          document.getElementById("inpColEq1").value = pal.equipe1;',
+    '          document.getElementById("txtColEq1").value = pal.equipe1.toUpperCase();',
+    '          document.getElementById("inpColEq2").value = pal.equipe2;',
+    '          document.getElementById("txtColEq2").value = pal.equipe2.toUpperCase();',
+    '          if(document.getElementById("inpColEq3")){',
+    '            document.getElementById("inpColEq3").value = pal.equipe3;',
+    '            document.getElementById("txtColEq3").value = pal.equipe3.toUpperCase();',
+    '          }',
+    '          majCouleursLive();',
+    '        }',
+    '        majClubLogoClient(res.logoUrl);',
+    '        var nomAff = res.nomClub ? (" : " + res.nomClub) : "";',
+    '        if(status) status.innerHTML = "<span style=\'color:#22c55e;font-weight:800;\'>✓ Club importé" + nomAff + "</span><br><span style=\'color:#cbd5e1;font-size:0.7rem;\'>Logo et couleurs synchronisés ! Cliquez ci-dessous sur « Enregistrer les modifications » pour valider.</span>";',
+    '        afficherToast("Club " + (res.nomClub || "") + " importé avec succès !", "succes");',
+    '        if(typeof confetti === "function") confetti({ particleCount: 70, spread: 60 });',
+    '      });',
+    '    };',
+    '    imgTemp.onerror = function(){',
+    '      majClubLogoClient(res.logoUrl);',
+    '      if(status) status.innerHTML = "<span style=\'color:#22c55e;font-weight:800;\'>✓ Logo FFHB importé" + (res.nomClub ? (" : " + res.nomClub) : "") + "</span>";',
+    '      afficherToast("Logo FFHB récupéré !", "succes");',
+    '    };',
+    '    imgTemp.src = res.logoDataUri || res.logoUrl;',
+    '  }).withFailureHandler(function(err){',
+    '    if(btn) btn.disabled = false;',
+    '    if(status) status.innerHTML = "<span style=\'color:#f87171;\'>Erreur : " + err.message + "</span>";',
+    '    afficherToast(err.message, "erreur");',
+    '  }).importerInfosClubFFHB(SESSION_TEL, SESSION_PIN, url);',
     '}',
     'function choisirNbEquipesModal(n){',
       'var num = parseInt(n, 10) || 3;',
@@ -2798,6 +3049,8 @@ function construireHtmlWebApp() {
       'if(document.getElementById("inpColEq3")){ document.getElementById("inpColEq3").value = c3; document.getElementById("txtColEq3").value = c3.toUpperCase(); }',
       'document.getElementById("statusModalCouleurs").textContent = "";',
       'document.getElementById("modalLogoStatus").textContent = "";',
+      'if(document.getElementById("inpFfhbClubUrl")) document.getElementById("inpFfhbClubUrl").value = CLUB_CONFIG.urlFfhbClub || "";',
+      'if(document.getElementById("ffhbImportStatus")) document.getElementById("ffhbImportStatus").innerHTML = "";',
       'if(document.getElementById("modalClubLogoPreview")) document.getElementById("modalClubLogoPreview").src = CLUB_CONFIG.logoUrl || "' + cfg.logoUrl + '";',
       'if(document.getElementById("inpClubLogoUrl")) document.getElementById("inpClubLogoUrl").value = "";',
       'var curNb = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 3;',
@@ -2872,6 +3125,20 @@ function construireHtmlWebApp() {
         'var cUrl = (document.getElementById("cfgEqUrl" + i) ? document.getElementById("cfgEqUrl" + i).value.trim() : "");',
         'eqList.push({ num: i, code: cCode, nomSondage: cLabel, motCleFfhb: cMotCle, motCle: cMotCle, labelSondage: cLabel, delaiRdvHeures: cDelai, delaiRdv: cDelai, urlPoule: cUrl });',
       '}',
+      'var urlFfhb = (document.getElementById("inpFfhbClubUrl") ? document.getElementById("inpFfhbClubUrl").value.trim() : "") || (CLUB_CONFIG.urlFfhbClub || "");',
+      'var logoAEnregistrer = (document.getElementById("inpClubLogoUrl") ? document.getElementById("inpClubLogoUrl").value.trim() : "") || (NOUVEAU_LOGO_IMPORTE || "");',
+      'var payloadCouleurs = {',
+        'primaire: cp,',
+        'secondaire: cs,',
+        'equipe1: c1,',
+        'equipe2: c2,',
+        'equipe3: c3,',
+        'nbEquipes: nbEq,',
+        'equipes: eqList,',
+        'logoUrl: logoAEnregistrer,',
+        'nomClub: NOUVEAU_NOM_CLUB_IMPORTE || "",',
+        'urlFfhbClub: urlFfhb',
+      '};',
       'document.getElementById("statusModalCouleurs").textContent = "Enregistrement dans Google Sheet...";',
       'document.getElementById("btnSaveCouleurs").disabled = true;',
       'google.script.run.withSuccessHandler(function(res){',
@@ -2885,6 +3152,18 @@ function construireHtmlWebApp() {
         'CLUB_CONFIG.equipes = eqList;',
         'var ancienNb = CLUB_CONFIG.nbEquipes;',
         'CLUB_CONFIG.nbEquipes = nbEq;',
+        'if(res && res.logoUrl){',
+        '  CLUB_CONFIG.logoUrl = res.logoUrl;',
+        '  majClubLogoClient(res.logoUrl);',
+        '}',
+        'if(res && res.nomClub){',
+        '  CLUB_CONFIG.nomClub = res.nomClub;',
+        '  if(document.getElementById("homeClubName")) document.getElementById("homeClubName").textContent = res.nomClub;',
+        '  if(document.getElementById("headerClubTitle")) document.getElementById("headerClubTitle").textContent = res.nomClub + " - Compo Coach";',
+        '}',
+        'if(res && res.urlFfhbClub){',
+        '  CLUB_CONFIG.urlFfhbClub = res.urlFfhbClub;',
+        '}',
         'afficherToast("Configuration des équipes et couleurs enregistrée !", "succes");',
         'if(typeof confetti === "function") confetti({ particleCount: 70, spread: 60 });',
         'setTimeout(function(){',
@@ -2895,7 +3174,7 @@ function construireHtmlWebApp() {
         'document.getElementById("btnSaveCouleurs").disabled = false;',
         'document.getElementById("statusModalCouleurs").textContent = err.message;',
         'afficherToast(err.message, "erreur");',
-      '}).enregistrerCouleursClub(SESSION_TEL, SESSION_PIN, { primaire: cp, secondaire: cs, equipe1: c1, equipe2: c2, equipe3: c3, nbEquipes: nbEq, equipes: eqList });',
+      '}).enregistrerCouleursClub(SESSION_TEL, SESSION_PIN, payloadCouleurs);',
     '}',
     'function ouvrirSelecteurPhotoJoueur(){ document.getElementById("filePhoto").click(); }',
     'function ouvrirSelecteurPhotoCoach(){ document.getElementById("fileCoachPhoto").click(); }',

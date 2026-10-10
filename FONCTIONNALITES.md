@@ -191,10 +191,14 @@ Vous coachez les **Séniors Garçons (SG1 & SG2)** ET les **-15 Filles (-15F1 & 
 
 ## 🎨 7. Personnalisation du Club & Couleurs
 
-* **Blason officiel du club** : Téléversez le logo de votre club depuis votre smartphone, il est stocké sur votre Google Drive et s'affiche partout sur l'application.
-* **Couleurs officielles et maillots** :
-  * Personnalisez la couleur principale du club et la couleur de maillot de chaque équipe.
-  * Nuanciers de grands clubs disponibles en un clic (*HBC Nantes, PSG Handball, Montpellier MHB, USAM Nîmes, Chambéry, etc.*).
+* **⚡ Synchronisation Automatique FFHB en 1 clic** :
+  * Fournissez simplement l'URL de la page de votre club sur `monclub.ffhandball.fr` (ex : *https://monclub.ffhandball.fr/clubs/athletic-club-boulogne-billancourt/*).
+  * L'application récupère automatiquement le **blason officiel haute définition** du club.
+  * Elle extrait intelligemment les **couleurs dominantes et d'accent** du blason (couleur principale, secondaire, teintes des maillots) et applique immédiatement la charte graphique sur toute l'interface !
+* **Blason officiel du club** : Téléversez une image ou collez une URL directe, elle est stockée sur votre Google Drive et s'affiche partout sur l'application.
+* **Couleurs officielles et maillots personnalisables** :
+  * Ajustez la couleur principale du club et la couleur de maillot de chaque équipe avec des sélecteurs de couleurs en direct.
+  * Palettes rapides de grands clubs disponibles en un clic (*HBC Nantes, PSG Handball, Montpellier MHB, USAM Nîmes, Chambéry, etc.*).
   * Calcul automatique du contraste pour que le texte reste parfaitement lisible sur tous les téléphones.
 
 ---
