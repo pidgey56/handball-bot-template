@@ -265,14 +265,6 @@ Assurez-vous que les permissions des workflows sont activées en écriture sur v
 3. Cochez également **« Allow GitHub Actions to create and approve pull requests »**.
 4. Cliquez sur **Save**.
 
-### Erreur « refusing to allow a GitHub App to create or update workflow without workflows permission » ou « Unexpected value 'workflows' »
-Cette situation survient si votre action de synchronisation tente de commiter des modifications dans le dossier `.github/workflows/` :
-1. **Règle de sécurité GitHub** : Le jeton par défaut `GITHUB_TOKEN` est strictement interdit par GitHub de modifier ou commiter des fichiers de workflows (pour empêcher toute injection de code malveillant ou boucle infinie).
-2. **Ne pas écrire `workflows: write` dans le YAML** : Dans la syntaxe GitHub Actions, la clé `workflows` n'existe pas dans le bloc `permissions:` (seules `contents`, `actions`, `pull-requests`, etc. sont acceptées). Écrire `workflows: write` provoque l'erreur `Unexpected value 'workflows'`.
-3. **Comment résoudre :**
-   * **Solution 1 (Standard & Recommandée)** : Synchronisez uniquement les fichiers applicatifs (`send-poll.js`, `package.json`, `version.json`, documentation) comme le fait le template officiel. Ces fichiers se mettent à jour parfaitement avec `contents: write`.
-   * **Solution 2 (Mettre aussi à jour les workflows)** : Utilisez un Personal Access Token (PAT) avec le scope `workflow` configuré dans vos Secrets (voir détails à l'Étape 10 ci-dessous).
-
 ### La WebApp affiche une erreur d'autorisation
 Lors du déploiement de la WebApp :
 - Choisissez toujours **Exécuter en tant que : Moi** et **Qui a accès : Tout le monde**.
@@ -288,29 +280,27 @@ Lorsqu'une nouvelle version de Handball Bot est publiée avec de nouvelles fonct
 
 ### 1. Mettre à jour le robot WhatsApp (GitHub Actions) en 1 clic
 
-#### Méthode Standard (Recommandée) :
+#### Méthode Standard :
 1. Sur votre dépôt GitHub privé, rendez-vous dans l'onglet **Actions**.
 2. Dans la colonne de gauche, cliquez sur le workflow **« Sync with Handball Bot Template »**.
 3. À droite, cliquez sur **Run workflow** > **Run workflow**.
 4. En 10 secondes, GitHub télécharge les nouveaux scripts applicatifs (`send-poll.js`, `package.json`, `version.json`, guides) et les applique à votre dépôt **sans jamais toucher à votre session WhatsApp (`auth_info/`)**.
 
-#### Option Avancée : Si vous souhaitez que le bot mette aussi à jour les fichiers de workflow (`.github/workflows/`)
+#### Option : Mettre à jour automatiquement les fichiers de workflow (`.github/workflows/`)
 
-Puisque le `GITHUB_TOKEN` par défaut ne peut pas modifier les workflows, il faut utiliser un **Personal Access Token (PAT)** avec le droit `workflow` :
+Puisque le jeton par défaut de GitHub ne peut pas modifier les fichiers de workflow, il suffit d'utiliser un **Personal Access Token (PAT)** avec le droit `workflow` :
 
 1. **Créer le token PAT** :
    - Dans vos paramètres GitHub : **Settings > Developer Settings > Personal access tokens > Tokens (classic)**.
    - Cliquez sur **Generate new token (classic)**.
-   - Cochez impérativement :
-     - **`repo`** (Full control of private repositories)
-     - **`workflow`** (Update GitHub Action workflows)
+   - Cochez les cases **`repo`** et **`workflow`**.
    - Cliquez sur **Generate token** et copiez le token (`ghp_...`).
 2. **Ajouter le Secret sur le dépôt de votre club** :
    - Sur votre dépôt GitHub, allez dans **Settings > Secrets and variables > Actions**.
    - Cliquez sur **New repository secret** :
      - Nom : **`GH_PAT`**
      - Valeur : collez votre token `ghp_...`
-3. **Configurer votre workflow `.github/workflows/sync-template.yml`** :
+3. **Dans votre workflow `.github/workflows/sync-template.yml`** :
    - Utilisez ce token dans l'étape de récupération (checkout) :
      ```yaml
      permissions:
@@ -326,9 +316,6 @@ Puisque le `GITHUB_TOKEN` par défaut ne peut pas modifier les workflows, il fau
                token: ${{ secrets.GH_PAT }}
                fetch-depth: 0
      ```
-
-> [!IMPORTANT]
-> **Attention à la syntaxe YAML :** Ne mettez **JAMAIS** `workflows: write` dans le bloc `permissions:`. Le mot-clé `workflows` n'existe pas dans GitHub Actions et provoquera l'erreur `Unexpected value 'workflows'`. L'autorisation de mettre à jour les workflows est apportée exclusivement par le jeton `${{ secrets.GH_PAT }}` transmis à l'action de checkout.
 
 ### 2. Mettre à jour le Google Sheet (`code.gs`)
 1. Dans votre Google Sheet, ouvrez **Extensions > Apps Script**.
