@@ -2020,7 +2020,7 @@ function construireHtmlWebApp() {
                 '[[div class="dash-tile-title"]]Séances Entraînement[[/div]]',
                 '[[div class="dash-tile-desc"]]Séparé / Réduit / Complet[[/div]]',
                 '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;"]]',
-                  '[[button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTr" onclick="entrerEntrainement(false)"]]Tableau[[/button]]',
+                  '[[button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTr" onclick="entrerEntrainement(false)"]]Tableau[[/button]]',
                   '[[button type="button" class="btn-enter btn-enter-tinder" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTrTinder" onclick="entrerEntrainement(true)"]]Tinder[[/button]]',
                 '[[/div]]',
                 '[[button type="button" class="btn-enter btn-enter-alt" style="margin-top:6px;padding:6px;font-size:0.75rem;width:100%;" onclick="ouvrirModalConfigEntrainements()"]]Configurer créneaux[[/button]]',
