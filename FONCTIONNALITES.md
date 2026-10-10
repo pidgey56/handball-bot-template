@@ -119,8 +119,10 @@ Avant de valider et d'envoyer votre message, visualisez votre **7 majeur** sur u
   * 🧠 **Demi-Centre (DC)**
   * 🧱 **Pivot (PVT)**
   * 🧤 **Gardien de But (GB)** positionné dans sa zone des 6 mètres
-* **Banc des remplaçants interactif** : Les joueurs restants sont alignés sur le banc. Vous pouvez permuter n'importe quel joueur titulaire avec un remplaçant d'un simple clic !
-* **Affichage des photos officielles et numéros** sur le terrain.
+* **Banc des remplaçants interactif & Glisser-Déposer (Drag & Drop)** :
+  * **Glisser-déposer fluide** : Glissez n'importe quel joueur du banc vers un poste du terrain, ou glissez deux joueurs du terrain l'un sur l'autre pour les intervertir.
+  * **Permutation tactile en 1 clic sur mobile** : Touchez un joueur (il s'illumine en bleu), puis touchez le poste ou le remplaçant avec lequel vous souhaitez échanger. Aucune popup intrusive, la rotation s'effectue instantanément !
+* **Affichage des photos avec secours automatique (Fallback)** : Les photos de profil sont affichées dans les pastilles des joueurs. Si une photo est introuvable ou ne charge pas, l'application bascule automatiquement sur l'initiale du joueur sur fond dégradé pour garantir un rendu visuel toujours soigné.
 
 ---
 
@@ -214,3 +216,4 @@ Utilisez le bouton **« + Renfort »** dans la WebApp : vous pouvez repêcher n'
 
 ### Combien coûte l'outil par saison ?
 **0 €.** Handball Bot est un projet bénévole, open-source et libre, sans aucun abonnement ni publicité.
+
