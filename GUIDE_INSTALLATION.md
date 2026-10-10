@@ -96,7 +96,7 @@ Google Sheets a besoin d'un token pour communiquer avec votre dépôt GitHub (d�
 5. Remplissez le formulaire :
    - **Note** : `Handball Bot Token`
    - **Expiration** : `No expiration` (ou 1 an)
-   - **Scopes (Permissions)** : Cochez impérativement la case principale **`repo`** (Full control of private repositories).
+   - **Scopes (Permissions)** : Cochez impérativement la case principale **`repo`** (Full control of private repositories) ainsi que la case **`workflow`** (Update GitHub Action workflows).
 6. Cliquez sur **Generate token** en bas de page.
 7. **Copiez immédiatement le token généré** (qui commence par `ghp_...`).
 8. Ouvrez votre Google Sheet, onglet **Configuration** :
