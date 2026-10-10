@@ -2058,13 +2058,28 @@ function declencherLectureVotes() {
  */
 function construireHtmlWebApp() {
   const cfg = getClubConfig();
+  const logoIcon = cfg.logoUrl || genererLogoDefaut(cfg.couleurPrimaire || '#f97316');
   const manifestObj = {
     name: (cfg.nomClub || 'Handball') + ' - Espace Coach',
-    short_name: 'Handball Coach',
+    short_name: (cfg.nomClub ? (cfg.nomClub.slice(0, 12)) : 'Handball') + ' Coach',
     start_url: '.',
     display: 'standalone',
     background_color: '#090d16',
-    theme_color: cfg.couleurPrimaire || '#1e293b'
+    theme_color: cfg.couleurPrimaire || '#1e293b',
+    icons: [
+      {
+        src: logoIcon,
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'any maskable'
+      },
+      {
+        src: logoIcon,
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any maskable'
+      }
+    ]
   };
   const manifestDataUri = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(manifestObj));
   const tpl = [
@@ -2074,6 +2089,7 @@ function construireHtmlWebApp() {
     '[[meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"]]',
     '[[meta name="apple-mobile-web-app-title" content="' + (cfg.nomClub || 'Handball') + ' Coach"]]',
     '[[meta name="theme-color" content="' + (cfg.couleurPrimaire || '#1e293b') + '"]]',
+    '[[link rel="icon" type="image/png" href="' + cfg.logoUrl + '"]]',
     '[[link rel="manifest" href="' + manifestDataUri + '"]]',
     '[[link rel="apple-touch-icon" href="' + cfg.logoUrl + '"]]',
     '[[style]]',
@@ -2637,10 +2653,11 @@ function construireHtmlWebApp() {
         '[[/div]]',
         '[[div id="pwaAndroidGuide" style="display:none;background:#0e1626;padding:14px;border-radius:14px;border:1px solid rgba(148,163,184,0.18);text-align:left;font-size:0.82rem;line-height:1.45;color:#e2e8f0;"]]',
           '[[div style="font-weight:800;color:var(--color-primary);margin-bottom:8px;"]]Sur Android (Chrome) :[[/div]]',
-          '[[div style="margin-bottom:8px;"]]1. Appuyez sur le menu des 3 points verticaux ⋮ en haut à droite.[[/div]]',
-          '[[div style="margin-bottom:8px;"]]2. Sélectionnez « Ajouter à l\'écran d\'accueil » ou « Installer l\'application ».[[/div]]',
-          '[[div]]3. Validez l\'installation.[[/div]]',
-          '[[button type="button" id="btnPwaNativeInstall" class="btn-enter" style="width:100%;margin-top:10px;display:none;" onclick="declencherPwaNative()"]]Installer maintenant[[/button]]',
+          '[[div style="margin-bottom:8px;"]]1. Appuyez sur le bouton ci-dessous (ou sur le menu <b>⋮</b> en haut à droite > <i>Ajouter à l\'écran d\'accueil</i>).[[/div]]',
+          '[[div style="margin-bottom:8px;"]]2. Dans le menu qui s\'ouvre, touchez <b>« Créer un raccourci »</b> <i>(sur Google Apps Script, l\'option « Installer » est grisée par sécurité par Google)</i>.[[/div]]',
+          '[[div style="margin-bottom:8px;"]]3. Validez en cliquant sur <b>« Ajouter »</b>.[[/div]]',
+          '[[div style="font-size:0.75rem;color:#38bdf8;background:rgba(56,189,248,0.1);padding:8px 10px;border-radius:8px;border:1px solid rgba(56,189,248,0.25);"]]✨ L\'icône du club est installée sur votre écran d\'accueil et s\'ouvre directement en plein écran ![[/div]]',
+          '[[button type="button" id="btnPwaNativeInstall" class="btn-enter" style="width:100%;margin-top:12px;display:none;" onclick="declencherPwaNative()"]]Créer le raccourci sur l\'écran d\'accueil[[/button]]',
         '[[/div]]',
         '[[div style="margin-top:14px;display:flex;justify-content:flex-end;"]]',
           '[[button type="button" class="btn-reset" onclick="fermerModalPwa()"]]Fermer[[/button]]',
