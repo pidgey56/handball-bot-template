@@ -1601,9 +1601,9 @@ function reinitialiserCovoiturage(telCoach, pinCoach) {
 }
 
 /**
- * Enregistre le vote MVP & Chèvre d'un joueur
+ * Enregistre le vote d'un joueur pour le MVP du match
  */
-function voterMvpChevre(tel, pin, nomMvp, nomChevre) {
+function voterMvp(tel, pin, nomMvp) {
   const auth = authentifierUtilisateur(tel, pin);
   const props = PropertiesService.getScriptProperties();
   let votes = {};
@@ -1614,31 +1614,46 @@ function voterMvpChevre(tel, pin, nomMvp, nomChevre) {
 
   if (!votes.liste) votes.liste = {};
 
+  const mMvp = String(nomMvp || '').trim();
+  if (!mMvp) throw new Error('Veuillez sélectionner un joueur pour le titre de MVP.');
+
   votes.liste[auth.telephone] = {
     votant: auth.nom,
-    mvp: String(nomMvp || '').trim(),
-    chevre: String(nomChevre || '').trim(),
+    mvp: mMvp,
     date: new Date().toISOString()
   };
 
   props.setProperty('VOTES_MVP_DATA', JSON.stringify(votes));
-  const res = calculerResultatsVotesMvp(votes);
+  const res = calculerResultatsVotesMvp(votes, auth.telephone);
   return { ok: true, votesMvp: res, ...res };
 }
 
 /**
- * Calcule le podium des votes MVP et Chèvre
+ * Rétro-compatibilité vote MVP & Chèvre
  */
-function calculerResultatsVotesMvp(votesData) {
+function voterMvpChevre(tel, pin, nomMvp, nomChevre) {
+  return voterMvp(tel, pin, nomMvp);
+}
+
+/**
+ * Calcule le classement des votes MVP
+ */
+function calculerResultatsVotesMvp(votesData, telUtilisateur) {
   const decompteMvp = {};
-  const decompteChevre = {};
   const liste = (votesData && votesData.liste) ? votesData.liste : {};
   let totalVotes = 0;
+  let monVoteMvp = '';
+  const telNorm = telUtilisateur ? normaliserNumero(telUtilisateur) : '';
 
-  Object.values(liste).forEach(function(v) {
-    totalVotes++;
-    if (v.mvp) decompteMvp[v.mvp] = (decompteMvp[v.mvp] || 0) + 1;
-    if (v.chevre) decompteChevre[v.chevre] = (decompteChevre[v.chevre] || 0) + 1;
+  Object.keys(liste).forEach(function(t) {
+    const v = liste[t];
+    if (v && v.mvp) {
+      totalVotes++;
+      decompteMvp[v.mvp] = (decompteMvp[v.mvp] || 0) + 1;
+      if (telNorm && normaliserNumero(t) === telNorm) {
+        monVoteMvp = v.mvp;
+      }
+    }
   });
 
   const trier = function(obj) {
@@ -1651,25 +1666,25 @@ function calculerResultatsVotesMvp(votesData) {
     ok: true,
     totalVotes: totalVotes,
     podiumMvp: trier(decompteMvp),
-    podiumChevre: trier(decompteChevre)
+    monVoteMvp: monVoteMvp
   };
 }
 
 /**
  * Récupère les votes MVP et le podium actuel
  */
-function getVotesMvpData() {
+function getVotesMvpData(telUtilisateur) {
   const props = PropertiesService.getScriptProperties();
   let votes = {};
   try {
     const raw = props.getProperty('VOTES_MVP_DATA');
     if (raw) votes = JSON.parse(raw);
   } catch (e) {}
-  return calculerResultatsVotesMvp(votes);
+  return calculerResultatsVotesMvp(votes, telUtilisateur);
 }
 
 /**
- * Réinitialise les votes MVP pour le prochain match
+ * Réinitialise les votes MVP pour le prochain match (Coach)
  */
 function reinitialiserVotesMvp(telCoach, pinCoach) {
   const ss = getSpreadsheet();
@@ -1679,6 +1694,194 @@ function reinitialiserVotesMvp(telCoach, pinCoach) {
   const clean = { liste: {} };
   PropertiesService.getScriptProperties().setProperty('VOTES_MVP_DATA', JSON.stringify(clean));
   return calculerResultatsVotesMvp(clean);
+}
+
+/**
+ * -------------------------------------------------------------
+ * TROPHÉE CHÈVRE DU MATCH (BÊTISIER D'ACTIONS PROPOSÉES & VOTÉES)
+ * -------------------------------------------------------------
+ */
+
+/**
+ * Récupère les actions du bêtisier et les résultats de votes Chèvre
+ */
+function getChevreData(telUtilisateur) {
+  const props = PropertiesService.getScriptProperties();
+  let rawData = {};
+  try {
+    const raw = props.getProperty('ACTIONS_CHEVRE_DATA');
+    if (raw) rawData = JSON.parse(raw);
+  } catch (e) {}
+  return calculerResultatsChevre(rawData, telUtilisateur);
+}
+
+/**
+ * Calcule les résultats et le classement des actions Chèvre
+ */
+function calculerResultatsChevre(rawData, telUtilisateur) {
+  const actions = (rawData && Array.isArray(rawData.actions)) ? rawData.actions : [];
+  const votes = (rawData && rawData.votes) ? rawData.votes : {};
+
+  const decompteVoix = {};
+  let totalVotes = 0;
+  let monVoteActionId = '';
+  const telNorm = telUtilisateur ? normaliserNumero(telUtilisateur) : '';
+
+  Object.keys(votes).forEach(function(t) {
+    const v = votes[t];
+    if (v && v.actionId) {
+      totalVotes++;
+      decompteVoix[v.actionId] = (decompteVoix[v.actionId] || 0) + 1;
+      if (telNorm && normaliserNumero(t) === telNorm) {
+        monVoteActionId = v.actionId;
+      }
+    }
+  });
+
+  const actionsEnrichies = actions.map(function(act) {
+    const nbVoix = decompteVoix[act.id] || 0;
+    return {
+      id: act.id,
+      description: act.description,
+      joueur: act.joueur || '',
+      auteur: act.auteur || '',
+      auteurTel: act.auteurTel || '',
+      date: act.date || '',
+      voix: nbVoix,
+      estMonVote: (act.id === monVoteActionId)
+    };
+  }).sort(function(a, b) {
+    if (b.voix !== a.voix) return b.voix - a.voix;
+    return String(b.date || '').localeCompare(String(a.date || ''));
+  });
+
+  return {
+    ok: true,
+    totalActions: actions.length,
+    totalVotes: totalVotes,
+    actions: actionsEnrichies,
+    podiumChevre: actionsEnrichies.slice(0, 3),
+    monVoteActionId: monVoteActionId
+  };
+}
+
+/**
+ * Propose une nouvelle action du match éligible au vote de la Chèvre
+ */
+function proposerActionChevre(tel, pin, description, joueurConcerne) {
+  const auth = authentifierUtilisateur(tel, pin);
+  const desc = String(description || '').trim();
+  const joueur = String(joueurConcerne || '').trim();
+
+  if (!desc) throw new Error('Veuillez décrire l\'action pour le bêtisier.');
+
+  const props = PropertiesService.getScriptProperties();
+  let rawData = {};
+  try {
+    const raw = props.getProperty('ACTIONS_CHEVRE_DATA');
+    if (raw) rawData = JSON.parse(raw);
+  } catch (e) { rawData = {}; }
+
+  if (!Array.isArray(rawData.actions)) rawData.actions = [];
+  if (!rawData.votes) rawData.votes = {};
+
+  const actionId = 'chv_' + new Date().getTime() + '_' + Math.floor(Math.random() * 1000);
+  rawData.actions.push({
+    id: actionId,
+    description: desc,
+    joueur: joueur,
+    auteur: auth.nom,
+    auteurTel: auth.telephone,
+    date: new Date().toISOString()
+  });
+
+  props.setProperty('ACTIONS_CHEVRE_DATA', JSON.stringify(rawData));
+  const res = calculerResultatsChevre(rawData, auth.telephone);
+  return { ok: true, chevreData: res, ...res };
+}
+
+/**
+ * Supprime une action du bêtisier (par son auteur ou un coach)
+ */
+function supprimerActionChevre(tel, pin, idAction) {
+  const auth = authentifierUtilisateur(tel, pin);
+  const ss = getSpreadsheet();
+  const estCoach = verifierDroitsCoachOuDev(ss, normaliserNumero(tel), String(pin || '').trim());
+
+  const props = PropertiesService.getScriptProperties();
+  let rawData = {};
+  try {
+    const raw = props.getProperty('ACTIONS_CHEVRE_DATA');
+    if (raw) rawData = JSON.parse(raw);
+  } catch (e) { rawData = {}; }
+
+  if (!Array.isArray(rawData.actions)) rawData.actions = [];
+  if (!rawData.votes) rawData.votes = {};
+
+  const act = rawData.actions.find(function(a) { return a.id === idAction; });
+  if (!act) throw new Error('Action introuvable.');
+
+  if (!estCoach && normaliserNumero(act.auteurTel) !== normaliserNumero(auth.telephone)) {
+    throw new Error('Vous ne pouvez supprimer que les actions que vous avez créées.');
+  }
+
+  rawData.actions = rawData.actions.filter(function(a) { return a.id !== idAction; });
+  Object.keys(rawData.votes).forEach(function(t) {
+    if (rawData.votes[t] && rawData.votes[t].actionId === idAction) {
+      delete rawData.votes[t];
+    }
+  });
+
+  props.setProperty('ACTIONS_CHEVRE_DATA', JSON.stringify(rawData));
+  const res = calculerResultatsChevre(rawData, auth.telephone);
+  return { ok: true, chevreData: res, ...res };
+}
+
+/**
+ * Enregistre ou bascule le vote d'un joueur pour une action Chèvre
+ */
+function voterActionChevre(tel, pin, idAction) {
+  const auth = authentifierUtilisateur(tel, pin);
+  const props = PropertiesService.getScriptProperties();
+  let rawData = {};
+  try {
+    const raw = props.getProperty('ACTIONS_CHEVRE_DATA');
+    if (raw) rawData = JSON.parse(raw);
+  } catch (e) { rawData = {}; }
+
+  if (!Array.isArray(rawData.actions)) rawData.actions = [];
+  if (!rawData.votes) rawData.votes = {};
+
+  const act = rawData.actions.find(function(a) { return a.id === idAction; });
+  if (!act) throw new Error('Cette action n\'existe plus.');
+
+  const telNorm = normaliserNumero(auth.telephone);
+  if (rawData.votes[telNorm] && rawData.votes[telNorm].actionId === idAction) {
+    delete rawData.votes[telNorm];
+  } else {
+    rawData.votes[telNorm] = {
+      votant: auth.nom,
+      actionId: idAction,
+      date: new Date().toISOString()
+    };
+  }
+
+  props.setProperty('ACTIONS_CHEVRE_DATA', JSON.stringify(rawData));
+  const res = calculerResultatsChevre(rawData, auth.telephone);
+  return { ok: true, chevreData: res, ...res };
+}
+
+/**
+ * Réinitialise les actions et votes Chèvre pour le prochain match (Coach)
+ */
+function reinitialiserVotesChevre(telCoach, pinCoach) {
+  const ss = getSpreadsheet();
+  if (!verifierDroitsCoachOuDev(ss, normaliserNumero(telCoach), String(pinCoach || '').trim())) {
+    throw new Error('Action réservée aux coachs autorisés.');
+  }
+  const clean = { actions: [], votes: {} };
+  PropertiesService.getScriptProperties().setProperty('ACTIONS_CHEVRE_DATA', JSON.stringify(clean));
+  return calculerResultatsChevre(clean);
 }
 
 /**
@@ -2944,6 +3147,7 @@ function lireDonneesCoach() {
     derniereCompo: derniereCompo,
     covoiturage: getCovoiturageData(),
     votesMvp: getVotesMvpData(),
+    chevreData: getChevreData(),
     absences: getAbsencesJoueurs(),
     caisseNoire: getCaisseNoireData(),
     clubConfig: {
@@ -3388,6 +3592,7 @@ function construireHtmlWebApp() {
     '.player-tile{background:rgba(30,41,59,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:12px 14px;text-align:left;cursor:pointer;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;justify-content:space-between;min-height:88px;box-sizing:border-box;}',
     '.player-tile:hover{background:rgba(30,41,59,0.9);transform:translateY(-2px);box-shadow:0 10px 24px -4px rgba(0,0,0,0.5);}',
     '.player-tile.tile-mvp:hover{border-color:rgba(251,191,36,0.55);box-shadow:0 10px 24px -4px rgba(251,191,36,0.2);}',
+    '.player-tile.tile-chevre:hover{border-color:rgba(249,115,22,0.55);box-shadow:0 10px 24px -4px rgba(249,115,22,0.2);}',
     '.player-tile.tile-covoit:hover{border-color:rgba(56,189,248,0.55);box-shadow:0 10px 24px -4px rgba(56,189,248,0.2);}',
     '.player-tile.tile-absence:hover{border-color:rgba(244,63,94,0.55);box-shadow:0 10px 24px -4px rgba(244,63,94,0.2);}',
     '.player-tile.tile-caisse:hover{border-color:rgba(234,179,8,0.55);box-shadow:0 10px 24px -4px rgba(234,179,8,0.2);}',
@@ -3395,10 +3600,23 @@ function construireHtmlWebApp() {
     '.player-tile-icon{font-size:1.35rem;line-height:1;}',
     '.player-tile-badge{font-size:0.66rem;padding:2px 7px;border-radius:99px;font-weight:800;background:rgba(99,102,241,0.2);color:#c7d2fe;border:1px solid rgba(99,102,241,0.3);}',
     '.badge-mvp{background:rgba(251,191,36,0.18);color:#fef08a;border-color:rgba(251,191,36,0.35);}',
+    '.badge-chevre{background:rgba(249,115,22,0.18);color:#fdba74;border-color:rgba(249,115,22,0.35);}',
     '.badge-covoit{background:rgba(56,189,248,0.18);color:#bae6fd;border-color:rgba(56,189,248,0.35);}',
     '.badge-absence{background:rgba(244,63,94,0.18);color:#fecdd3;border-color:rgba(244,63,94,0.35);}',
     '.player-tile-title{font-size:0.86rem;font-weight:800;color:#f8fafc;}',
     '.player-tile-sub{font-size:0.72rem;color:#94a3b8;margin-top:2px;line-height:1.25;}',
+    '.chevre-action-card{background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px;transition:all 0.15s ease;position:relative;}',
+    '.chevre-action-card:hover{border-color:rgba(249,115,22,0.4);background:rgba(15,23,42,0.95);}',
+    '.chevre-action-leader{border-color:rgba(234,88,12,0.5);background:linear-gradient(135deg,#090d16,rgba(234,88,12,0.08));}',
+    '.chevre-action-voted{border-color:rgba(234,88,12,0.65);box-shadow:0 0 14px rgba(234,88,12,0.2);}',
+    '.chevre-action-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}',
+    '.chevre-action-target{font-size:0.74rem;background:rgba(255,255,255,0.06);color:#f1f5f9;padding:2px 8px;border-radius:99px;font-weight:700;}',
+    '.chevre-action-desc{font-size:0.86rem;font-weight:700;color:#f8fafc;line-height:1.35;word-break:break-word;}',
+    '.chevre-action-meta{font-size:0.72rem;color:#94a3b8;display:flex;align-items:center;gap:6px;}',
+    '.chevre-action-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:2px;gap:8px;}',
+    '.btn-vote-chevre{background:rgba(234,88,12,0.18);border:1px solid rgba(234,88,12,0.4);color:#fdba74;font-size:0.75rem;padding:4px 10px;border-radius:8px;font-weight:700;cursor:pointer;transition:all 0.15s ease;}',
+    '.btn-vote-chevre:hover{background:rgba(234,88,12,0.35);color:#fff;}',
+    '.btn-vote-chevre-active{background:linear-gradient(135deg,#ea580c,#c2410c);border:1px solid #ea580c;color:#fff;font-size:0.75rem;padding:4px 10px;border-radius:8px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(234,88,12,0.35);}',
     '.match-hub-banner{background:linear-gradient(145deg,rgba(15,23,42,0.9),rgba(30,41,59,0.7));border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:14px;width:100%;box-sizing:border-box;text-align:left;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);cursor:pointer;}',
     '.match-hub-banner:hover{border-color:var(--color-secondary);box-shadow:0 12px 28px rgba(0,0,0,0.5);transform:translateY(-2px);}',
     '.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:16px 0;height:140px;}',
@@ -3509,9 +3727,13 @@ function construireHtmlWebApp() {
               '[[div style="font-size:0.72rem;color:#38bdf8;font-weight:700;display:flex;align-items:center;gap:4px;"]]📐 Toucher pour ouvrir le terrain tactique & compositions →[[/div]]',
             '[[/div]]',
             '[[div class="player-hub-grid"]]',
-              '[[div class="player-tile tile-mvp" onclick="ouvrirModalMvpChevre()"]]',
+              '[[div class="player-tile tile-mvp" onclick="ouvrirModalMvp()"]]',
                 '[[div class="player-tile-top"]][[span class="player-tile-icon"]]🏆[[/span]][[span id="tileBadgeMvp" class="player-tile-badge badge-mvp"]]Vote ouvert[[/span]][[/div]]',
-                '[[div]][[div class="player-tile-title"]]MVP & Chèvre 🐐[[/div]][[div id="tileSubMvp" class="player-tile-sub"]]Élisez le joueur du match[[/div]][[/div]]',
+                '[[div]][[div class="player-tile-title"]]Élection MVP[[/div]][[div id="tileSubMvp" class="player-tile-sub"]]Élisez le joueur du match[[/div]][[/div]]',
+              '[[/div]]',
+              '[[div class="player-tile tile-chevre" onclick="ouvrirModalChevre()"]]',
+                '[[div class="player-tile-top"]][[span class="player-tile-icon"]]🐐[[/span]][[span id="tileBadgeChevre" class="player-tile-badge badge-chevre"]]Bêtisier[[/span]][[/div]]',
+                '[[div]][[div class="player-tile-title"]]Trophée Chèvre[[/div]][[div id="tileSubChevre" class="player-tile-sub"]]Proposez & votez les casseroles[[/div]][[/div]]',
               '[[/div]]',
               '[[div class="player-tile tile-covoit" onclick="ouvrirModalCovoiturage()"]]',
                 '[[div class="player-tile-top"]][[span class="player-tile-icon"]]🚗[[/span]][[span id="tileBadgeCovoit" class="player-tile-badge badge-covoit"]]Trajets[[/span]][[/div]]',
@@ -3521,7 +3743,7 @@ function construireHtmlWebApp() {
                 '[[div class="player-tile-top"]][[span class="player-tile-icon"]]📅[[/span]][[span id="tileBadgeAbsence" class="player-tile-badge badge-absence"]]Prévenir[[/span]][[/div]]',
                 '[[div]][[div class="player-tile-title"]]Déclarer Absence[[/div]][[div id="tileSubAbsence" class="player-tile-sub"]]Indiquer vos indispos[[/div]][[/div]]',
               '[[/div]]',
-              '[[div class="player-tile tile-caisse" onclick="ouvrirModalCaisseNoire()"]]',
+              '[[div class="player-tile tile-caisse" style="grid-column:1/-1;" onclick="ouvrirModalCaisseNoire()"]]',
                 '[[div class="player-tile-top"]][[span class="player-tile-icon"]]💰[[/span]][[span id="tileBadgeCaisse" class="player-tile-badge" style="background:rgba(234,179,8,0.2);color:#fef08a;border-color:rgba(234,179,8,0.35);"]]Cagnotte[[/span]][[/div]]',
                 '[[div]][[div class="player-tile-title"]]Caisse Noire & Amendes[[/div]][[div id="tileSubCaisse" class="player-tile-sub"]]Ardoise, cagnotte & barème[[/div]][[/div]]',
               '[[/div]]',
@@ -4232,33 +4454,59 @@ function construireHtmlWebApp() {
         '[[button type="button" class="btn-reset" style="width:100%;margin-top:14px;background:#1e293b;padding:9px;" onclick="fermerModalGuideCoach()"]]Fermer le guide[[/button]]',
       '[[/div]]',
     '[[/div]]',
-    '[[div class="modal-bg" id="modalMvpChevreBg" onclick="fermerModalMvpChevreSurBg(event)"]]',
+    '[[div class="modal-bg" id="modalMvpBg" onclick="fermerModalMvpSurBg(event)"]]',
       '[[div class="modal-box" style="border-top:4px solid #f59e0b;max-width:480px;"]]',
         '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
-          '[[div style="font-weight:900;font-size:1.15rem;color:#fde68a;display:flex;align-items:center;gap:8px;"]]🏆 MVP & Chèvre du Match 🐐[[/div]]',
-          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalMvpChevre()"]]✕[[/button]]',
+          '[[div style="font-weight:900;font-size:1.15rem;color:#fde68a;display:flex;align-items:center;gap:8px;"]]🏆 Élection du MVP du Match[[/div]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalMvp()"]]✕[[/button]]',
         '[[/div]]',
-        '[[p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;"]]Votez pour le meilleur joueur du week-end (MVP) et pour le bêtisier / trophée casserole (Chèvre du match) ![[/p]]',
+        '[[p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;"]]Votez pour le meilleur joueur du week-end (MVP de l\'équipe) ![[/p]]',
         '[[div id="mvpFormBox" style="background:#0e1626;border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:14px;margin-bottom:14px;"]]',
           '[[div style="font-weight:800;font-size:0.86rem;color:#fcd34d;margin-bottom:10px;"]]🗳️ Déposer mon vote :[[/div]]',
-          '[[div style="margin-bottom:10px;"]]',
+          '[[div style="margin-bottom:12px;"]]',
             '[[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]⭐ Élu MVP (Meilleur Joueur) :[[/label]]',
             '[[select id="selVoteMvp" class="inp-field" style="padding:8px 12px;font-size:0.88rem;"]][[/select]]',
           '[[/div]]',
-          '[[div style="margin-bottom:12px;"]]',
-            '[[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]🐐 Élu Chèvre (Le bêtisier sympa) :[[/label]]',
-            '[[select id="selVoteChevre" class="inp-field" style="padding:8px 12px;font-size:0.88rem;"]][[/select]]',
-          '[[/div]]',
-          '[[button type="button" class="btn-enter" id="btnSubmitVoteMvp" style="margin:0;width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="enregistrerVoteMvp()"]]Enregistrer mon vote ![[/button]]',
+          '[[button type="button" class="btn-enter" id="btnSubmitVoteMvp" style="margin:0;width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="enregistrerVoteMvp()"]]Enregistrer mon vote MVP ![[/button]]',
           '[[div id="statusVoteMvp" style="font-size:0.78rem;color:var(--color-secondary);min-height:1.2em;text-align:center;margin-top:6px;"]][[/div]]',
         '[[/div]]',
         '[[div style="font-weight:800;font-size:0.88rem;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"]]',
-          '[[span]]📊 Podium & Résultats en direct[[/span]]',
+          '[[span]]📊 Podium MVP & Résultats en direct[[/span]]',
           '[[span id="mvpTotalVotesCount" style="font-size:0.72rem;color:#94a3b8;font-weight:600;"]]0 vote(s)[[/span]]',
         '[[/div]]',
         '[[div id="mvpPodiumContainer"]][[/div]]',
         '[[div id="coachMvpResetBox" style="display:none;margin-top:14px;border-top:1px solid rgba(148,163,184,0.15);padding-top:10px;text-align:center;"]]',
-          '[[button type="button" class="btn-reset" style="font-size:0.72rem;color:#f87171;" onclick="reinitialiserVotesMvpParCoach()"]]🔄 Réinitialiser les votes pour le prochain match (Coach)[[/button]]',
+          '[[button type="button" class="btn-reset" style="font-size:0.72rem;color:#f87171;" onclick="reinitialiserVotesMvpParCoach()"]]🔄 Réinitialiser les votes MVP pour le prochain match (Coach)[[/button]]',
+        '[[/div]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalChevreBg" onclick="fermerModalChevreSurBg(event)"]]',
+      '[[div class="modal-box" style="border-top:4px solid #ea580c;max-width:520px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[div style="font-weight:900;font-size:1.15rem;color:#fdba74;display:flex;align-items:center;gap:8px;"]]🐐 Trophée Chèvre du Match[[/div]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalChevre()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;"]]Le bêtisier sympa du match ! Chaque joueur peut proposer les casseroles du week-end et voter pour la plus belle action.[[/p]]',
+        '[[div id="chevreNewActionBox" style="background:#0e1626;border:1px solid rgba(234,88,12,0.3);border-radius:14px;padding:14px;margin-bottom:16px;"]]',
+          '[[div style="font-weight:800;font-size:0.86rem;color:#fdba74;margin-bottom:10px;display:flex;align-items:center;gap:6px;"]]➕ Proposer une action au bêtisier :[[/div]]',
+          '[[div style="margin-bottom:10px;"]]',
+            '[[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Description de la casserole :[[/label]]',
+            '[[input id="inpChevreActionDesc" class="inp-field" type="text" placeholder="Ex : Tir de 7m direct dans le plafond du gymnase..."]]',
+          '[[/div]]',
+          '[[div style="margin-bottom:12px;"]]',
+            '[[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Joueur concerné par l\'action :[[/label]]',
+            '[[select id="selChevreJoueurConcerne" class="inp-field" style="padding:8px 12px;font-size:0.88rem;"]][[/select]]',
+          '[[/div]]',
+          '[[button type="button" class="btn-enter" id="btnSubmitActionChevre" style="margin:0;width:100%;background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;" onclick="proposerActionChevreClient()"]]Proposer cette action au vote ![[/button]]',
+          '[[div id="statusActionChevre" style="font-size:0.78rem;color:#fdba74;min-height:1.2em;text-align:center;margin-top:6px;"]][[/div]]',
+        '[[/div]]',
+        '[[div style="font-weight:800;font-size:0.88rem;color:#e2e8f0;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;"]]',
+          '[[span]]🗳️ Actions en lice & Vote des joueurs[[/span]]',
+          '[[span id="chevreTotalCountBadge" style="font-size:0.72rem;color:#fdba74;font-weight:700;background:rgba(234,88,12,0.15);padding:2px 8px;border-radius:99px;border:1px solid rgba(234,88,12,0.3);"]]0 action(s)[[/span]]',
+        '[[/div]]',
+        '[[div id="chevreActionsListContainer" style="max-height:360px;overflow-y:auto;padding-right:2px;"]][[/div]]',
+        '[[div id="coachChevreResetBox" style="display:none;margin-top:14px;border-top:1px solid rgba(148,163,184,0.15);padding-top:10px;text-align:center;"]]',
+          '[[button type="button" class="btn-reset" style="font-size:0.72rem;color:#f87171;" onclick="reinitialiserChevreParCoach()"]]🔄 Réinitialiser les actions & votes Chèvre pour le prochain match (Coach)[[/button]]',
         '[[/div]]',
       '[[/div]]',
     '[[/div]]',
@@ -4647,7 +4895,7 @@ function construireHtmlWebApp() {
     'var TRAIN_MODE_TINDER = false; var TRAIN_SWIPE_HISTORIQUE = []; var TRAIN_ANIM_EN_COURS = false;',
     'var JOUEURS = []; var EFFECTIF_COMPLET = []; var MODE_TINDER = false; var HISTORIQUE_SWIPE = []; var ANIM_EN_COURS = false; var CONTEXTE_APERCU = null; var VUE_PRECEDENTE_APERCU = "appView";',
     'var SESSION_TEL = ""; var SESSION_PIN = ""; var SESSION_NOM = ""; var EST_COACH = false; var EST_TRESORIER = false; var ID_ABSENCE_EN_COURS = null; var CURRENT_MATCH_SALLE = "";',
-    'var INFOS_MATCHS = null; var COVOITURAGE_DATA = { conducteurs: [], passagers: [] }; var VOTES_MVP_DATA = { totalVotes: 0, podiumMvp: [], podiumChevre: [] }; var MES_ABSENCES = []; var STATUT_COVOIT_CHOISI = "conduis";',
+    'var INFOS_MATCHS = null; var COVOITURAGE_DATA = { conducteurs: [], passagers: [] }; var VOTES_MVP_DATA = { totalVotes: 0, podiumMvp: [], monVoteMvp: "" }; var CHEVRE_DATA = { totalActions: 0, totalVotes: 0, actions: [], podiumChevre: [], monVoteActionId: "" }; var MES_ABSENCES = []; var STATUT_COVOIT_CHOISI = "conduis";',
     'var CAISSE_NOIRE_DATA = { config: { devise: "€", objectifCagnotte: 300, objectifDescription: "Resto & Tournée de fin d\'année", moyenPaiement: "Lydia / Espèces au vestiaire", bareme: [] }, amendes: [], depenses: [], stats: { totalCollecte: 0, totalDu: 0, soldeCaisse: 0, totalDepenses: 0 } };',
     'var JOUEUR_MODAL_COURANT = null; var POSTE_MODAL_COURANT = ""; var PHOTO_MODAL_DATA = undefined;',
     'function afficherLoading(titre, sousTitre){',
@@ -5202,6 +5450,7 @@ function construireHtmlWebApp() {
       'if(document.getElementById("btnSwitchMode").style.display !== "inline-block") document.getElementById("btnSwitchMode").style.display = "inline-block";',
       'if(data.covoiturage) COVOITURAGE_DATA = data.covoiturage;',
       'if(data.votesMvp) VOTES_MVP_DATA = data.votesMvp;',
+      'if(data.chevreData) CHEVRE_DATA = data.chevreData;',
       'if(data.absences) MES_ABSENCES = data.absences;',
       'if(data.matchs) INFOS_MATCHS = data.matchs;',
       'if(data.caisseNoire) CAISSE_NOIRE_DATA = data.caisseNoire;',
@@ -6441,6 +6690,16 @@ function construireHtmlWebApp() {
         'if(tBadgeMvp) tBadgeMvp.textContent = "Vote ouvert";',
         'if(tSubMvp) tSubMvp.textContent = "Élisez le joueur du match";',
       '}',
+      'var tBadgeChv = document.getElementById("tileBadgeChevre");',
+      'var tSubChv = document.getElementById("tileSubChevre");',
+      'if(CHEVRE_DATA && CHEVRE_DATA.actions && CHEVRE_DATA.actions.length > 0){',
+        'if(tBadgeChv) tBadgeChv.textContent = CHEVRE_DATA.actions.length + " action(s)";',
+        'var topChv = CHEVRE_DATA.actions[0];',
+        'if(tSubChv) tSubChv.textContent = (topChv.voix > 0 ? "1er : " + (topChv.joueur ? topChv.joueur + " (" + topChv.voix + "v)" : topChv.voix + " voix") : "Votez pour la meilleure !");',
+      '} else {',
+        'if(tBadgeChv) tBadgeChv.textContent = "Bêtisier";',
+        'if(tSubChv) tSubChv.textContent = "Proposez vos casseroles";',
+      '}',
       'var tBadgeCov = document.getElementById("tileBadgeCovoit");',
       'var tSubCov = document.getElementById("tileSubCovoit");',
       'var nbPlacesDispos = 0;',
@@ -6487,93 +6746,219 @@ function construireHtmlWebApp() {
         'badgeCoachCaisse.textContent = (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " € en caisse • " + (CAISSE_NOIRE_DATA.stats.totalDu || 0) + " € impayés";',
       '}',
     '}',
-    'function ouvrirModalMvpChevre(){',
+    'function ouvrirModalMvp(){',
       'remplirSelectsMvp();',
       'rendrePodiumMvp();',
       'var cBox = document.getElementById("coachMvpResetBox"); if(cBox) cBox.style.display = EST_COACH ? "block" : "none";',
-      'document.getElementById("modalMvpChevreBg").style.display = "flex";',
-    '}',
-    'function fermerModalMvpChevre(){ document.getElementById("modalMvpChevreBg").style.display = "none"; }',
-    'function fermerModalMvpChevreSurBg(e){ if(e.target.id === "modalMvpChevreBg") fermerModalMvpChevre(); }',
+      'document.getElementById("modalMvpBg").style.display = "flex";',
+    '},',
+    'function fermerModalMvp(){ document.getElementById("modalMvpBg").style.display = "none"; },',
+    'function fermerModalMvpSurBg(e){ if(e.target.id === "modalMvpBg") fermerModalMvp(); },',
+    'function ouvrirModalMvpChevre(){ ouvrirModalMvp(); },',
+    'function fermerModalMvpChevre(){ fermerModalMvp(); fermerModalChevre(); },',
+    'function fermerModalMvpChevreSurBg(e){ fermerModalMvpSurBg(e); },',
     'function remplirSelectsMvp(){',
-      'var selM = document.getElementById("selVoteMvp"), selC = document.getElementById("selVoteChevre");',
-      'if(!selM || !selC) return;',
-      'selM.innerHTML = "<option value=\'\'>-- Choisir un coéquipier --</option>";',
-      'selC.innerHTML = "<option value=\'\'>-- Choisir un coéquipier --</option>";',
-      'var effectifTrie = (EFFECTIF_COMPLET || []).slice().sort(function(a,b){ return String(a.nom||"").localeCompare(String(b.nom||"")); });',
+      'var selM = document.getElementById("selVoteMvp");',
+      'if(!selM) return;',
+      'selM.innerHTML = "<option value=\'\'>-- Choisir le joueur du match --</option>";',
+      'var effectifTrie = (EFFECTIF_COMPLET || []).slice().sort(function(a,b){ return String(a.nom||\"\").localeCompare(String(b.nom||\"\")); });',
       'effectifTrie.forEach(function(j){',
-        'var o1 = document.createElement("option"); o1.value = j.nom; o1.textContent = j.nom + " (" + (j.poste || "Demi-Centre") + ")"; selM.appendChild(o1);',
-        'var o2 = document.createElement("option"); o2.value = j.nom; o2.textContent = j.nom + " (" + (j.poste || "Demi-Centre") + ")"; selC.appendChild(o2);',
+        'var o = document.createElement("option"); o.value = j.nom; o.textContent = j.nom + " (" + (j.poste || "Joueur") + ")";',
+        'if(VOTES_MVP_DATA && VOTES_MVP_DATA.monVoteMvp === j.nom) o.selected = true;',
+        'selM.appendChild(o);',
       '});',
-    '}',
+    '},',
     'function enregistrerVoteMvp(){',
-      'var nomMvp = document.getElementById("selVoteMvp").value;',
-      'var nomChevre = document.getElementById("selVoteChevre").value;',
-      'if(!nomMvp && !nomChevre){ afficherToast("Veuillez choisir un joueur pour au moins une des catégories.", "erreur"); return; }',
+      'var selM = document.getElementById("selVoteMvp");',
+      'var nomMvp = selM ? selM.value : "";',
+      'if(!nomMvp){ afficherToast("Veuillez sélectionner un joueur pour le titre de MVP.", "erreur"); return; }',
       'var status = document.getElementById("statusVoteMvp");',
       'var btn = document.getElementById("btnSubmitVoteMvp");',
       'if(status) status.innerHTML = "<span class=\'spinner-badge\'></span>Enregistrement de votre vote...";',
       'if(btn){ btn.disabled = true; btn.innerHTML = "<span class=\'spinner-inline\'></span>Enregistrement..."; }',
-      'afficherLoading("Vote MVP & Chèvre...", "Enregistrement de votre sélection...");',
+      'afficherLoading("Vote MVP...", "Enregistrement de votre vote pour " + nomMvp + "...");',
       'google.script.run.withSuccessHandler(function(res){',
         'masquerLoading();',
-        'if(btn){ btn.disabled = false; btn.textContent = "Enregistrer mon vote !"; }',
+        'if(btn){ btn.disabled = false; btn.textContent = "Enregistrer mon vote MVP !"; }',
         'if(status) status.textContent = "Vote pris en compte ! Merci pour votre participation.";',
         'VOTES_MVP_DATA = res.votesMvp || res || VOTES_MVP_DATA;',
         'rendrePodiumMvp();',
         'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
-        'afficherToast("Vote MVP & Chèvre enregistré !", "succes");',
+        'afficherToast("Vote MVP enregistré avec succès !", "succes");',
         'if(typeof confetti === "function") confetti({ particleCount: 75, spread: 65 });',
       '}).withFailureHandler(function(err){',
         'masquerLoading();',
-        'if(btn){ btn.disabled = false; btn.textContent = "Enregistrer mon vote !"; }',
+        'if(btn){ btn.disabled = false; btn.textContent = "Enregistrer mon vote MVP !"; }',
         'if(status) status.textContent = "Erreur : " + err.message;',
         'afficherToast(err.message, "erreur");',
-      '}).voterMvpChevre(SESSION_TEL, SESSION_PIN, nomMvp, nomChevre);',
-    '}',
+      '}).voterMvp(SESSION_TEL, SESSION_PIN, nomMvp);',
+    '},',
     'function rendrePodiumMvp(){',
       'var cont = document.getElementById("mvpPodiumContainer"); if(!cont) return;',
       'var totEl = document.getElementById("mvpTotalVotesCount");',
       'if(totEl) totEl.textContent = (VOTES_MVP_DATA.totalVotes || 0) + " vote(s)";',
       'var podMvp = (VOTES_MVP_DATA && VOTES_MVP_DATA.podiumMvp) || [];',
-      'var podChv = (VOTES_MVP_DATA && VOTES_MVP_DATA.podiumChevre) || [];',
-      'var html = "<div style=\'display:grid;grid-template-columns:1fr 1fr;gap:12px;\'>";',
-      'html += "<div><div style=\'font-weight:800;font-size:0.8rem;color:#fcd34d;margin-bottom:6px;text-align:center;\'>⭐ Podium MVP</div>";',
-      'if(podMvp.length === 0){ html += "<div style=\'font-size:0.75rem;color:#64748b;text-align:center;padding:12px;\'>Aucun vote pour le moment</div>"; }',
-      'else {',
-        'podMvp.forEach(function(item, idx){',
-          'var medal = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : "🥉");',
-          'var vCount = (item.votes !== undefined && item.votes !== null) ? item.votes : ((item.voix !== undefined && item.voix !== null) ? item.voix : 0);',
-          'html += "<div style=\'background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px 10px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;font-size:0.78rem;\'><span>" + medal + " <b>" + item.nom + "</b></span><span style=\'color:#fcd34d;font-weight:800;\'>" + vCount + " v</span></div>";',
-        '});',
+      'if(podMvp.length === 0){',
+        'cont.innerHTML = "<div style=\'font-size:0.8rem;color:#64748b;text-align:center;padding:18px;background:#090d16;border-radius:12px;border:1px dashed rgba(255,255,255,0.1);\'>Aucun vote pour le moment.<br><span style=\'font-size:0.75rem;color:#94a3b8;\'>Soyez le premier à élire le MVP du match !</span></div>";',
+        'return;',
       '}',
+      'var html = "<div style=\'display:flex;flex-direction:column;gap:6px;\'>";',
+      'var maxVoix = (podMvp[0] && (podMvp[0].voix || podMvp[0].votes)) || 1;',
+      'podMvp.forEach(function(item, idx){',
+        'var medal = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : "•"));',
+        'var vCount = (item.votes !== undefined && item.votes !== null) ? item.votes : ((item.voix !== undefined && item.voix !== null) ? item.voix : 0);',
+        'var isMonVote = (VOTES_MVP_DATA && VOTES_MVP_DATA.monVoteMvp === item.nom);',
+        'var pct = Math.max(8, Math.round((vCount / maxVoix) * 100));',
+        'html += "<div style=\'background:#090d16;border:1px solid " + (isMonVote ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)") + ";border-radius:10px;padding:8px 12px;position:relative;overflow:hidden;\'>";',
+        'html += "<div style=\'position:absolute;left:0;top:0;bottom:0;width:" + pct + "%;background:rgba(245,158,11,0.08);pointer-events:none;\'></div>";',
+        'html += "<div style=\'display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;font-size:0.82rem;\'>";',
+        'html += "<div style=\'display:flex;align-items:center;gap:8px;\'><span>" + medal + "</span><span style=\'font-weight:700;color:#fff;\'>" + item.nom + "</span>" + (isMonVote ? " <span style=\'font-size:0.68rem;background:rgba(245,158,11,0.2);color:#fbbf24;padding:1px 6px;border-radius:99px;font-weight:700;\'>Votre vote</span>" : "") + "</div>";',
+        'html += "<span style=\'color:#fcd34d;font-weight:800;font-size:0.85rem;\'>" + vCount + " vote(s)</span>";',
+        'html += "</div></div>";',
+      '});',
       'html += "</div>";',
-      'html += "<div><div style=\'font-weight:800;font-size:0.8rem;color:#fca5a5;margin-bottom:6px;text-align:center;\'>🐐 Podium Chèvre</div>";',
-      'if(podChv.length === 0){ html += "<div style=\'font-size:0.75rem;color:#64748b;text-align:center;padding:12px;\'>Aucun vote pour le moment</div>"; }',
-      'else {',
-        'podChv.forEach(function(item, idx){',
-          'var badge = idx === 0 ? "👑" : (idx === 1 ? "🥈" : "🥉");',
-          'var vCount = (item.votes !== undefined && item.votes !== null) ? item.votes : ((item.voix !== undefined && item.voix !== null) ? item.voix : 0);',
-          'html += "<div style=\'background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px 10px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;font-size:0.78rem;\'><span>" + badge + " <b>" + item.nom + "</b></span><span style=\'color:#fca5a5;font-weight:800;\'>" + vCount + " v</span></div>";',
-        '});',
-      '}',
-      'html += "</div></div>";',
       'cont.innerHTML = html;',
-    '}',
+    '},',
     'function reinitialiserVotesMvpParCoach(){',
-      'if(!confirm("Réinitialiser tous les votes MVP et Chèvre pour le prochain match ?")) return;',
+      'if(!confirm("Réinitialiser tous les votes MVP pour le prochain match ?")) return;',
       'afficherLoading("Réinitialisation...", "Remise à zéro des votes MVP...");',
       'google.script.run.withSuccessHandler(function(res){',
         'masquerLoading();',
-        'VOTES_MVP_DATA = { totalVotes: 0, podiumMvp: [], podiumChevre: [] };',
+        'VOTES_MVP_DATA = { totalVotes: 0, podiumMvp: [], monVoteMvp: "" };',
         'rendrePodiumMvp();',
         'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
-        'afficherToast("Votes MVP & Chèvre remis à zéro pour ce match.", "info");',
+        'afficherToast("Votes MVP remis à zéro pour ce match.", "info");',
       '}).withFailureHandler(function(err){',
         'masquerLoading();',
         'afficherToast(err.message, "erreur");',
       '}).reinitialiserVotesMvp(SESSION_TEL, SESSION_PIN);',
-    '}',
+    '},',
+    'function ouvrirModalChevre(){',
+      'remplirSelectsChevre();',
+      'rendreActionsChevre();',
+      'var cBox = document.getElementById("coachChevreResetBox"); if(cBox) cBox.style.display = EST_COACH ? "block" : "none";',
+      'document.getElementById("modalChevreBg").style.display = "flex";',
+    '},',
+    'function fermerModalChevre(){ document.getElementById("modalChevreBg").style.display = "none"; },',
+    'function fermerModalChevreSurBg(e){ if(e.target.id === "modalChevreBg") fermerModalChevre(); },',
+    'function remplirSelectsChevre(){',
+      'var sel = document.getElementById("selChevreJoueurConcerne");',
+      'if(!sel) return;',
+      'sel.innerHTML = "<option value=\'\'>-- Joueur concerné (ou laisser vide si collectif) --</option>";',
+      'var effectifTrie = (EFFECTIF_COMPLET || []).slice().sort(function(a,b){ return String(a.nom||\"\").localeCompare(String(b.nom||\"\")); });',
+      'effectifTrie.forEach(function(j){',
+        'var o = document.createElement("option"); o.value = j.nom; o.textContent = j.nom + " (" + (j.poste || "Joueur") + ")";',
+        'sel.appendChild(o);',
+      '});',
+    '},',
+    'function proposerActionChevreClient(){',
+      'var inpDesc = document.getElementById("inpChevreActionDesc");',
+      'var selJ = document.getElementById("selChevreJoueurConcerne");',
+      'var desc = inpDesc ? inpDesc.value.trim() : "";',
+      'var joueur = selJ ? selJ.value : "";',
+      'if(!desc){ afficherToast("Veuillez décrire l\'action ou la casserole.", "erreur"); return; }',
+      'var btn = document.getElementById("btnSubmitActionChevre");',
+      'var status = document.getElementById("statusActionChevre");',
+      'if(status) status.innerHTML = "<span class=\'spinner-badge\'></span>Publication en cours...";',
+      'if(btn){ btn.disabled = true; btn.innerHTML = "<span class=\'spinner-inline\'></span>Publication..."; }',
+      'afficherLoading("Trophée Chèvre...", "Publication de la nouvelle casserole...");',
+      'google.script.run.withSuccessHandler(function(res){',
+        'masquerLoading();',
+        'if(btn){ btn.disabled = false; btn.textContent = "Proposer cette action au vote !"; }',
+        'if(status) status.textContent = "Action ajoutée avec succès au bêtisier !";',
+        'if(inpDesc) inpDesc.value = "";',
+        'if(selJ) selJ.value = "";',
+        'CHEVRE_DATA = res.chevreData || res || CHEVRE_DATA;',
+        'rendreActionsChevre();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Casserole ajoutée au bêtisier !", "succes");',
+      '}).withFailureHandler(function(err){',
+        'masquerLoading();',
+        'if(btn){ btn.disabled = false; btn.textContent = "Proposer cette action au vote !"; }',
+        'if(status) status.textContent = "Erreur : " + err.message;',
+        'afficherToast(err.message, "erreur");',
+      '  }).proposerActionChevre(SESSION_TEL, SESSION_PIN, desc, joueur);',
+    '},',
+    'function voterActionChevreClient(idAction){',
+      'if(!idAction) return;',
+      'afficherLoading("Vote Chèvre...", "Mise à jour de votre vote...");',
+      'google.script.run.withSuccessHandler(function(res){',
+        'masquerLoading();',
+        'CHEVRE_DATA = res.chevreData || res || CHEVRE_DATA;',
+        'rendreActionsChevre();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'var aVote = (CHEVRE_DATA.monVoteActionId === idAction);',
+        'afficherToast(aVote ? "Votre vote pour cette casserole est pris en compte !" : "Vote retiré.", "succes");',
+        'if(aVote && typeof confetti === "function") confetti({ particleCount: 50, spread: 55 });',
+      '}).withFailureHandler(function(err){',
+        'masquerLoading();',
+        'afficherToast(err.message, "erreur");',
+      '  }).voterActionChevre(SESSION_TEL, SESSION_PIN, idAction);',
+    '},',
+    'function supprimerActionChevreClient(idAction){',
+      'if(!idAction) return;',
+      'if(!confirm("Voulez-vous vraiment supprimer cette action du bêtisier ?")) return;',
+      'afficherLoading("Suppression...", "Suppression de l\'action...");',
+      'google.script.run.withSuccessHandler(function(res){',
+        'masquerLoading();',
+        'CHEVRE_DATA = res.chevreData || res || CHEVRE_DATA;',
+        'rendreActionsChevre();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Action supprimée.", "info");',
+      '}).withFailureHandler(function(err){',
+        'masquerLoading();',
+        'afficherToast(err.message, "erreur");',
+      '  }).supprimerActionChevre(SESSION_TEL, SESSION_PIN, idAction);',
+    '},',
+    'function rendreActionsChevre(){',
+      'var cont = document.getElementById("chevreActionsListContainer"); if(!cont) return;',
+      'var badge = document.getElementById("chevreTotalCountBadge");',
+      'var nbActs = (CHEVRE_DATA && CHEVRE_DATA.actions) ? CHEVRE_DATA.actions.length : 0;',
+      'var nbVotes = (CHEVRE_DATA && CHEVRE_DATA.totalVotes) ? CHEVRE_DATA.totalVotes : 0;',
+      'if(badge) badge.textContent = nbActs + " action(s) • " + nbVotes + " vote(s)";',
+      'var acts = (CHEVRE_DATA && CHEVRE_DATA.actions) || [];',
+      'if(acts.length === 0){',
+        'cont.innerHTML = "<div style=\'text-align:center;padding:24px 12px;background:#090d16;border-radius:12px;border:1px dashed rgba(234,88,12,0.25);color:#94a3b8;font-size:0.8rem;line-height:1.5;\'>🐐 <b>Aucune action proposée pour le moment.</b><br><span style=\'font-size:0.75rem;color:#64748b;\'>Un tir dans les nuages ? Une passe à l\'arbitre ? Remplissez le formulaire ci-dessus pour ouvrir le bal !</span></div>";',
+        'return;',
+      '}',
+      'var html = "<div style=\'display:flex;flex-direction:column;gap:10px;\'>";',
+      'acts.forEach(function(act, idx){',
+        'var isLeader = (idx === 0 && act.voix > 0);',
+        'var isVoted = act.estMonVote || (CHEVRE_DATA.monVoteActionId === act.id);',
+        'var canDelete = EST_COACH || (act.auteurTel && normaliserTelClient(act.auteurTel) === normaliserTelClient(SESSION_TEL)) || (act.auteur && act.auteur === SESSION_NOM);',
+        'html += "<div class=\'chevre-action-card" + (isLeader ? " chevre-action-leader" : "") + (isVoted ? " chevre-action-voted" : "") + "\'>";',
+        'html += "<div class=\'chevre-action-top\'>";',
+        'html += "<div style=\'display:flex;align-items:center;gap:6px;\'>";',
+        'if(isLeader) html += "<span style=\'font-size:0.85rem;background:rgba(234,88,12,0.3);color:#fdba74;padding:2px 8px;border-radius:99px;font-weight:900;border:1px solid rgba(234,88,12,0.4);\'>👑 #1 Chèvre</span>";',
+        'if(act.joueur) html += "<span class=\'chevre-action-target\'>🎯 " + act.joueur + "</span>";',
+        'html += "</div>";',
+        'if(canDelete) html += "<button type=\'button\' class=\'btn-reset\' style=\'color:#f87171;font-size:0.72rem;padding:2px 6px;\' title=\'Supprimer cette action\' onclick=\'supprimerActionChevreClient(\\\"" + act.id + "\\\")\'>🗑️</button>";',
+        'html += "</div>";',
+        'html += "<div class=\'chevre-action-desc\'>« " + act.description + " »</div>";',
+        'html += "<div class=\'chevre-action-bottom\'>";',
+        'html += "<div class=\'chevre-action-meta\'>Proposé par " + (act.auteur || "un coéquipier") + "</div>";',
+        'html += "<button type=\'button\' class=\'btn-reset " + (isVoted ? "btn-vote-chevre-active" : "btn-vote-chevre") + "\' onclick=\'voterActionChevreClient(\\\"" + act.id + "\\\")\'>" + (isVoted ? "✔️ Voté (" + act.voix + "v)" : "🐐 Voter (" + act.voix + ")") + "</button>";',
+        'html += "</div>";',
+        'html += "</div>";',
+      '});',
+      'html += "</div>";',
+      'cont.innerHTML = html;',
+    '},',
+    'function normaliserTelClient(t){ return String(t||\"\").replace(/[^0-9]/g,\"\"); },',
+    'function reinitialiserChevreParCoach(){',
+      'if(!confirm("Réinitialiser toutes les propositions et votes du Trophée Chèvre pour le prochain match ?")) return;',
+      'afficherLoading("Réinitialisation...", "Remise à zéro du trophée Chèvre...");',
+      'google.script.run.withSuccessHandler(function(res){',
+        'masquerLoading();',
+        'CHEVRE_DATA = { totalActions: 0, totalVotes: 0, actions: [], podiumChevre: [], monVoteActionId: "" };',
+        'rendreActionsChevre();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Trophée Chèvre remis à zéro pour ce match.", "info");',
+      '}).withFailureHandler(function(err){',
+        'masquerLoading();',
+        'afficherToast(err.message, "erreur");',
+      '  }).reinitialiserVotesChevre(SESSION_TEL, SESSION_PIN);',
+    '},',
     'function selectionnerStatutCovoit(statut){',
       'STATUT_COVOIT_CHOISI = statut;',
       'var btnCond = document.getElementById("btnCovoitConduis");',
@@ -8143,6 +8528,8 @@ function construireHtmlWebApp() {
         'if(typeof fermerModalConfigEntrainements === "function") fermerModalConfigEntrainements();',
         'if(typeof fermerModalGuideCoach === "function") fermerModalGuideCoach();',
         'if(typeof fermerModalNouveauJoueur === "function") fermerModalNouveauJoueur();',
+        'if(typeof fermerModalMvp === "function") fermerModalMvp();',
+        'if(typeof fermerModalChevre === "function") fermerModalChevre();',
         'if(typeof fermerModalMvpChevre === "function") fermerModalMvpChevre();',
         'if(typeof fermerModalCovoiturage === "function") fermerModalCovoiturage();',
         'if(typeof fermerModalAbsence === "function") fermerModalAbsence();',
