@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.8.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -1431,6 +1431,215 @@ function enregistrerChouchou(telCoach, pinCoach, nomJoueur) {
 }
 
 /**
+ * -------------------------------------------------------------
+ * FONCTIONNALITÉS JOUEURS (ESPACE JOUEUR, VOTE MVP, COVOITURAGE, ABSENCES)
+ * -------------------------------------------------------------
+ */
+
+/**
+ * Enregistre ou met à jour le covoiturage d'un joueur
+ */
+function enregistrerCovoiturage(tel, pin, actionType, nbPlaces, conducteurNom) {
+  const auth = authentifierUtilisateur(tel, pin);
+  const props = PropertiesService.getScriptProperties();
+  let covoit = {};
+  try {
+    const raw = props.getProperty('COVOITURAGE_DATA');
+    if (raw) covoit = JSON.parse(raw);
+  } catch (e) { covoit = {}; }
+
+  if (!covoit.conducteurs) covoit.conducteurs = [];
+  if (!covoit.passagers) covoit.passagers = [];
+
+  // Retirer le joueur des listes existantes
+  covoit.conducteurs = covoit.conducteurs.filter(function(c) { return c.nom !== auth.nom; });
+  covoit.passagers = covoit.passagers.filter(function(p) { return p.nom !== auth.nom; });
+
+  if (actionType === 'conducteur') {
+    const places = parseInt(nbPlaces, 10) || 3;
+    covoit.conducteurs.push({ nom: auth.nom, tel: auth.telephone, places: places, passagers: [] });
+  } else if (actionType === 'passager') {
+    covoit.passagers.push({ nom: auth.nom, tel: auth.telephone, avec: String(conducteurNom || '').trim() });
+    if (conducteurNom) {
+      covoit.conducteurs.forEach(function(c) {
+        if (c.nom.toLowerCase() === String(conducteurNom).toLowerCase().trim()) {
+          if (!c.passagers) c.passagers = [];
+          if (c.passagers.indexOf(auth.nom) === -1) c.passagers.push(auth.nom);
+        }
+      });
+    }
+  }
+
+  props.setProperty('COVOITURAGE_DATA', JSON.stringify(covoit));
+  return { ok: true, covoiturage: covoit };
+}
+
+/**
+ * Récupère les données de covoiturage
+ */
+function getCovoiturageData() {
+  const props = PropertiesService.getScriptProperties();
+  try {
+    const raw = props.getProperty('COVOITURAGE_DATA');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { conducteurs: [], passagers: [] };
+}
+
+/**
+ * Réinitialise le covoiturage pour un nouveau match
+ */
+function reinitialiserCovoiturage(telCoach, pinCoach) {
+  const ss = getSpreadsheet();
+  if (!verifierDroitsCoachOuDev(ss, normaliserNumero(telCoach), String(pinCoach || '').trim())) {
+    throw new Error('Action réservée aux coachs autorisés.');
+  }
+  const clean = { conducteurs: [], passagers: [] };
+  PropertiesService.getScriptProperties().setProperty('COVOITURAGE_DATA', JSON.stringify(clean));
+  return { ok: true, covoiturage: clean };
+}
+
+/**
+ * Enregistre le vote MVP & Chèvre d'un joueur
+ */
+function voterMvpChevre(tel, pin, nomMvp, nomChevre) {
+  const auth = authentifierUtilisateur(tel, pin);
+  const props = PropertiesService.getScriptProperties();
+  let votes = {};
+  try {
+    const raw = props.getProperty('VOTES_MVP_DATA');
+    if (raw) votes = JSON.parse(raw);
+  } catch (e) { votes = {}; }
+
+  if (!votes.liste) votes.liste = {};
+
+  votes.liste[auth.telephone] = {
+    votant: auth.nom,
+    mvp: String(nomMvp || '').trim(),
+    chevre: String(nomChevre || '').trim(),
+    date: new Date().toISOString()
+  };
+
+  props.setProperty('VOTES_MVP_DATA', JSON.stringify(votes));
+  return calculerResultatsVotesMvp(votes);
+}
+
+/**
+ * Calcule le podium des votes MVP et Chèvre
+ */
+function calculerResultatsVotesMvp(votesData) {
+  const decompteMvp = {};
+  const decompteChevre = {};
+  const liste = (votesData && votesData.liste) ? votesData.liste : {};
+  let totalVotes = 0;
+
+  Object.values(liste).forEach(function(v) {
+    totalVotes++;
+    if (v.mvp) decompteMvp[v.mvp] = (decompteMvp[v.mvp] || 0) + 1;
+    if (v.chevre) decompteChevre[v.chevre] = (decompteChevre[v.chevre] || 0) + 1;
+  });
+
+  const trier = function(obj) {
+    return Object.keys(obj).map(function(nom) {
+      return { nom: nom, voix: obj[nom] };
+    }).sort(function(a, b) { return b.voix - a.voix; });
+  };
+
+  return {
+    ok: true,
+    totalVotes: totalVotes,
+    podiumMvp: trier(decompteMvp),
+    podiumChevre: trier(decompteChevre)
+  };
+}
+
+/**
+ * Récupère les votes MVP et le podium actuel
+ */
+function getVotesMvpData() {
+  const props = PropertiesService.getScriptProperties();
+  let votes = {};
+  try {
+    const raw = props.getProperty('VOTES_MVP_DATA');
+    if (raw) votes = JSON.parse(raw);
+  } catch (e) {}
+  return calculerResultatsVotesMvp(votes);
+}
+
+/**
+ * Réinitialise les votes MVP pour le prochain match
+ */
+function reinitialiserVotesMvp(telCoach, pinCoach) {
+  const ss = getSpreadsheet();
+  if (!verifierDroitsCoachOuDev(ss, normaliserNumero(telCoach), String(pinCoach || '').trim())) {
+    throw new Error('Action réservée aux coachs autorisés.');
+  }
+  const clean = { liste: {} };
+  PropertiesService.getScriptProperties().setProperty('VOTES_MVP_DATA', JSON.stringify(clean));
+  return calculerResultatsVotesMvp(clean);
+}
+
+/**
+ * Déclare une absence à l'avance pour le joueur
+ */
+function declarerAbsenceJoueur(tel, pin, dateDebut, dateFin, motif) {
+  const auth = authentifierUtilisateur(tel, pin);
+  const ss = getSpreadsheet();
+  const shEff = ss.getSheetByName('Effectif');
+  const dDeb = String(dateDebut || '').trim();
+  const dFin = String(dateFin || '').trim();
+  const rMotif = String(motif || 'Non renseigné').trim();
+
+  if (!dDeb) throw new Error('Veuillez indiquer au moins une date de début.');
+
+  const props = PropertiesService.getScriptProperties();
+  let absences = [];
+  try {
+    const raw = props.getProperty('ABSENCES_JOUEURS');
+    if (raw) absences = JSON.parse(raw);
+  } catch (e) { absences = []; }
+
+  const nouvelleAbsence = {
+    nom: auth.nom,
+    tel: auth.telephone,
+    dateDebut: dDeb,
+    dateFin: dFin || dDeb,
+    motif: rMotif,
+    creeLe: new Date().toISOString()
+  };
+
+  absences.push(nouvelleAbsence);
+  props.setProperty('ABSENCES_JOUEURS', JSON.stringify(absences));
+
+  if (shEff) {
+    const rows = shEff.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (normaliserNumero(dechiffrerNumero(rows[i][1])) === auth.telephone) {
+        const noteActuelle = String(rows[i][6] || '').trim();
+        const noteAbsence = 'Absent ' + (dDeb === dFin || !dFin ? dDeb : ('du ' + dDeb + ' au ' + dFin)) + ' (' + rMotif + ')';
+        const nouvelleNote = noteActuelle ? (noteActuelle + ' • ' + noteAbsence) : noteAbsence;
+        shEff.getRange(i + 1, 7).setValue(nouvelleNote);
+        break;
+      }
+    }
+  }
+
+  return { ok: true, absences: absences.filter(function(a) { return a.tel === auth.telephone; }) };
+}
+
+/**
+ * Récupère les absences des joueurs
+ */
+function getAbsencesJoueurs() {
+  const props = PropertiesService.getScriptProperties();
+  try {
+    const raw = props.getProperty('ABSENCES_JOUEURS');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return [];
+}
+
+/**
  * Permet au coach d'ajouter un nouveau joueur dans l'onglet Effectif
  */
 function ajouterJoueurParCoach(telCoach, pinCoach, joueurData) {
@@ -1847,10 +2056,35 @@ function lireDonneesCoach() {
   effectifComplet.sort(trierParNom);
 
   const rowsMatchs = shMatchs ? shMatchs.getRange('B4:K6').getValues() : [];
+  const extraireDetailMatch = function(row, nomDefaut) {
+    if (!row || !row[0]) return { label: nomDefaut, aMatch: false, adversaire: '', salle: '', date: '', heure: '', rdv: '' };
+    const dateM = String(row[2] || '');
+    const heureM = String(row[3] || '');
+    const heureRdv = String(row[4] || '');
+    const lieu = String(row[5] || '');
+    const adv = String(row[6] || '');
+    const salle = String(row[7] || '');
+    const libelle = String(row[8] || '');
+    const aMatch = Boolean(adv && adv !== '-' && !/pas de match/i.test(adv));
+    return {
+      label: (libelle && libelle !== '-') ? libelle : nomDefaut,
+      aMatch: aMatch,
+      date: dateM,
+      heure: heureM,
+      rdv: heureRdv,
+      lieu: lieu,
+      adversaire: adv,
+      salle: salle
+    };
+  };
+
   const infosMatchs = {
+    eq1: extraireDetailMatch(rowsMatchs[0], 'Équipe ' + cfg.nomEquipe1),
+    eq2: extraireDetailMatch(rowsMatchs[1], 'Équipe ' + cfg.nomEquipe2),
+    eq3: extraireDetailMatch(rowsMatchs[2], 'Équipe ' + (cfg.nomEquipe3 || 'Équipe 3')),
     label1B: (rowsMatchs[0] && rowsMatchs[0][8] && rowsMatchs[0][8] !== '-') ? rowsMatchs[0][8] : ('Équipe ' + cfg.nomEquipe1),
     label1C: (rowsMatchs[1] && rowsMatchs[1][8] && rowsMatchs[1][8] !== '-') ? rowsMatchs[1][8] : ('Équipe ' + cfg.nomEquipe2),
-    label1D: (rowsMatchs[2] && rowsMatchs[2][8] && rowsMatchs[2][8] !== '-') ? rowsMatchs[2][8] : ('Équipe ' + cfg.nomEquipe3)
+    label1D: (rowsMatchs[2] && rowsMatchs[2][8] && rowsMatchs[2][8] !== '-') ? rowsMatchs[2][8] : ('Équipe ' + (cfg.nomEquipe3 || 'Équipe 3'))
   };
 
   // Récupération de la dernière composition enregistrée pour rechargement express
@@ -1897,6 +2131,9 @@ function lireDonneesCoach() {
     seancesTrain: cfg.seancesTrain,
     effectif: effectifComplet,
     derniereCompo: derniereCompo,
+    covoiturage: getCovoiturageData(),
+    votesMvp: getVotesMvpData(),
+    absences: getAbsencesJoueurs(),
     clubConfig: {
       nomClub: cfg.nomClub,
       logoUrl: cfg.logoUrl,
@@ -2287,7 +2524,8 @@ function construireHtmlWebApp() {
     '.train-type-pill.active{background:var(--color-primary);color:var(--color-primary-text);box-shadow:0 2px 8px rgba(0,0,0,0.3);font-weight:800;}',
     '.train-info input{width:60px;margin-left:6px;padding:5px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:#05070d;color:#f8fafc;}',
     '#homeView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box;}',
-    '.home-card{background:rgba(15,23,42,0.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.1);border-top:4px solid var(--color-primary);border-radius:28px;padding:34px 28px;max-width:460px;width:100%;text-align:center;box-shadow:0 30px 70px -15px rgba(0,0,0,0.8);}',
+    '.home-card{background:rgba(15,23,42,0.82);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.1);border-top:4px solid var(--color-primary);border-radius:28px;padding:34px 28px;max-width:460px;width:100%;text-align:center;box-shadow:0 30px 70px -15px rgba(0,0,0,0.8);transition:max-width 0.3s ease;}',
+    'body.user-logged-in .home-card{max-width:540px;}',
     '.home-logo{font-size:3.2rem;line-height:1;margin-bottom:8px;}',
     '.home-card h1{margin:0 0 4px 0;font-size:1.6rem;letter-spacing:-0.4px;font-weight:900;}',
     '.home-sub{color:#94a3b8;font-size:0.85rem;margin:0 0 18px 0;}',
@@ -2300,7 +2538,26 @@ function construireHtmlWebApp() {
     '.dash-tile:hover{background:rgba(30,41,59,0.85);border-color:rgba(255,255,255,0.2);transform:translateY(-2px);box-shadow:0 12px 28px -6px rgba(0,0,0,0.6);}',
     '.dash-tile-title{font-weight:800;font-size:0.88rem;color:#f8fafc;display:flex;align-items:center;gap:6px;}',
     '.dash-tile-desc{font-size:0.72rem;color:#94a3b8;margin-top:3px;line-height:1.3;}',
-    '.player-athlete-card{width:220px;height:260px;position:relative;border-radius:22px;overflow:hidden;border:2px solid var(--color-primary);background:#05070d;display:flex;flex-direction:column;justify-content:flex-end;padding:14px;box-sizing:border-box;box-shadow:0 14px 35px rgba(0,0,0,0.6);}',
+    '.player-athlete-card{width:260px;height:310px;position:relative;border-radius:24px;overflow:hidden;border:2px solid var(--color-primary);background:#05070d;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;box-sizing:border-box;box-shadow:0 16px 40px rgba(0,0,0,0.65);margin:0 auto;transition:all 0.25s ease;}',
+    '.player-athlete-card:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 22px 45px rgba(0,0,0,0.8);border-color:var(--color-secondary);}',
+    '.player-athlete-card .card-logo-watermark{position:absolute;top:10px;left:10px;width:38px;height:38px;opacity:0.65;object-fit:contain;z-index:2;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5));}',
+    '.player-hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:6px;}',
+    '.player-tile{background:rgba(30,41,59,0.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:12px;text-align:left;cursor:pointer;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;justify-content:space-between;min-height:86px;}',
+    '.player-tile:hover{background:rgba(30,41,59,0.9);border-color:var(--color-secondary);transform:translateY(-2px);box-shadow:0 10px 24px -4px rgba(0,0,0,0.5);}',
+    '.player-tile-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}',
+    '.player-tile-icon{font-size:1.35rem;line-height:1;}',
+    '.player-tile-badge{font-size:0.66rem;padding:2px 7px;border-radius:99px;font-weight:800;background:rgba(99,102,241,0.2);color:#c7d2fe;border:1px solid rgba(99,102,241,0.3);}',
+    '.player-tile-title{font-size:0.86rem;font-weight:800;color:#f8fafc;}',
+    '.player-tile-sub{font-size:0.72rem;color:#94a3b8;margin-top:2px;line-height:1.25;}',
+    '.match-hub-banner{background:linear-gradient(145deg,rgba(15,23,42,0.9),rgba(30,41,59,0.7));border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:14px;width:100%;box-sizing:border-box;text-align:left;}',
+    '.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:16px 0;height:140px;}',
+    '.podium-step{flex:1;max-width:110px;background:rgba(30,41,59,0.8);border-radius:14px 14px 0 0;padding:10px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative;border:1px solid rgba(255,255,255,0.1);transition:transform 0.2s;}',
+    '.podium-step:hover{transform:translateY(-3px);}',
+    '.podium-1{height:100%;border-top:3px solid #fbbf24;background:linear-gradient(to top,rgba(30,41,59,0.9),rgba(245,158,11,0.2));}',
+    '.podium-2{height:80%;border-top:3px solid #cbd5e1;background:linear-gradient(to top,rgba(30,41,59,0.9),rgba(148,163,184,0.2));}',
+    '.podium-3{height:65%;border-top:3px solid #f97316;background:linear-gradient(to top,rgba(30,41,59,0.9),rgba(234,88,12,0.2));}',
+    '.covoit-card{background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:10px 12px;margin-bottom:8px;text-align:left;}',
+    '.absence-chip{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;padding:8px 10px;border-radius:10px;font-size:0.78rem;margin-bottom:6px;text-align:left;}',
     '.roster-wrap{max-width:1200px;margin:16px auto 30px;padding:0 16px;}',
     '.roster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:14px;}',
     '.rcard{background:rgba(30,41,59,0.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.22s cubic-bezier(0.16,1,0.3,1);box-shadow:0 6px 18px rgba(0,0,0,0.35);}',
@@ -2336,18 +2593,29 @@ function construireHtmlWebApp() {
           '[[div class="home-status" id="loginError" style="color:#f87171;text-align:center;"]][[/div]]',
           '[[button class="btn-enter" id="btnLogin" onclick="seConnecter()"]]Se connecter[[/button]]',
         '[[/div]]',
-        '[[div id="playerBox" style="display:none;flex-direction:column;align-items:center;gap:14px;width:100%;"]]',
+        '[[div id="playerBox" style="display:none;flex-direction:column;align-items:center;gap:12px;width:100%;"]]',
           '[[div id="playerPreviewCard" class="player-athlete-card"]]',
+            '[[img id="playerCardLogo" class="card-logo-watermark" src="' + cfg.logoUrl + '" alt="Club"]]',
             '[[img id="playerImgPreview" class="tbg-photo" style="display:none;"]]',
             '[[div class="tbg-overlay"]][[/div]]',
-            '[[div id="playerInitialPreview" class="tavatar" style="position:absolute;top:32px;left:50%;transform:translateX(-50%);margin:0;"]]J[[/div]]',
-            '[[div style="position:relative;z-index:2;text-align:center;"]]',
-              '[[div id="playerNomPreview" style="font-weight:900;font-size:1.35rem;letter-spacing:0.3px;"]]Joueur[[/div]]',
-              '[[div id="playerPostePreview" style="font-size:0.82rem;color:var(--color-secondary);font-weight:700;margin-top:2px;"]]Poste[[/div]]',
+            '[[div id="playerInitialPreview" class="tavatar" style="position:absolute;top:38px;left:50%;transform:translateX(-50%);margin:0;"]]J[[/div]]',
+            '[[div style="position:relative;z-index:2;text-align:center;width:100%;"]]',
+              '[[div id="playerChouchouBadgeCard" style="display:none;margin-bottom:4px;"]][[span class="chouchou-badge" style="font-size:0.75rem;padding:3px 10px;"]]❤️ Chouchou du coach[[/span]][[/div]]',
+              '[[div id="playerNomPreview" style="font-weight:900;font-size:1.35rem;letter-spacing:0.3px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.8);"]]Joueur[[/div]]',
+              '[[div id="playerPostePreview" style="font-size:0.84rem;color:var(--color-secondary);font-weight:700;margin-top:2px;text-shadow:0 2px 4px rgba(0,0,0,0.8);"]]Poste[[/div]]',
+              '[[div style="display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;"]]',
+                '[[span id="playerAssiduiteBadge" style="font-size:0.7rem;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);padding:3px 8px;border-radius:99px;border:1px solid rgba(255,255,255,0.15);color:#e2e8f0;font-weight:700;"]]⚡ Assiduité : --[[/span]]',
+                '[[span id="playerStatutPresenceBadge" style="font-size:0.7rem;background:rgba(34,197,94,0.2);backdrop-filter:blur(6px);padding:3px 8px;border-radius:99px;border:1px solid rgba(34,197,94,0.4);color:#86efac;font-weight:700;"]]✓ Actif[[/span]]',
+              '[[/div]]',
             '[[/div]]',
           '[[/div]]',
-          '[[div id="posteSelectBox" style="width:100%;text-align:left;"]]',
-            '[[label style="font-size:0.8rem;color:#94a3b8;font-weight:600;display:block;margin-bottom:6px;"]]Mon poste sur le terrain :[[/label]]',
+          '[[div style="display:flex;gap:6px;width:100%;margin-top:2px;"]]',
+            '[[button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(30,41,59,0.8);" onclick="ouvrirSelecteurPhotoJoueur()"]]📸 Photo[[/button]]',
+            '[[button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(30,41,59,0.8);" onclick="togglePosteSelect()"]]🎯 Poste ▾[[/button]]',
+            '[[button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(99,102,241,0.25);border-color:#6366f1;color:#e0e7ff;" onclick="partagerMaCarteJoueur()"]]📲 Partager[[/button]]',
+          '[[/div]]',
+          '[[div id="posteSelectBox" style="width:100%;text-align:left;display:none;background:rgba(15,23,42,0.7);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"]]',
+            '[[label style="font-size:0.78rem;color:#94a3b8;font-weight:600;display:block;margin-bottom:6px;"]]Mon poste préféré sur le terrain :[[/label]]',
             '[[select id="selPosteJoueur" class="inp-field" onchange="changerMonPoste()"]]',
               '[[option value="Gardien"]]Gardien[[/option]]',
               '[[option value="Ailier Gauche"]]Ailier Gauche[[/option]]',
@@ -2359,8 +2627,38 @@ function construireHtmlWebApp() {
             '[[/select]]',
           '[[/div]]',
           '[[input type="file" id="filePhoto" accept="image/*" style="display:none;" onchange="chargerFichierPhoto(event)"]]',
-          '[[button class="btn-enter" style="width:100%;" onclick="ouvrirSelecteurPhotoJoueur()"]]Choisir ma photo de profil[[/button]]',
           '[[div class="home-status" id="photoStatus"]][[/div]]',
+          '[[div id="matchHubBanner" class="match-hub-banner"]]',
+            '[[div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"]]',
+              '[[span id="matchHubStatutBadge" style="font-size:0.76rem;font-weight:800;padding:3px 9px;border-radius:99px;background:rgba(234,179,8,0.2);color:#facc15;border:1px solid rgba(234,179,8,0.3);"]]⏳ MATCH DU WEEK-END[[/span]]',
+              '[[span id="matchHubEquipeBadge" style="font-size:0.75rem;font-weight:700;color:#94a3b8;"]][[/span]]',
+            '[[/div]]',
+            '[[div id="matchHubAdversaire" style="font-weight:900;font-size:1.05rem;color:#fff;margin-bottom:3px;"]]Consultez vos convocations[[/div]]',
+            '[[div id="matchHubDetails" style="font-size:0.8rem;color:#cbd5e1;line-height:1.4;margin-bottom:10px;"]]Détails des matchs et convocations officiels du club.[[/div]]',
+            '[[div id="matchHubActions" style="display:flex;gap:6px;flex-wrap:wrap;"]]',
+              '[[button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.76rem;background:rgba(30,41,59,0.8);" onclick="ouvrirGpsGymnase(\'waze\')"]]🚗 Waze[[/button]]',
+              '[[button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.76rem;background:rgba(30,41,59,0.8);" onclick="ouvrirGpsGymnase(\'maps\')"]]📍 Maps[[/button]]',
+              '[[button type="button" class="btn-wa" style="padding:6px 12px;font-size:0.76rem;flex:1;" onclick="ouvrirApercuCompoJoueur()"]]📐 Voir Terrain Tactique[[/button]]',
+            '[[/div]]',
+          '[[/div]]',
+          '[[div class="player-hub-grid"]]',
+            '[[div class="player-tile" onclick="ouvrirModalMvpChevre()"]]',
+              '[[div class="player-tile-top"]][[span class="player-tile-icon"]]🏆[[/span]][[span id="tileBadgeMvp" class="player-tile-badge"]]Vote ouvert[[/span]][[/div]]',
+              '[[div]][[div class="player-tile-title"]]MVP & Chèvre 🐐[[/div]][[div id="tileSubMvp" class="player-tile-sub"]]Élisez le joueur du match[[/div]][[/div]]',
+            '[[/div]]',
+            '[[div class="player-tile" onclick="ouvrirModalCovoiturage()"]]',
+              '[[div class="player-tile-top"]][[span class="player-tile-icon"]]🚗[[/span]][[span id="tileBadgeCovoit" class="player-tile-badge"]]Trajets[[/span]][[/div]]',
+              '[[div]][[div class="player-tile-title"]]Covoiturage[[/div]][[div id="tileSubCovoit" class="player-tile-sub"]]Proposer ou trouver 1 place[[/div]][[/div]]',
+            '[[/div]]',
+            '[[div class="player-tile" onclick="ouvrirModalAbsence()"]]',
+              '[[div class="player-tile-top"]][[span class="player-tile-icon"]]📅[[/span]][[span id="tileBadgeAbsence" class="player-tile-badge"]]Prévenir[[/span]][[/div]]',
+              '[[div]][[div class="player-tile-title"]]Déclarer Absence[[/div]][[div id="tileSubAbsence" class="player-tile-sub"]]Indiquer vos indispos[[/div]][[/div]]',
+            '[[/div]]',
+            '[[div class="player-tile" onclick="ouvrirModalTrombinoscope()"]]',
+              '[[div class="player-tile-top"]][[span class="player-tile-icon"]]👥[[/span]][[span id="tileBadgeVestiaire" class="player-tile-badge"]]Effectif[[/span]][[/div]]',
+              '[[div]][[div class="player-tile-title"]]Le Vestiaire[[/div]][[div id="tileSubVestiaire" class="player-tile-sub"]]Trombinoscope complet[[/div]][[/div]]',
+            '[[/div]]',
+          '[[/div]]',
           '[[div id="coachMenuBox" style="display:none;width:100%;border-top:1px solid rgba(148,163,184,0.18);padding-top:14px;margin-top:6px;"]]',
             '[[div id="updateBannerBox" style="display:none;background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #6366f1;border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,0.35);"]]',
               '[[div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"]]',
@@ -3002,8 +3300,137 @@ function construireHtmlWebApp() {
               '[[li]][[b style="color:#fff;"]]Identité du Club :[[/b]] Importez le blason officiel et appliquez les couleurs des maillots en 1 clic.[[/li]]',
             '[[/ul]]',
           '[[/div]]',
+          '[[div style="background:#171d2b;border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:12px;"]]',
+            '[[div style="font-weight:800;color:#fbbf24;margin-bottom:6px;font-size:0.9rem;"]]🏆 6. Espace & Vie du Joueur (MVP, Covoiturage, Absences)[[/div]]',
+            '[[ul style="margin:0 0 0 16px;padding:0;display:flex;flex-direction:column;gap:4px;"]]',
+              '[[li]][[b style="color:#fff;"]]Fiche Athlète FUT :[[/b]] Chaque joueur a sa carte personnalisée avec photo, assiduité aux séances et blason du club.[[/li]]',
+              '[[li]][[b style="color:#fff;"]]Vote MVP & Chèvre 🐐 :[[/b]] Élection du match avec podium en direct et pluie de confettis.[[/li]]',
+              '[[li]][[b style="color:#fff;"]]Covoiturage :[[/b]] Organisation autonome des voitures et passagers pour les déplacements extérieurs.[[/li]]',
+              '[[li]][[b style="color:#fff;"]]Déclaration d\'absence :[[/b]] Les joueurs préviennent à l\'avance, visible directement dans l\'espace coach.[[/li]]',
+              '[[li]][[b style="color:#fff;"]]Le Vestiaire :[[/b]] Trombinoscope interactif avec recherche rapide par nom et poste.[[/li]]',
+            '[[/ul]]',
+          '[[/div]]',
         '[[/div]]',
         '[[button type="button" class="btn-reset" style="width:100%;margin-top:14px;background:#1e293b;padding:9px;" onclick="fermerModalGuideCoach()"]]Fermer le guide[[/button]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalMvpChevreBg" onclick="fermerModalMvpChevreSurBg(event)"]]',
+      '[[div class="modal-box" style="border-top:4px solid #f59e0b;max-width:480px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[div style="font-weight:900;font-size:1.15rem;color:#fde68a;display:flex;align-items:center;gap:8px;"]]🏆 MVP & Chèvre du Match 🐐[[/div]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalMvpChevre()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;"]]Votez pour le meilleur joueur du week-end (MVP) et pour le bêtisier / trophée casserole (Chèvre du match) ![[/p]]',
+        '[[div id="mvpFormBox" style="background:#0e1626;border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:14px;margin-bottom:14px;"]]',
+          '[[div style="font-weight:800;font-size:0.86rem;color:#fcd34d;margin-bottom:10px;"]]🗳️ Déposer mon vote :[[/div]]',
+          '[[div style="margin-bottom:10px;"]]',
+            '[[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]⭐ Élu MVP (Meilleur Joueur) :[[/label]]',
+            '[[select id="selVoteMvp" class="inp-field" style="padding:8px 12px;font-size:0.88rem;"]][[/select]]',
+          '[[/div]]',
+          '[[div style="margin-bottom:12px;"]]',
+            '[[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]🐐 Élu Chèvre (Le bêtisier sympa) :[[/label]]',
+            '[[select id="selVoteChevre" class="inp-field" style="padding:8px 12px;font-size:0.88rem;"]][[/select]]',
+          '[[/div]]',
+          '[[button type="button" class="btn-enter" id="btnSubmitVoteMvp" style="margin:0;width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="enregistrerVoteMvp()"]]Enregistrer mon vote ![[/button]]',
+          '[[div id="statusVoteMvp" style="font-size:0.78rem;color:var(--color-secondary);min-height:1.2em;text-align:center;margin-top:6px;"]][[/div]]',
+        '[[/div]]',
+        '[[div style="font-weight:800;font-size:0.88rem;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"]]',
+          '[[span]]📊 Podium & Résultats en direct[[/span]]',
+          '[[span id="mvpTotalVotesCount" style="font-size:0.72rem;color:#94a3b8;font-weight:600;"]]0 vote(s)[[/span]]',
+        '[[/div]]',
+        '[[div id="mvpPodiumContainer"]][[/div]]',
+        '[[div id="coachMvpResetBox" style="display:none;margin-top:14px;border-top:1px solid rgba(148,163,184,0.15);padding-top:10px;text-align:center;"]]',
+          '[[button type="button" class="btn-reset" style="font-size:0.72rem;color:#f87171;" onclick="reinitialiserVotesMvpParCoach()"]]🔄 Réinitialiser les votes pour le prochain match (Coach)[[/button]]',
+        '[[/div]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalCovoiturageBg" onclick="fermerModalCovoiturageSurBg(event)"]]',
+      '[[div class="modal-box" style="border-top:4px solid #0284c7;max-width:480px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[div style="font-weight:900;font-size:1.15rem;color:#7dd3fc;display:flex;align-items:center;gap:8px;"]]🚗 Covoiturage Match[[/div]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalCovoiturage()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;"]]Organisez les trajets pour les matchs à l\'extérieur en quelques secondes.[[/p]]',
+        '[[div id="covoitFormBox" style="background:#0e1626;border:1px solid rgba(2,132,199,0.25);border-radius:14px;padding:14px;margin-bottom:14px;"]]',
+          '[[div style="font-weight:800;font-size:0.86rem;color:#38bdf8;margin-bottom:10px;"]]Mon statut pour le déplacement :[[/div]]',
+          '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;"]]',
+            '[[button type="button" id="btnCovoitConduis" class="btn-reset" style="padding:8px 6px;font-size:0.78rem;font-weight:700;background:rgba(2,132,199,0.3);border-color:#0284c7;color:#fff;" onclick="selectionnerStatutCovoit(\'conduis\')"]]🚙 Je conduis[[/button]]',
+            '[[button type="button" id="btnCovoitCherche" class="btn-reset" style="padding:8px 6px;font-size:0.78rem;font-weight:700;" onclick="selectionnerStatutCovoit(\'cherche\')"]]🙋 Je cherche 1 place[[/button]]',
+          '[[/div]]',
+          '[[div id="boxCovoitNbPlaces" style="display:block;margin-bottom:10px;"]]',
+            '[[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Nombre total de places libres dans ma voiture :[[/label]]',
+            '[[select id="selCovoitNbPlaces" class="inp-field" style="padding:8px 12px;font-size:0.88rem;"]]',
+              '[[option value="1"]]1 place libre[[/option]]',
+              '[[option value="2"]]2 places libres[[/option]]',
+              '[[option value="3" selected]]3 places libres[[/option]]',
+              '[[option value="4"]]4 places libres[[/option]]',
+              '[[option value="5"]]5 places libres[[/option]]',
+            '[[/select]]',
+          '[[/div]]',
+          '[[div style="display:flex;gap:6px;"]]',
+            '[[button type="button" class="btn-enter" id="btnSubmitCovoit" style="margin:0;flex:1;background:#0284c7;color:#fff;" onclick="enregistrerMonCovoiturage()"]]Enregistrer mon statut[[/button]]',
+            '[[button type="button" class="btn-reset" style="padding:8px 10px;font-size:0.75rem;" onclick="annulerMonCovoiturage()"]]Retirer[[/button]]',
+          '[[/div]]',
+          '[[div id="statusCovoit" style="font-size:0.78rem;color:var(--color-secondary);min-height:1.2em;text-align:center;margin-top:6px;"]][[/div]]',
+        '[[/div]]',
+        '[[div style="font-weight:800;font-size:0.88rem;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"]]',
+          '[[span]]🚘 Voitures & Places disponibles[[/span]]',
+          '[[span id="covoitStatsSummary" style="font-size:0.72rem;color:#38bdf8;font-weight:700;"]][[/span]]',
+        '[[/div]]',
+        '[[div id="covoitListContainer" style="max-height:220px;overflow-y:auto;"]][[/div]]',
+        '[[div id="coachCovoitResetBox" style="display:none;margin-top:14px;border-top:1px solid rgba(148,163,184,0.15);padding-top:10px;text-align:center;"]]',
+          '[[button type="button" class="btn-reset" style="font-size:0.72rem;color:#f87171;" onclick="reinitialiserCovoiturageParCoach()"]]🔄 Réinitialiser le covoiturage pour ce match (Coach)[[/button]]',
+        '[[/div]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalAbsenceBg" onclick="fermerModalAbsenceSurBg(event)"]]',
+      '[[div class="modal-box" style="border-top:4px solid #ef4444;max-width:480px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[div style="font-weight:900;font-size:1.15rem;color:#fca5a5;display:flex;align-items:center;gap:8px;"]]📅 Déclarer une Absence[[/div]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalAbsence()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;"]]Prévenez l\'entraîneur de vos futures indisponibilités pour lui faciliter la planification des compositions.[[/p]]',
+        '[[div style="background:#0e1626;border:1px solid rgba(239,68,68,0.25);border-radius:14px;padding:14px;margin-bottom:14px;"]]',
+          '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;"]]',
+            '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Du (début) :[[/label]][[input type="date" id="inpAbsenceDebut" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"]][[/div]]',
+            '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Au (inclus) :[[/label]][[input type="date" id="inpAbsenceFin" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"]][[/div]]',
+          '[[/div]]',
+          '[[div style="margin-bottom:12px;"]]',
+            '[[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Motif :[[/label]]',
+            '[[select id="selAbsenceMotif" class="inp-field" style="padding:8px 12px;font-size:0.85rem;"]]',
+              '[[option value="Vacances / Voyage"]]Vacances / Voyage[[/option]]',
+              '[[option value="Blessure / Santé"]]Blessure / Santé[[/option]]',
+              '[[option value="Travail / Études"]]Travail / Études[[/option]]',
+              '[[option value="Raison personnelle / Famille"]]Raison personnelle / Famille[[/option]]',
+              '[[option value="Autre"]]Autre indisponibilité[[/option]]',
+            '[[/select]]',
+          '[[/div]]',
+          '[[button type="button" class="btn-enter" id="btnSubmitAbsence" style="margin:0;width:100%;background:#ef4444;color:#fff;" onclick="declarerNouvelleAbsence()"]]Transmettre mon absence au coach[[/button]]',
+          '[[div id="statusAbsence" style="font-size:0.78rem;color:var(--color-secondary);min-height:1.2em;text-align:center;margin-top:6px;"]][[/div]]',
+        '[[/div]]',
+        '[[div style="font-weight:800;font-size:0.88rem;color:#e2e8f0;margin-bottom:8px;"]][[span id="titreListeAbsences"]]📋 Mes déclarations en cours[[/span]][[/div]]',
+        '[[div id="mesAbsencesList" style="max-height:180px;overflow-y:auto;"]][[/div]]',
+      '[[/div]]',
+    '[[/div]]',
+    '[[div class="modal-bg" id="modalTrombinoscopeBg" onclick="fermerModalTrombinoscopeSurBg(event)"]]',
+      '[[div class="modal-box" style="border-top:4px solid var(--color-primary);max-width:540px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"]]',
+          '[[div style="font-weight:900;font-size:1.15rem;color:#fff;display:flex;align-items:center;gap:8px;"]]👥 Le Vestiaire (Trombinoscope)[[/div]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalTrombinoscope()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[div style="display:flex;gap:8px;margin-bottom:10px;"]]',
+          '[[input type="text" id="inpFiltreTrombinoscope" class="inp-field" placeholder="Rechercher un coéquipier..." style="padding:8px 12px;font-size:0.84rem;flex:1;" oninput="filtrerTrombinoscope(this.value)"]]',
+          '[[select id="selFiltrePosteTrombi" class="inp-field" style="width:auto;padding:8px 10px;font-size:0.8rem;" onchange="filtrerTrombinoscope()"]]',
+            '[[option value=""]]Tous postes[[/option]]',
+            '[[option value="Gardien"]]Gardiens[[/option]]',
+            '[[option value="Ailier"]]Ailiers[[/option]]',
+            '[[option value="Arrière"]]Arrières[[/option]]',
+            '[[option value="Demi-Centre"]]Demi-Centres[[/option]]',
+            '[[option value="Pivot"]]Pivots[[/option]]',
+          '[[/select]]',
+        '[[/div]]',
+        '[[div id="trombinoscopeCount" style="font-size:0.75rem;color:#94a3b8;font-weight:600;margin-bottom:8px;"]][[/div]]',
+        '[[div id="trombinoscopeGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;max-height:60vh;overflow-y:auto;padding-right:4px;"]][[/div]]',
       '[[/div]]',
     '[[/div]]',
     '[[div id="previewView" style="display:none;"]]',
@@ -3078,6 +3505,7 @@ function construireHtmlWebApp() {
     'var TRAIN_MODE_TINDER = false; var TRAIN_SWIPE_HISTORIQUE = []; var TRAIN_ANIM_EN_COURS = false;',
     'var JOUEURS = []; var EFFECTIF_COMPLET = []; var MODE_TINDER = false; var HISTORIQUE_SWIPE = []; var ANIM_EN_COURS = false; var CONTEXTE_APERCU = null; var VUE_PRECEDENTE_APERCU = "appView";',
     'var SESSION_TEL = ""; var SESSION_PIN = ""; var SESSION_NOM = ""; var EST_COACH = false;',
+    'var INFOS_MATCHS = null; var COVOITURAGE_DATA = { conducteurs: [], passagers: [] }; var VOTES_MVP_DATA = { totalVotes: 0, podiumMvp: [], podiumChevre: [] }; var MES_ABSENCES = []; var STATUT_COVOIT_CHOISI = "conduis";',
     'var JOUEUR_MODAL_COURANT = null; var POSTE_MODAL_COURANT = ""; var PHOTO_MODAL_DATA = undefined;',
     'function getContrastColor(hexColor){',
       'if(!hexColor) return "#ffffff";',
@@ -3576,6 +4004,11 @@ function construireHtmlWebApp() {
       'majCompteurs();',
       'document.getElementById("statutChargement").textContent = JOUEURS.length + " disponible(s)";',
       'if(document.getElementById("btnSwitchMode").style.display !== "inline-block") document.getElementById("btnSwitchMode").style.display = "inline-block";',
+      'if(data.covoiturage) COVOITURAGE_DATA = data.covoiturage;',
+      'if(data.votesMvp) VOTES_MVP_DATA = data.votesMvp;',
+      'if(data.absences) MES_ABSENCES = data.absences;',
+      'if(data.matchs) INFOS_MATCHS = data.matchs;',
+      'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
       'rendreRosterGrid(); majVueEntrainement();',
       'verifierBrouillonExistant();',
     '}',
@@ -4310,7 +4743,7 @@ function construireHtmlWebApp() {
         '}).enregistrerEntrainementEtPublier(CONTEXTE_APERCU.donnees.seance, CONTEXTE_APERCU.donnees.typeSeance, CONTEXTE_APERCU.donnees.groupes, CONTEXTE_APERCU.donnees.nonRetenus, true, txtTr);',
       '}',
     '}',
-    'function retourApercu(){ basculerVue(VUE_PRECEDENTE_APERCU); }',
+    'function retourApercu(){ basculerVue(EST_COACH ? VUE_PRECEDENTE_APERCU : "homeView"); }',
     'function basculerVue(nomVue){',
       'if(nomVue !== "previewView") VUE_PRECEDENTE_APERCU = nomVue;',
       '["homeView","appView","trainView","rosterView","previewView"].forEach(function(v){',
@@ -4400,20 +4833,10 @@ function construireHtmlWebApp() {
       'google.script.run.withSuccessHandler(function(res){',
         'document.getElementById("btnLogin").disabled = false;',
         'SESSION_TEL = res.telephone; SESSION_PIN = res.pin; SESSION_NOM = res.nom; EST_COACH = res.estCoach;',
+        'document.body.classList.add("user-logged-in");',
         'document.getElementById("loginBox").style.display = "none";',
         'document.getElementById("playerBox").style.display = "flex";',
-        'document.getElementById("playerNomPreview").textContent = res.nom;',
-        'document.getElementById("playerPostePreview").textContent = res.poste;',
-        'document.getElementById("selPosteJoueur").value = res.poste;',
-        'var pImg = document.getElementById("playerImgPreview"), pInit = document.getElementById("playerInitialPreview");',
-        'var pLtr = (res.nom || "").trim().charAt(0).toUpperCase();',
-        'pInit.textContent = pLtr;',
-        'if(res.photo){',
-          'pImg.src = res.photo; pImg.style.display = "block"; pInit.style.display = "none";',
-          'pImg.onerror = function(){ pImg.style.display = "none"; pInit.style.display = "flex"; };',
-        '} else {',
-          'pInit.style.display = "flex"; pImg.style.display = "none";',
-        '}',
+        'majEspaceJoueur(res.nom);',
         'if(EST_COACH){',
           'document.getElementById("coachMenuBox").style.display = "block";',
           'var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "flex";',
@@ -4429,6 +4852,7 @@ function construireHtmlWebApp() {
     'function seDeconnecter(){',
       'try { localStorage.removeItem("hb_pin"); } catch(e){}',
       'SESSION_TEL = ""; SESSION_PIN = ""; SESSION_NOM = ""; EST_COACH = false;',
+      'document.body.classList.remove("user-logged-in");',
       'var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "none";',
       'document.getElementById("playerBox").style.display = "none";',
       'document.getElementById("loginBox").style.display = "flex";',
@@ -4439,6 +4863,8 @@ function construireHtmlWebApp() {
       'var np = document.getElementById("selPosteJoueur").value;',
       'google.script.run.withSuccessHandler(function(res){',
         'document.getElementById("playerPostePreview").textContent = res.poste;',
+        'afficherToast("Poste mis à jour : " + res.poste, "succes");',
+        'majEspaceJoueur(SESSION_NOM);',
       '}).enregistrerMonPoste(SESSION_TEL, SESSION_PIN, np);',
     '}',
     'function chargerFichierPhoto(e){',
@@ -4452,9 +4878,421 @@ function construireHtmlWebApp() {
           'document.getElementById("playerImgPreview").src = res.photo;',
           'document.getElementById("playerImgPreview").style.display = "block";',
           'document.getElementById("playerInitialPreview").style.display = "none";',
+          'afficherToast("Photo de profil mise à jour !", "succes");',
+          'majEspaceJoueur(SESSION_NOM);',
         '}).enregistrerMaPhoto(SESSION_TEL, SESSION_PIN, b64);',
       '};',
       'r.readAsDataURL(f);',
+    '}',
+    'function togglePosteSelect(){',
+      'var b = document.getElementById("posteSelectBox");',
+      'if(b) b.style.display = (b.style.display === "none" || !b.style.display) ? "block" : "none";',
+    '}',
+    'function partagerMaCarteJoueur(){',
+      'var clubNom = (CLUB_CONFIG && CLUB_CONFIG.nomClub) || "Mon Club de Handball";',
+      'var txt = "Retrouve ma carte de joueur sur le portail " + clubNom + " ! 🤾‍♂️";',
+      'if(navigator.share){',
+        'navigator.share({ title: clubNom + " - Joueur", text: txt, url: window.location.href }).catch(function(){});',
+      '} else if(navigator.clipboard && navigator.clipboard.writeText){',
+        'navigator.clipboard.writeText(window.location.href).then(function(){',
+          'afficherToast("Lien de l\'application copié dans le presse-papier !", "succes");',
+        '});',
+      '} else {',
+        'afficherToast("Partagez l\'adresse de l\'application avec votre équipe !", "info");',
+      '}',
+    '}',
+    'function ouvrirGpsGymnase(type){',
+      'var salle = "";',
+      'if(INFOS_MATCHS){',
+        'var d = INFOS_MATCHS.details1B || INFOS_MATCHS.details1C || INFOS_MATCHS.details1D;',
+        'if(d && d.salle) salle = d.salle;',
+      '}',
+      'if(!salle && CLUB_CONFIG && CLUB_CONFIG.nomClub) salle = CLUB_CONFIG.nomClub;',
+      'var q = encodeURIComponent(salle + " Gymnase");',
+      'var url = (type === "waze") ? ("https://waze.com/ul?q=" + q) : ("https://www.google.com/maps/search/?api=1&query=" + q);',
+      'window.open(url, "_blank");',
+    '}',
+    'function ouvrirApercuCompoJoueur(){',
+      'ouvrirApercuMatch();',
+      'if(!EST_COACH){',
+        'var bPub = document.getElementById("btnPublishPreview"); if(bPub) bPub.style.display = "none";',
+        'var txtM = document.getElementById("txtPreviewMatch"); if(txtM) txtM.readOnly = true;',
+        'var hSwap = document.getElementById("tacticalSwapHint"); if(hSwap) hSwap.innerHTML = "<span style=\'color:#38bdf8;\'>Mode consultation joueur : visualisez les postes et remplaçants du match.</span>";',
+      '}',
+    '}',
+    'function majEspaceJoueur(nom){',
+      'if(!nom) nom = SESSION_NOM;',
+      'if(!nom) return;',
+      'var pObj = (EFFECTIF_COMPLET || []).find(function(x){ return x.nom.toLowerCase() === nom.toLowerCase(); }) ||',
+                 '(JOUEURS || []).find(function(x){ return x.nom.toLowerCase() === nom.toLowerCase(); }) ||',
+                 '{ nom: nom, poste: "Demi-Centre", entrainements: 0 };',
+      'document.getElementById("playerNomPreview").textContent = pObj.nom;',
+      'document.getElementById("playerPostePreview").textContent = pObj.poste || "Demi-Centre";',
+      'if(document.getElementById("selPosteJoueur")) document.getElementById("selPosteJoueur").value = pObj.poste || "Demi-Centre";',
+      'var pImg = document.getElementById("playerImgPreview"), pInit = document.getElementById("playerInitialPreview");',
+      'var pLtr = (pObj.nom || "").trim().charAt(0).toUpperCase();',
+      'if(pInit) pInit.textContent = pLtr;',
+      'if(pObj.photo){',
+        'if(pImg){ pImg.src = pObj.photo; pImg.style.display = "block"; }',
+        'if(pInit) pInit.style.display = "none";',
+      '} else {',
+        'if(pInit) pInit.style.display = "flex";',
+        'if(pImg) pImg.style.display = "none";',
+      '}',
+      'var isChou = (CLUB_CONFIG && CLUB_CONFIG.chouchou && String(nom).trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase());',
+      'var chouBadge = document.getElementById("playerChouchouBadgeCard");',
+      'if(chouBadge) chouBadge.style.display = isChou ? "block" : "none";',
+      'var nbTr = pObj.entrainements || 0;',
+      'var bTr = document.getElementById("playerAssiduiteBadge");',
+      'if(bTr) bTr.textContent = "⚡ Assiduité : " + nbTr + " séance" + (nbTr > 1 ? "s" : "");',
+      'var statutBadge = document.getElementById("matchHubStatutBadge");',
+      'var equipeBadge = document.getElementById("matchHubEquipeBadge");',
+      'var advEl = document.getElementById("matchHubAdversaire");',
+      'var detEl = document.getElementById("matchHubDetails");',
+      'var actBox = document.getElementById("matchHubActions");',
+      'var eqNomConvoque = ""; var detailsEquipe = null;',
+      'if(DERNIERE_COMPO){',
+        'if((DERNIERE_COMPO.equipe1B || []).indexOf(nom) !== -1){',
+          'eqNomConvoque = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "Équipe 1";',
+          'if(INFOS_MATCHS && INFOS_MATCHS.details1B) detailsEquipe = INFOS_MATCHS.details1B;',
+        '} else if((DERNIERE_COMPO.equipe1C || []).indexOf(nom) !== -1){',
+          'eqNomConvoque = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "Équipe 2";',
+          'if(INFOS_MATCHS && INFOS_MATCHS.details1C) detailsEquipe = INFOS_MATCHS.details1C;',
+        '} else if((DERNIERE_COMPO.equipe1D || []).indexOf(nom) !== -1){',
+          'eqNomConvoque = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "Équipe 3";',
+          'if(INFOS_MATCHS && INFOS_MATCHS.details1D) detailsEquipe = INFOS_MATCHS.details1D;',
+        '} else if((DERNIERE_COMPO.repos || []).indexOf(nom) !== -1){',
+          'eqNomConvoque = "REPOS";',
+        '}',
+      '}',
+      'if(eqNomConvoque === "REPOS"){',
+        'if(statutBadge){ statutBadge.textContent = "🛌 AU REPOS"; statutBadge.style.background = "rgba(239,68,68,0.2)"; statutBadge.style.color = "#fca5a5"; }',
+        'if(equipeBadge) equipeBadge.textContent = "Non retenu ce week-end";',
+        'if(advEl) advEl.textContent = "Repos ce week-end";',
+        'if(detEl) detEl.textContent = "Profitez de votre week-end pour recharger les batteries ! Rendez-vous au prochain entraînement.";',
+        'if(actBox) actBox.style.display = "none";',
+      '} else if(eqNomConvoque){',
+        'if(statutBadge){ statutBadge.textContent = "🔥 CONVOQUÉ"; statutBadge.style.background = "rgba(34,197,94,0.25)"; statutBadge.style.color = "#86efac"; }',
+        'if(equipeBadge) equipeBadge.textContent = eqNomConvoque;',
+        'var advTxt = (detailsEquipe && detailsEquipe.adversaire) ? detailsEquipe.adversaire : "Match à venir";',
+        'if(advEl) advEl.textContent = "⚔️ Contre " + advTxt;',
+        'var detLignes = [];',
+        'if(detailsEquipe && detailsEquipe.dateMatch) detLignes.push("📅 " + detailsEquipe.dateMatch + (detailsEquipe.heureMatch ? (" à " + detailsEquipe.heureMatch) : ""));',
+        'if(detailsEquipe && detailsEquipe.salle) detLignes.push("📍 Salle : " + detailsEquipe.salle);',
+        'if(detailsEquipe && detailsEquipe.heureRdv) detLignes.push("⏱️ Rendez-vous : " + detailsEquipe.heureRdv);',
+        'if(detEl) detEl.textContent = detLignes.length ? detLignes.join(" • ") : "Consultez les horaires et le gymnase ci-dessous.";',
+        'if(actBox) actBox.style.display = "flex";',
+      '} else {',
+        'if(statutBadge){ statutBadge.textContent = "⏳ MATCH DU WEEK-END"; statutBadge.style.background = "rgba(234,179,8,0.2)"; statutBadge.style.color = "#facc15"; }',
+        'if(equipeBadge) equipeBadge.textContent = "Sélection en préparation";',
+        'if(advEl) advEl.textContent = "Convocations en cours...";',
+        'if(detEl) detEl.textContent = "Les feuilles de match seront publiées très prochainement par l\'entraîneur.";',
+        'if(actBox) actBox.style.display = "none";',
+      '}',
+      'var tBadgeMvp = document.getElementById("tileBadgeMvp");',
+      'var tSubMvp = document.getElementById("tileSubMvp");',
+      'if(VOTES_MVP_DATA && VOTES_MVP_DATA.podiumMvp && VOTES_MVP_DATA.podiumMvp.length > 0){',
+        'if(tBadgeMvp) tBadgeMvp.textContent = VOTES_MVP_DATA.totalVotes + " vote(s)";',
+        'if(tSubMvp) tSubMvp.textContent = "1er : " + VOTES_MVP_DATA.podiumMvp[0].nom;',
+      '} else {',
+        'if(tBadgeMvp) tBadgeMvp.textContent = "Vote ouvert";',
+        'if(tSubMvp) tSubMvp.textContent = "Élisez le joueur du match";',
+      '}',
+      'var tBadgeCov = document.getElementById("tileBadgeCovoit");',
+      'var tSubCov = document.getElementById("tileSubCovoit");',
+      'var nbPlacesDispos = 0;',
+      'if(COVOITURAGE_DATA && COVOITURAGE_DATA.conducteurs){',
+        'COVOITURAGE_DATA.conducteurs.forEach(function(c){ nbPlacesDispos += (c.nbPlaces || 0); });',
+      '}',
+      'if(tBadgeCov) tBadgeCov.textContent = nbPlacesDispos > 0 ? (nbPlacesDispos + " place(s)") : "Trajets";',
+      'if(tSubCov) tSubCov.textContent = (COVOITURAGE_DATA && COVOITURAGE_DATA.conducteurs && COVOITURAGE_DATA.conducteurs.length > 0) ? (COVOITURAGE_DATA.conducteurs.length + " voiture(s) prête(s)") : "Proposer ou trouver 1 place";',
+      'var tBadgeAbs = document.getElementById("tileBadgeAbsence");',
+      'var tSubAbs = document.getElementById("tileSubAbsence");',
+      'var mesAbs = (MES_ABSENCES || []).filter(function(a){ return String(a.nom || "").toLowerCase() === nom.toLowerCase(); });',
+      'if(tBadgeAbs) tBadgeAbs.textContent = mesAbs.length > 0 ? (mesAbs.length + " déclarée(s)") : "Prévenir";',
+      'if(tSubAbs) tSubAbs.textContent = mesAbs.length > 0 ? "Absence enregistrée" : "Indiquer vos indispos";',
+      'var tBadgeVest = document.getElementById("tileBadgeVestiaire");',
+      'var tSubVest = document.getElementById("tileSubVestiaire");',
+      'if(tBadgeVest) tBadgeVest.textContent = (EFFECTIF_COMPLET ? EFFECTIF_COMPLET.length : 0) + " joueurs";',
+      'if(tSubVest) tSubVest.textContent = "Trombinoscope complet";',
+    '}',
+    'function ouvrirModalMvpChevre(){',
+      'remplirSelectsMvp();',
+      'rendrePodiumMvp();',
+      'var cBox = document.getElementById("coachMvpResetBox"); if(cBox) cBox.style.display = EST_COACH ? "block" : "none";',
+      'document.getElementById("modalMvpChevreBg").style.display = "flex";',
+    '}',
+    'function fermerModalMvpChevre(){ document.getElementById("modalMvpChevreBg").style.display = "none"; }',
+    'function fermerModalMvpChevreSurBg(e){ if(e.target.id === "modalMvpChevreBg") fermerModalMvpChevre(); }',
+    'function remplirSelectsMvp(){',
+      'var selM = document.getElementById("selVoteMvp"), selC = document.getElementById("selVoteChevre");',
+      'if(!selM || !selC) return;',
+      'selM.innerHTML = "<option value=\'\'>-- Choisir un coéquipier --</option>";',
+      'selC.innerHTML = "<option value=\'\'>-- Choisir un coéquipier --</option>";',
+      'var effectifTrie = (EFFECTIF_COMPLET || []).slice().sort(function(a,b){ return String(a.nom||"").localeCompare(String(b.nom||"")); });',
+      'effectifTrie.forEach(function(j){',
+        'var o1 = document.createElement("option"); o1.value = j.nom; o1.textContent = j.nom + " (" + (j.poste || "Demi-Centre") + ")"; selM.appendChild(o1);',
+        'var o2 = document.createElement("option"); o2.value = j.nom; o2.textContent = j.nom + " (" + (j.poste || "Demi-Centre") + ")"; selC.appendChild(o2);',
+      '});',
+    '}',
+    'function enregistrerVoteMvp(){',
+      'var nomMvp = document.getElementById("selVoteMvp").value;',
+      'var nomChevre = document.getElementById("selVoteChevre").value;',
+      'if(!nomMvp && !nomChevre){ afficherToast("Veuillez choisir un joueur pour au moins une des catégories.", "erreur"); return; }',
+      'var status = document.getElementById("statusVoteMvp");',
+      'if(status) status.textContent = "Enregistrement de votre vote...";',
+      'document.getElementById("btnSubmitVoteMvp").disabled = true;',
+      'google.script.run.withSuccessHandler(function(res){',
+        'document.getElementById("btnSubmitVoteMvp").disabled = false;',
+        'if(status) status.textContent = "Vote pris en compte ! Merci pour votre participation.";',
+        'VOTES_MVP_DATA = res.votesMvp || VOTES_MVP_DATA;',
+        'rendrePodiumMvp();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Vote MVP & Chèvre enregistré !", "succes");',
+        'if(typeof confetti === "function") confetti({ particleCount: 75, spread: 65 });',
+      '}).withFailureHandler(function(err){',
+        'document.getElementById("btnSubmitVoteMvp").disabled = false;',
+        'if(status) status.textContent = "Erreur : " + err.message;',
+        'afficherToast(err.message, "erreur");',
+      '}).voterMvpChevre(SESSION_TEL, SESSION_PIN, nomMvp, nomChevre);',
+    '}',
+    'function rendrePodiumMvp(){',
+      'var cont = document.getElementById("mvpPodiumContainer"); if(!cont) return;',
+      'var totEl = document.getElementById("mvpTotalVotesCount");',
+      'if(totEl) totEl.textContent = (VOTES_MVP_DATA.totalVotes || 0) + " vote(s)";',
+      'var podMvp = (VOTES_MVP_DATA && VOTES_MVP_DATA.podiumMvp) || [];',
+      'var podChv = (VOTES_MVP_DATA && VOTES_MVP_DATA.podiumChevre) || [];',
+      'var html = "<div style=\'display:grid;grid-template-columns:1fr 1fr;gap:12px;\'>";',
+      'html += "<div><div style=\'font-weight:800;font-size:0.8rem;color:#fcd34d;margin-bottom:6px;text-align:center;\'>⭐ Podium MVP</div>";',
+      'if(podMvp.length === 0){ html += "<div style=\'font-size:0.75rem;color:#64748b;text-align:center;padding:12px;\'>Aucun vote pour le moment</div>"; }',
+      'else {',
+        'podMvp.forEach(function(item, idx){',
+          'var medal = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : "🥉");',
+          'html += "<div style=\'background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px 10px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;font-size:0.78rem;\'><span>" + medal + " <b>" + item.nom + "</b></span><span style=\'color:#fcd34d;font-weight:800;\'>" + item.votes + " v</span></div>";',
+        '});',
+      '}',
+      'html += "</div>";',
+      'html += "<div><div style=\'font-weight:800;font-size:0.8rem;color:#fca5a5;margin-bottom:6px;text-align:center;\'>🐐 Podium Chèvre</div>";',
+      'if(podChv.length === 0){ html += "<div style=\'font-size:0.75rem;color:#64748b;text-align:center;padding:12px;\'>Aucun vote pour le moment</div>"; }',
+      'else {',
+        'podChv.forEach(function(item, idx){',
+          'var badge = idx === 0 ? "👑" : (idx === 1 ? "🥈" : "🥉");',
+          'html += "<div style=\'background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px 10px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;font-size:0.78rem;\'><span>" + badge + " <b>" + item.nom + "</b></span><span style=\'color:#fca5a5;font-weight:800;\'>" + item.votes + " v</span></div>";',
+        '});',
+      '}',
+      'html += "</div></div>";',
+      'cont.innerHTML = html;',
+    '}',
+    'function reinitialiserVotesMvpParCoach(){',
+      'if(!confirm("Réinitialiser tous les votes MVP et Chèvre pour le prochain match ?")) return;',
+      'google.script.run.withSuccessHandler(function(res){',
+        'VOTES_MVP_DATA = { totalVotes: 0, podiumMvp: [], podiumChevre: [] };',
+        'rendrePodiumMvp();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Votes MVP & Chèvre remis à zéro pour ce match.", "info");',
+      '}).reinitialiserVotesMvp(SESSION_TEL, SESSION_PIN);',
+    '}',
+    'function selectionnerStatutCovoit(statut){',
+      'STATUT_COVOIT_CHOISI = statut;',
+      'var btnCond = document.getElementById("btnCovoitConduis");',
+      'var btnCher = document.getElementById("btnCovoitCherche");',
+      'var boxPl = document.getElementById("boxCovoitNbPlaces");',
+      'if(statut === "conduis"){',
+        'if(btnCond){ btnCond.style.background = "rgba(2,132,199,0.3)"; btnCond.style.borderColor = "#0284c7"; btnCond.style.color = "#fff"; }',
+        'if(btnCher){ btnCher.style.background = "transparent"; btnCher.style.borderColor = "rgba(255,255,255,0.15)"; btnCher.style.color = "#94a3b8"; }',
+        'if(boxPl) boxPl.style.display = "block";',
+      '} else {',
+        'if(btnCher){ btnCher.style.background = "rgba(2,132,199,0.3)"; btnCher.style.borderColor = "#0284c7"; btnCher.style.color = "#fff"; }',
+        'if(btnCond){ btnCond.style.background = "transparent"; btnCond.style.borderColor = "rgba(255,255,255,0.15)"; btnCond.style.color = "#94a3b8"; }',
+        'if(boxPl) boxPl.style.display = "none";',
+      '}',
+    '}',
+    'function ouvrirModalCovoiturage(){',
+      'selectionnerStatutCovoit("conduis");',
+      'rendreCovoiturageList();',
+      'var cBox = document.getElementById("coachCovoitResetBox"); if(cBox) cBox.style.display = EST_COACH ? "block" : "none";',
+      'document.getElementById("modalCovoiturageBg").style.display = "flex";',
+    '}',
+    'function fermerModalCovoiturage(){ document.getElementById("modalCovoiturageBg").style.display = "none"; }',
+    'function fermerModalCovoiturageSurBg(e){ if(e.target.id === "modalCovoiturageBg") fermerModalCovoiturage(); }',
+    'function enregistrerMonCovoiturage(){',
+      'var status = document.getElementById("statusCovoit");',
+      'var nb = parseInt(document.getElementById("selCovoitNbPlaces").value, 10) || 3;',
+      'if(status) status.textContent = "Enregistrement de votre statut...";',
+      'document.getElementById("btnSubmitCovoit").disabled = true;',
+      'google.script.run.withSuccessHandler(function(res){',
+        'document.getElementById("btnSubmitCovoit").disabled = false;',
+        'if(status) status.textContent = "Statut enregistré !";',
+        'COVOITURAGE_DATA = res.covoiturage || COVOITURAGE_DATA;',
+        'rendreCovoiturageList();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Covoiturage mis à jour !", "succes");',
+      '}).withFailureHandler(function(err){',
+        'document.getElementById("btnSubmitCovoit").disabled = false;',
+        'if(status) status.textContent = "Erreur : " + err.message;',
+        'afficherToast(err.message, "erreur");',
+      '}).enregistrerCovoiturage(SESSION_TEL, SESSION_PIN, STATUT_COVOIT_CHOISI, nb, "");',
+    '}',
+    'function annulerMonCovoiturage(){',
+      'var status = document.getElementById("statusCovoit");',
+      'if(status) status.textContent = "Suppression de votre statut...";',
+      'google.script.run.withSuccessHandler(function(res){',
+        'if(status) status.textContent = "Statut retiré.";',
+        'COVOITURAGE_DATA = res.covoiturage || COVOITURAGE_DATA;',
+        'rendreCovoiturageList();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Statut de covoiturage retiré.", "info");',
+      '}).enregistrerCovoiturage(SESSION_TEL, SESSION_PIN, "aucun", 0, "");',
+    '}',
+    'function rendreCovoiturageList(){',
+      'var cont = document.getElementById("covoitListContainer"); if(!cont) return;',
+      'var sum = document.getElementById("covoitStatsSummary");',
+      'var conds = (COVOITURAGE_DATA && COVOITURAGE_DATA.conducteurs) || [];',
+      'var pass = (COVOITURAGE_DATA && COVOITURAGE_DATA.passagers) || [];',
+      'var totPlaces = 0;',
+      'conds.forEach(function(c){ totPlaces += (c.nbPlaces || 0); });',
+      'if(sum) sum.textContent = conds.length + " voiture(s) • " + totPlaces + " place(s) dispo";',
+      'if(conds.length === 0 && pass.length === 0){',
+        'cont.innerHTML = "<div style=\'font-size:0.75rem;color:#64748b;text-align:center;padding:16px;\'>Aucun trajet proposé pour le moment.<br>Soyez le premier à proposer votre voiture !</div>";',
+        'return;',
+      '}',
+      'var html = "";',
+      'if(conds.length > 0){',
+        'html += "<div style=\'font-size:0.75rem;font-weight:700;color:#38bdf8;margin-bottom:6px;\'>🚙 Conducteurs :</div>";',
+        'conds.forEach(function(c){',
+          'html += "<div class=\'covoit-card\'><div style=\'display:flex;justify-content:space-between;align-items:center;\'><span style=\'font-weight:800;font-size:0.84rem;color:#f8fafc;\'>🚘 " + c.nom + "</span><span style=\'font-size:0.72rem;background:rgba(2,132,199,0.25);color:#7dd3fc;padding:2px 8px;border-radius:99px;font-weight:700;\'>" + c.nbPlaces + " place(s) dispo</span></div>";',
+          'if(c.passagers && c.passagers.length > 0){',
+            'html += "<div style=\'font-size:0.7rem;color:#94a3b8;margin-top:4px;\'>Passagers à bord : " + c.passagers.join(", ") + "</div>";',
+          '}',
+          'html += "</div>";',
+        '});',
+      '}',
+      'if(pass.length > 0){',
+        'html += "<div style=\'font-size:0.75rem;font-weight:700;color:#fcd34d;margin:10px 0 6px 0;\'>🙋 Cherchent une place :</div>";',
+        'html += "<div style=\'display:flex;gap:4px;flex-wrap:wrap;\'>";',
+        'pass.forEach(function(p){',
+          'html += "<span style=\'font-size:0.72rem;background:#0e1626;border:1px solid rgba(255,255,255,0.1);padding:4px 8px;border-radius:8px;color:#e2e8f0;\'>👤 " + p.nom + "</span>";',
+        '});',
+        'html += "</div>";',
+      '}',
+      'cont.innerHTML = html;',
+    '}',
+    'function reinitialiserCovoiturageParCoach(){',
+      'if(!confirm("Réinitialiser l\'organisation du covoiturage pour ce match ?")) return;',
+      'google.script.run.withSuccessHandler(function(res){',
+        'COVOITURAGE_DATA = { conducteurs: [], passagers: [] };',
+        'rendreCovoiturageList();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Covoiturage réinitialisé.", "info");',
+      '}).reinitialiserCovoiturage(SESSION_TEL, SESSION_PIN);',
+    '}',
+    'function ouvrirModalAbsence(){',
+      'var dDeb = document.getElementById("inpAbsenceDebut");',
+      'var dFin = document.getElementById("inpAbsenceFin");',
+      'var now = new Date();',
+      'var sDate = now.toISOString().split("T")[0];',
+      'if(dDeb && !dDeb.value) dDeb.value = sDate;',
+      'if(dFin && !dFin.value) dFin.value = sDate;',
+      'document.getElementById("statusAbsence").textContent = "";',
+      'rendreMesAbsences();',
+      'document.getElementById("modalAbsenceBg").style.display = "flex";',
+    '}',
+    'function fermerModalAbsence(){ document.getElementById("modalAbsenceBg").style.display = "none"; }',
+    'function fermerModalAbsenceSurBg(e){ if(e.target.id === "modalAbsenceBg") fermerModalAbsence(); }',
+    'function declarerNouvelleAbsence(){',
+      'var deb = document.getElementById("inpAbsenceDebut").value;',
+      'var fin = document.getElementById("inpAbsenceFin").value;',
+      'var motif = document.getElementById("selAbsenceMotif").value;',
+      'if(!deb || !fin){ afficherToast("Veuillez renseigner les dates de début et de fin.", "erreur"); return; }',
+      'var status = document.getElementById("statusAbsence");',
+      'if(status) status.textContent = "Enregistrement de votre absence...";',
+      'document.getElementById("btnSubmitAbsence").disabled = true;',
+      'google.script.run.withSuccessHandler(function(res){',
+        'document.getElementById("btnSubmitAbsence").disabled = false;',
+        'if(status) status.textContent = "Absence transmise au coach avec succès !";',
+        'MES_ABSENCES = res.absences || MES_ABSENCES;',
+        'rendreMesAbsences();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Absence déclarée et enregistrée !", "succes");',
+      '}).withFailureHandler(function(err){',
+        'document.getElementById("btnSubmitAbsence").disabled = false;',
+        'if(status) status.textContent = "Erreur : " + err.message;',
+        'afficherToast(err.message, "erreur");',
+      '}).declarerAbsenceJoueur(SESSION_TEL, SESSION_PIN, deb, fin, motif);',
+    '}',
+    'function rendreMesAbsences(){',
+      'var cont = document.getElementById("mesAbsencesList"); if(!cont) return;',
+      'var titre = document.getElementById("titreListeAbsences");',
+      'var listeAffichee = [];',
+      'if(EST_COACH){',
+        'if(titre) titre.textContent = "📋 Absences déclarées par les joueurs";',
+        'listeAffichee = MES_ABSENCES || [];',
+      '} else {',
+        'if(titre) titre.textContent = "📋 Mes déclarations en cours";',
+        'listeAffichee = (MES_ABSENCES || []).filter(function(a){ return String(a.nom || "").toLowerCase() === String(SESSION_NOM || "").toLowerCase(); });',
+      '}',
+      'if(listeAffichee.length === 0){',
+        'cont.innerHTML = "<div style=\'font-size:0.75rem;color:#64748b;text-align:center;padding:12px;\'>Aucune absence enregistrée.</div>";',
+        'return;',
+      '}',
+      'var html = "";',
+      'listeAffichee.forEach(function(a){',
+        'var dStr = (a.dateDebut === a.dateFin) ? ("Le " + a.dateDebut) : ("Du " + a.dateDebut + " au " + a.dateFin);',
+        'var nomTxt = EST_COACH ? ("<b>" + a.nom + "</b> • ") : "";',
+        'html += "<div class=\'absence-chip\'><div>" + nomTxt + dStr + "</div><div style=\'font-size:0.72rem;color:#fecaca;margin-top:2px;\'>Motif : " + a.motif + "</div></div>";',
+      '});',
+      'cont.innerHTML = html;',
+    '}',
+    'function ouvrirModalTrombinoscope(){',
+      'document.getElementById("inpFiltreTrombinoscope").value = "";',
+      'document.getElementById("selFiltrePosteTrombi").value = "";',
+      'rendreTrombinoscopeGrid();',
+      'document.getElementById("modalTrombinoscopeBg").style.display = "flex";',
+    '}',
+    'function fermerModalTrombinoscope(){ document.getElementById("modalTrombinoscopeBg").style.display = "none"; }',
+    'function fermerModalTrombinoscopeSurBg(e){ if(e.target.id === "modalTrombinoscopeBg") fermerModalTrombinoscope(); }',
+    'function filtrerTrombinoscope(){ rendreTrombinoscopeGrid(); }',
+    'function rendreTrombinoscopeGrid(){',
+      'var grid = document.getElementById("trombinoscopeGrid"); if(!grid) return;',
+      'var q = (document.getElementById("inpFiltreTrombinoscope") ? document.getElementById("inpFiltreTrombinoscope").value : "").toLowerCase().trim();',
+      'var fPoste = (document.getElementById("selFiltrePosteTrombi") ? document.getElementById("selFiltrePosteTrombi").value : "").toLowerCase().trim();',
+      'var countEl = document.getElementById("trombinoscopeCount");',
+      'var liste = (EFFECTIF_COMPLET || []).filter(function(j){',
+        'if(q && !j.nom.toLowerCase().includes(q)) return false;',
+        'if(fPoste && !(j.poste || "").toLowerCase().includes(fPoste)) return false;',
+        'return true;',
+      '});',
+      'if(countEl) countEl.textContent = liste.length + " joueur(s) affiché(s)";',
+      'grid.innerHTML = "";',
+      'if(liste.length === 0){',
+        'grid.innerHTML = "<div style=\'grid-column:1/-1;text-align:center;color:#64748b;font-size:0.8rem;padding:20px;\'>Aucun joueur correspondant trouvé.</div>";',
+        'return;',
+      '}',
+      'liste.forEach(function(j){',
+        'var card = document.createElement("div");',
+        'card.style.cssText = "background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:10px;text-align:center;cursor:pointer;transition:transform 0.18s,border-color 0.18s;position:relative;overflow:hidden;";',
+        'card.onmouseenter = function(){ card.style.borderColor = "var(--color-primary)"; card.style.transform = "translateY(-2px)"; };',
+        'card.onmouseleave = function(){ card.style.borderColor = "rgba(255,255,255,0.08)"; card.style.transform = "translateY(0)"; };',
+        'card.onclick = function(){ fermerModalTrombinoscope(); ouvrirModalJoueur(j.nom); };',
+        'var avWrap = document.createElement("div");',
+        'avWrap.style.cssText = "width:60px;height:60px;border-radius:18px;margin:0 auto 8px auto;overflow:hidden;background:#1e293b;border:2px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:900;color:#fff;";',
+        'var jInit = (j.nom || "").trim().charAt(0).toUpperCase();',
+        'if(j.photo){',
+          'var img = document.createElement("img"); img.src = j.photo; img.style.cssText = "width:100%;height:100%;object-fit:cover;";',
+          'img.onerror = function(){ this.remove(); avWrap.textContent = jInit; };',
+          'avWrap.appendChild(img);',
+        '} else {',
+          'avWrap.textContent = jInit;',
+        '}',
+        'card.appendChild(avWrap);',
+        'var nm = document.createElement("div"); nm.style.cssText = "font-weight:800;font-size:0.84rem;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"; nm.textContent = j.nom;',
+        'card.appendChild(nm);',
+        'var pst = document.createElement("div"); pst.style.cssText = "font-size:0.72rem;color:var(--color-secondary);font-weight:700;margin-top:2px;"; pst.textContent = j.poste || "Demi-Centre";',
+        'card.appendChild(pst);',
+        'var trBadge = document.createElement("div"); trBadge.style.cssText = "font-size:0.68rem;color:#94a3b8;margin-top:4px;"; trBadge.textContent = (j.entrainements || 0) + " tr";',
+        'card.appendChild(trBadge);',
+        'grid.appendChild(card);',
+      '});',
     '}',
     'function majVueEntrainement(){',
       'if(!TRAIN_CONFIG[SEANCE_COURANTE]){',
@@ -5218,6 +6056,10 @@ function construireHtmlWebApp() {
         'if(typeof fermerModalConfigEntrainements === "function") fermerModalConfigEntrainements();',
         'if(typeof fermerModalGuideCoach === "function") fermerModalGuideCoach();',
         'if(typeof fermerModalNouveauJoueur === "function") fermerModalNouveauJoueur();',
+        'if(typeof fermerModalMvpChevre === "function") fermerModalMvpChevre();',
+        'if(typeof fermerModalCovoiturage === "function") fermerModalCovoiturage();',
+        'if(typeof fermerModalAbsence === "function") fermerModalAbsence();',
+        'if(typeof fermerModalTrombinoscope === "function") fermerModalTrombinoscope();',
         'return;',
       '}',
       'var tag = (document.activeElement && document.activeElement.tagName) ? document.activeElement.tagName.toLowerCase() : "";',
