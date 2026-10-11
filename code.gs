@@ -1682,24 +1682,203 @@ function reinitialiserVotesMvp(telCoach, pinCoach) {
 }
 
 /**
+ * Normalise une chaîne ou un objet Date au format YYYY-MM-DD
+ */
+function normaliserDateIsoAbsence(val) {
+  if (!val) return '';
+  if (Object.prototype.toString.call(val) === '[object Date]') {
+    try {
+      return Utilities.formatDate(val, Session.getScriptTimeZone() || 'Europe/Paris', 'yyyy-MM-dd');
+    } catch (e) {
+      return '';
+    }
+  }
+  const s = String(val).trim();
+  const mIso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (mIso) {
+    const mm = mIso[2].length === 1 ? '0' + mIso[2] : mIso[2];
+    const jj = mIso[3].length === 1 ? '0' + mIso[3] : mIso[3];
+    return mIso[1] + '-' + mm + '-' + jj;
+  }
+  const mFr = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (mFr) {
+    const jj = mFr[1].length === 1 ? '0' + mFr[1] : mFr[1];
+    const mm = mFr[2].length === 1 ? '0' + mFr[2] : mFr[2];
+    return mFr[3] + '-' + mm + '-' + jj;
+  }
+  return '';
+}
+
+/**
+ * Extrait la date de fin (format YYYY-MM-DD) depuis un texte de mention d'absence
+ */
+function extraireDateFinDepuisTexteAbsence(texte) {
+  if (!texte) return '';
+  const mAuIso = texte.match(/\bau\s+(\d{4}-\d{1,2}-\d{1,2})\b/i);
+  if (mAuIso) return normaliserDateIsoAbsence(mAuIso[1]);
+  const mAuFr = texte.match(/\bau\s+(\d{1,2}\/\d{1,2}\/\d{4})\b/i);
+  if (mAuFr) return normaliserDateIsoAbsence(mAuFr[1]);
+
+  const mDateIso = texte.match(/(\d{4}-\d{1,2}-\d{1,2})/);
+  if (mDateIso) return normaliserDateIsoAbsence(mDateIso[1]);
+  const mDateFr = texte.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+  if (mDateFr) return normaliserDateIsoAbsence(mDateFr[1]);
+
+  return '';
+}
+
+/**
+ * Nettoie une chaîne de notes en retirant les mentions d'absences terminées
+ * tout en conservant scrupuleusement les notes saisies par le coach.
+ */
+function nettoyerNoteJoueurAbsences(noteBrute, aujourdhuiIso) {
+  if (!noteBrute) return '';
+  const str = String(noteBrute).trim();
+  if (!str) return '';
+
+  const morceaux = str.split(/\s*(?:•|\n)\s*/);
+  const morceauxGardes = [];
+
+  for (let i = 0; i < morceaux.length; i++) {
+    const morceau = morceaux[i].trim();
+    if (!morceau) continue;
+
+    const estMentionAbsence = /^(?:absent\b|absence\b|indisponible\b)/i.test(morceau);
+    if (estMentionAbsence) {
+      const dateFinIso = extraireDateFinDepuisTexteAbsence(morceau);
+      if (dateFinIso && dateFinIso < aujourdhuiIso) {
+        continue;
+      }
+    }
+    morceauxGardes.push(morceau);
+  }
+
+  return morceauxGardes.join(' • ');
+}
+
+/**
+ * Synchronise les notes d'un joueur dans la colonne 7 d'Effectif :
+ * Préserve les notes coach manuelles et intègre uniquement les absences encore actives.
+ */
+function synchroniserNotesAbsenceJoueur(noteActuelle, absencesJoueur, aujourdhuiIso) {
+  const noteNettoyee = nettoyerNoteJoueurAbsences(noteActuelle, aujourdhuiIso);
+
+  const notesCoach = noteNettoyee.split(/\s*(?:•|\n)\s*/).filter(function(m) {
+    const clean = m.trim();
+    if (!clean) return false;
+    if (/^(?:absent\b|absence\b|indisponible\b)/i.test(clean) && extraireDateFinDepuisTexteAbsence(clean)) {
+      return false;
+    }
+    return true;
+  });
+
+  (absencesJoueur || []).forEach(function(a) {
+    const dDeb = String(a.dateDebut || '').trim();
+    const dFin = String(a.dateFin || dDeb).trim();
+    const rMotif = String(a.motif || 'Non renseigné').trim();
+    if (!dDeb) return;
+    const noteAbs = 'Absent ' + (dDeb === dFin || !dFin ? dDeb : ('du ' + dDeb + ' au ' + dFin)) + ' (' + rMotif + ')';
+    if (notesCoach.indexOf(noteAbs) === -1) {
+      notesCoach.push(noteAbs);
+    }
+  });
+
+  return notesCoach.join(' • ');
+}
+
+/**
+ * Purge toutes les absences dont la date de fin est strictement passée (< aujourd'hui).
+ * Met à jour 'ABSENCES_JOUEURS' dans ScriptProperties et synchronise la colonne 7 d'Effectif.
+ */
+function purgerAbsencesTerminees(ssOpt) {
+  const props = PropertiesService.getScriptProperties();
+  const aujourdhuiIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'yyyy-MM-dd');
+
+  let absences = [];
+  try {
+    const raw = props.getProperty('ABSENCES_JOUEURS');
+    if (raw) absences = JSON.parse(raw);
+  } catch (e) { absences = []; }
+
+  let modifie = false;
+  const absencesActives = absences.filter(function(a) {
+    const dFin = normaliserDateIsoAbsence(a.dateFin) || normaliserDateIsoAbsence(a.dateDebut);
+    if (dFin && dFin < aujourdhuiIso) {
+      modifie = true;
+      return false;
+    }
+    return true;
+  });
+
+  if (modifie) {
+    props.setProperty('ABSENCES_JOUEURS', JSON.stringify(absencesActives));
+  }
+
+  // Purger et synchroniser la feuille Effectif
+  try {
+    const ss = ssOpt || getSpreadsheet();
+    const shEff = ss ? ss.getSheetByName('Effectif') : null;
+    if (shEff && shEff.getLastRow() >= 2) {
+      const nbLignes = shEff.getLastRow() - 1;
+      const rangeNotes = shEff.getRange(2, 7, nbLignes, 1);
+      const valsNotes = rangeNotes.getValues();
+      const rangeIdent = shEff.getRange(2, 1, nbLignes, 2).getValues();
+      let changementFeuille = false;
+
+      const mapAbsParTel = {};
+      const mapAbsParNom = {};
+      absencesActives.forEach(function(a) {
+        if (a.tel) {
+          const tNorm = normaliserNumero(a.tel);
+          if (!mapAbsParTel[tNorm]) mapAbsParTel[tNorm] = [];
+          mapAbsParTel[tNorm].push(a);
+        }
+        if (a.nom) {
+          const nClean = String(a.nom).toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+          if (!mapAbsParNom[nClean]) mapAbsParNom[nClean] = [];
+          mapAbsParNom[nClean].push(a);
+        }
+      });
+
+      for (let i = 0; i < nbLignes; i++) {
+        const noteActuelle = String(valsNotes[i][0] || '').trim();
+        const nomLigne = String(rangeIdent[i][0] || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+        const telLigne = normaliserNumero(dechiffrerNumero(rangeIdent[i][1]));
+
+        const absJoueur = mapAbsParTel[telLigne] || mapAbsParNom[nomLigne] || [];
+        const nouvelleNote = synchroniserNotesAbsenceJoueur(noteActuelle, absJoueur, aujourdhuiIso);
+
+        if (nouvelleNote !== noteActuelle) {
+          valsNotes[i][0] = nouvelleNote;
+          changementFeuille = true;
+        }
+      }
+
+      if (changementFeuille) {
+        rangeNotes.setValues(valsNotes);
+      }
+    }
+  } catch (err) {
+    Logger.log('Purge Effectif absences notice: ' + err.message);
+  }
+
+  return absencesActives;
+}
+
+/**
  * Déclare une absence à l'avance pour le joueur
  */
 function declarerAbsenceJoueur(tel, pin, dateDebut, dateFin, motif, idAbsence) {
   const auth = authentifierUtilisateur(tel, pin);
   const ss = getSpreadsheet();
-  const shEff = ss.getSheetByName('Effectif');
   const dDeb = String(dateDebut || '').trim();
   const dFin = String(dateFin || '').trim();
   const rMotif = String(motif || 'Non renseigné').trim();
 
   if (!dDeb) throw new Error('Veuillez indiquer au moins une date de début.');
 
-  const props = PropertiesService.getScriptProperties();
-  let absences = [];
-  try {
-    const raw = props.getProperty('ABSENCES_JOUEURS');
-    if (raw) absences = JSON.parse(raw);
-  } catch (e) { absences = []; }
+  // Purge préalable des absences terminées
+  let absences = purgerAbsencesTerminees(ss);
 
   const absId = idAbsence || ('abs_' + new Date().getTime() + '_' + Math.floor(Math.random() * 1000));
   let existante = false;
@@ -1725,15 +1904,28 @@ function declarerAbsenceJoueur(tel, pin, dateDebut, dateFin, motif, idAbsence) {
     });
   }
 
-  props.setProperty('ABSENCES_JOUEURS', JSON.stringify(absences));
+  PropertiesService.getScriptProperties().setProperty('ABSENCES_JOUEURS', JSON.stringify(absences));
 
+  // Mettre à jour immédiatement la feuille Effectif
+  const shEff = ss.getSheetByName('Effectif');
   if (shEff) {
+    const aujourdhuiIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'yyyy-MM-dd');
     const rows = shEff.getDataRange().getValues();
+    const telAuthNorm = normaliserNumero(auth.telephone);
+    const nomAuthClean = String(auth.nom || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+
     for (let i = 1; i < rows.length; i++) {
-      if (normaliserNumero(dechiffrerNumero(rows[i][1])) === auth.telephone) {
+      const telRow = normaliserNumero(dechiffrerNumero(rows[i][1]));
+      const nomRow = String(rows[i][0] || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+
+      if (telRow === telAuthNorm || (nomAuthClean && nomRow === nomAuthClean)) {
         const noteActuelle = String(rows[i][6] || '').trim();
-        const noteAbsence = 'Absent ' + (dDeb === dFin || !dFin ? dDeb : ('du ' + dDeb + ' au ' + dFin)) + ' (' + rMotif + ')';
-        const nouvelleNote = noteActuelle ? (noteActuelle + ' • ' + noteAbsence) : noteAbsence;
+        const absCeJoueur = absences.filter(function(a) {
+          const tA = normaliserNumero(a.tel);
+          const nA = String(a.nom || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+          return (tA && tA === telAuthNorm) || (nA && nA === nomAuthClean);
+        });
+        const nouvelleNote = synchroniserNotesAbsenceJoueur(noteActuelle, absCeJoueur, aujourdhuiIso);
         shEff.getRange(i + 1, 7).setValue(nouvelleNote);
         break;
       }
@@ -1745,6 +1937,7 @@ function declarerAbsenceJoueur(tel, pin, dateDebut, dateFin, motif, idAbsence) {
 
 function supprimerAbsenceJoueur(tel, pin, idAbsence) {
   const auth = authentifierUtilisateur(tel, pin);
+  const ss = getSpreadsheet();
   const props = PropertiesService.getScriptProperties();
   let absences = [];
   try {
@@ -1758,19 +1951,50 @@ function supprimerAbsenceJoueur(tel, pin, idAbsence) {
   });
 
   props.setProperty('ABSENCES_JOUEURS', JSON.stringify(absences));
+
+  // Mettre à jour immédiatement la feuille Effectif pour retirer l'absence
+  const shEff = ss.getSheetByName('Effectif');
+  if (shEff) {
+    const aujourdhuiIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'yyyy-MM-dd');
+    const rows = shEff.getDataRange().getValues();
+    const telAuthNorm = normaliserNumero(auth.telephone);
+    const nomAuthClean = String(auth.nom || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+
+    for (let i = 1; i < rows.length; i++) {
+      const telRow = normaliserNumero(dechiffrerNumero(rows[i][1]));
+      const nomRow = String(rows[i][0] || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+
+      if (telRow === telAuthNorm || (nomAuthClean && nomRow === nomAuthClean)) {
+        const noteActuelle = String(rows[i][6] || '').trim();
+        const absCeJoueur = absences.filter(function(a) {
+          const tA = normaliserNumero(a.tel);
+          const nA = String(a.nom || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+          return (tA && tA === telAuthNorm) || (nA && nA === nomAuthClean);
+        });
+        const nouvelleNote = synchroniserNotesAbsenceJoueur(noteActuelle, absCeJoueur, aujourdhuiIso);
+        shEff.getRange(i + 1, 7).setValue(nouvelleNote);
+        break;
+      }
+    }
+  }
+
   return { ok: true, absences: absences };
 }
 
 /**
- * Récupère les absences des joueurs
+ * Récupère les absences des joueurs avec purge automatique des absences terminées
  */
 function getAbsencesJoueurs() {
-  const props = PropertiesService.getScriptProperties();
   try {
-    const raw = props.getProperty('ABSENCES_JOUEURS');
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-  return [];
+    return purgerAbsencesTerminees();
+  } catch (e) {
+    const props = PropertiesService.getScriptProperties();
+    try {
+      const raw = props.getProperty('ABSENCES_JOUEURS');
+      if (raw) return JSON.parse(raw);
+    } catch (err) {}
+    return [];
+  }
 }
 
 /**
@@ -2495,6 +2719,11 @@ function getDonneesCoach() {
  */
 function lireDonneesCoach() {
   const ss = getSpreadsheet();
+  try {
+    purgerAbsencesTerminees(ss);
+  } catch (e) {
+    Logger.log('Purge automatique absences au chargement coach : ' + e.message);
+  }
   const cfg = getClubConfig(ss);
   const shVotes = ss.getSheetByName('Votes_Semaine');
   const shEff = ss.getSheetByName('Effectif');
@@ -6207,7 +6436,13 @@ function construireHtmlWebApp() {
       'if(tSubCov) tSubCov.textContent = (COVOITURAGE_DATA && COVOITURAGE_DATA.conducteurs && COVOITURAGE_DATA.conducteurs.length > 0) ? (COVOITURAGE_DATA.conducteurs.length + " voiture(s) prête(s)") : "Proposer ou trouver 1 place";',
       'var tBadgeAbs = document.getElementById("tileBadgeAbsence");',
       'var tSubAbs = document.getElementById("tileSubAbsence");',
-      'var mesAbs = (MES_ABSENCES || []).filter(function(a){ return String(a.nom || "").toLowerCase() === nom.toLowerCase(); });',
+      'var dNowAbs = new Date(); var mNowAbs = (dNowAbs.getMonth() + 1); var jNowAbs = dNowAbs.getDate();',
+      'var todayIsoAbs = dNowAbs.getFullYear() + "-" + (mNowAbs < 10 ? "0" + mNowAbs : mNowAbs) + "-" + (jNowAbs < 10 ? "0" + jNowAbs : jNowAbs);',
+      'var mesAbs = (MES_ABSENCES || []).filter(function(a){',
+        'if(String(a.nom || "").toLowerCase() !== nom.toLowerCase()) return false;',
+        'var dFin = String(a.dateFin || a.dateDebut || "").trim();',
+        'return !dFin || dFin >= todayIsoAbs;',
+      '});',
       'if(tBadgeAbs) tBadgeAbs.textContent = mesAbs.length > 0 ? (mesAbs.length + " déclarée(s)") : "Prévenir";',
       'if(tSubAbs) tSubAbs.textContent = mesAbs.length > 0 ? "Absence enregistrée" : "Indiquer vos indispos";',
       'var tBadgeCaisse = document.getElementById("tileBadgeCaisse");',
@@ -6516,13 +6751,19 @@ function construireHtmlWebApp() {
     'function rendreMesAbsences(){',
       'var cont = document.getElementById("mesAbsencesList"); if(!cont) return;',
       'var titre = document.getElementById("titreListeAbsences");',
+      'var dNowAbs = new Date(); var mNowAbs = (dNowAbs.getMonth() + 1); var jNowAbs = dNowAbs.getDate();',
+      'var todayIsoAbs = dNowAbs.getFullYear() + "-" + (mNowAbs < 10 ? "0" + mNowAbs : mNowAbs) + "-" + (jNowAbs < 10 ? "0" + jNowAbs : jNowAbs);',
+      'var absencesValides = (MES_ABSENCES || []).filter(function(a){',
+        'var dFin = String(a.dateFin || a.dateDebut || "").trim();',
+        'return !dFin || dFin >= todayIsoAbs;',
+      '});',
       'var listeAffichee = [];',
       'if(EST_COACH){',
         'if(titre) titre.textContent = "📋 Absences déclarées par les joueurs";',
-        'listeAffichee = MES_ABSENCES || [];',
+        'listeAffichee = absencesValides;',
       '} else {',
         'if(titre) titre.textContent = "📋 Mes déclarations en cours";',
-        'listeAffichee = (MES_ABSENCES || []).filter(function(a){ return String(a.nom || "").toLowerCase() === String(SESSION_NOM || "").toLowerCase(); });',
+        'listeAffichee = absencesValides.filter(function(a){ return String(a.nom || "").toLowerCase() === String(SESSION_NOM || "").toLowerCase(); });',
       '}',
       'if(listeAffichee.length === 0){',
         'cont.innerHTML = "<div style=\'font-size:0.75rem;color:#64748b;text-align:center;padding:12px;\'>Aucune absence enregistrée.</div>";',
@@ -8017,6 +8258,11 @@ function construireHtmlWebApp() {
 }
 
 function executionAutoLundiMatin() {
+  try {
+    purgerAbsencesTerminees();
+  } catch (e) {
+    Logger.log('Purge automatique absences lundi matin : ' + e.message);
+  }
   genererSondageHebdo();
   declencherEnvoiWhatsApp();
 }
@@ -8468,9 +8714,20 @@ function onOpen() {
       .addSeparator()
       .addItem('🔐 9. Chiffrer tous les numéros de l\'effectif (RGPD)', 'menuChiffrerNumerosEffectif')
       .addItem('🔓 10. Déchiffrer tous les numéros de l\'effectif', 'menuDechiffrerNumerosEffectif')
+      .addItem('🧹 11. Purger les absences terminées (Notes & WebApp)', 'menuPurgerAbsencesTerminees')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
   } catch (e) {}
+}
+
+function menuPurgerAbsencesTerminees() {
+  try {
+    const actives = purgerAbsencesTerminees();
+    const nbActives = actives ? actives.length : 0;
+    SpreadsheetApp.getActiveSpreadsheet().toast('Purge terminée avec succès ! ' + nbActives + ' absence(s) active(s) restante(s).', '🧹 Purge Absences', 5);
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur lors de la purge : ' + e.message);
+  }
 }
 
