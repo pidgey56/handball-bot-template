@@ -1088,13 +1088,16 @@ function actualiserCouleursClasseur() {
 }
 
 function convertirUrlPhoto(urlBrute) {
-  const url = String(urlBrute || '').trim();
+  let url = String(urlBrute || '').trim();
   if (!url) return '';
   if (url.indexOf('data:image/') === 0) return url;
   const mDriveFile = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
   if (mDriveFile) return 'https://drive.google.com/thumbnail?id=' + mDriveFile[1] + '&sz=w800';
   const mDriveId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (url.indexOf('drive.google.com') !== -1 && mDriveId) return 'https://drive.google.com/thumbnail?id=' + mDriveId[1] + '&sz=w800';
+  if (url.indexOf('dropbox.com') !== -1) {
+    return url.replace(/[?&]dl=[01]/, '').concat(url.indexOf('?') === -1 ? '?raw=1' : '&raw=1');
+  }
   return url;
 }
 
@@ -1451,7 +1454,7 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
 
   const nomCible = String(joueurCible.nom || '').trim();
   const nouveauPoste = String(joueurCible.poste || '').trim();
-  let nouvellePhoto = String(joueurCible.photo || '').trim();
+  let nouvellePhoto = (joueurCible.photo !== undefined) ? String(joueurCible.photo || '').trim() : undefined;
   const nouvelleNote = String(joueurCible.note || '').trim();
   const nouveauTel = joueurCible.tel ? normaliserNumero(joueurCible.tel) : '';
   const nouvelleEquipe = String(joueurCible.equipe || '').trim();
@@ -1460,23 +1463,25 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
     const nomExistant = String(rows[i][0] || '').trim();
     const nomPropre = nomExistant.replace(/\s*\([^)]*\)\s*/g, '').trim();
     if (nomExistant.toLowerCase() === nomCible.toLowerCase() || nomPropre.toLowerCase() === nomCible.toLowerCase()) {
-      if (nouvellePhoto.indexOf('data:image/') === 0) {
-        try {
-          const parts = nouvellePhoto.split(',');
-          const mime = parts[0].match(/:(.*?);/)[1];
-          const decoded = Utilities.base64Decode(parts[1]);
-          const nomFichier = 'photo_' + nomPropre.replace(/\s+/g, '_') + '_' + new Date().getTime();
-          const blob = Utilities.newBlob(decoded, mime, nomFichier);
-          const fichier = DriveApp.createFile(blob);
-          fichier.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          nouvellePhoto = fichier.getUrl();
-        } catch (e) {}
+      if (nouvellePhoto !== undefined) {
+        if (nouvellePhoto.indexOf('data:image/') === 0) {
+          try {
+            const parts = nouvellePhoto.split(',');
+            const mime = parts[0].match(/:(.*?);/)[1];
+            const decoded = Utilities.base64Decode(parts[1]);
+            const nomFichier = 'photo_' + nomPropre.replace(/\s+/g, '_') + '_' + new Date().getTime();
+            const blob = Utilities.newBlob(decoded, mime, nomFichier);
+            const fichier = DriveApp.createFile(blob);
+            fichier.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+            nouvellePhoto = fichier.getUrl();
+          } catch (e) {}
+        }
+        shEff.getRange(i + 1, 5).setValue(nouvellePhoto);
       }
 
       if (nouveauTel) shEff.getRange(i + 1, 2).setValue(chiffrerNumero(nouveauTel));
       if (nouveauPoste) shEff.getRange(i + 1, 3).setValue(nouveauPoste);
       if (nouvelleEquipe) shEff.getRange(i + 1, 4).setValue(nouvelleEquipe);
-      if (nouvellePhoto) shEff.getRange(i + 1, 5).setValue(nouvellePhoto);
       shEff.getRange(i + 1, 7).setValue(nouvelleNote);
       if (estVraiCoach && joueurCible.estTresorier !== undefined) {
         shEff.getRange(i + 1, 8).setValue(joueurCible.estTresorier ? 'OUI' : 'NON');
@@ -1497,6 +1502,8 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
 
       const valTresorierActuel = (estVraiCoach && joueurCible.estTresorier !== undefined) ? Boolean(joueurCible.estTresorier) : Boolean(rows[i][7] === true || /oui|true|tr[eé]sorier/i.test(String(rows[i][7] || '')));
 
+      const photoStockeeFinale = (nouvellePhoto !== undefined) ? nouvellePhoto : rows[i][4];
+
       return {
         ok: true,
         joueur: {
@@ -1504,7 +1511,7 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
           tel: nouveauTel || dechiffrerNumero(rows[i][1]),
           poste: nouveauPoste || String(rows[i][2] || 'Demi-Centre'),
           equipe: nouvelleEquipe || String(rows[i][3] || ''),
-          photo: convertirUrlPhoto(nouvellePhoto || rows[i][4]),
+          photo: convertirUrlPhoto(photoStockeeFinale),
           note: nouvelleNote,
           estTresorier: valTresorierActuel
         }
@@ -2619,7 +2626,19 @@ function ajouterJoueurParCoach(telCoach, pinCoach, joueurData) {
   const telNormalise = normaliserNumero(joueurData.tel || '');
   const poste = String(joueurData.poste || 'Demi-Centre').trim();
   const equipe = String(joueurData.equipe || 'Équipe 1').trim();
-  const photo = String(joueurData.photo || '').trim();
+  let photo = String(joueurData.photo || '').trim();
+  if (photo.indexOf('data:image/') === 0) {
+    try {
+      const parts = photo.split(',');
+      const mime = parts[0].match(/:(.*?);/)[1];
+      const decoded = Utilities.base64Decode(parts[1]);
+      const nomFichier = 'photo_' + nomNettoye.replace(/\s+/g, '_') + '_' + new Date().getTime();
+      const blob = Utilities.newBlob(decoded, mime, nomFichier);
+      const fichier = DriveApp.createFile(blob);
+      fichier.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      photo = fichier.getUrl();
+    } catch (e) {}
+  }
   const pin = String(joueurData.pin || ('0000' + Math.floor(Math.random() * 9000 + 1000)).slice(-4));
   const note = String(joueurData.note || '').trim();
   const estTresorier = (joueurData.estTresorier && estVraiCoach) ? 'OUI' : 'NON';
@@ -3692,9 +3711,23 @@ function construireHtmlWebApp() {
               '[[/div]]',
             '[[/div]]',
             '[[div style="display:flex;gap:6px;width:100%;margin-top:2px;"]]',
-              '[[button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(30,41,59,0.8);" onclick="ouvrirSelecteurPhotoJoueur()"]]📸 Photo[[/button]]',
+              '[[button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(30,41,59,0.8);" onclick="togglePhotoSelect()"]]📸 Photo ▾[[/button]]',
               '[[button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(30,41,59,0.8);" onclick="togglePosteSelect()"]]🎯 Poste ▾[[/button]]',
               '[[button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(99,102,241,0.25);border-color:#6366f1;color:#e0e7ff;" onclick="partagerMaCarteJoueur()"]]📲 Partager[[/button]]',
+            '[[/div]]',
+            '[[div id="photoSelectBox" style="width:100%;text-align:left;display:none;background:rgba(15,23,42,0.85);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);margin-top:4px;"]]',
+              '[[div style="font-size:0.78rem;color:#94a3b8;font-weight:700;margin-bottom:6px;"]]Photo de profil :[[/div]]',
+              '[[div style="display:flex;gap:6px;margin-bottom:8px;"]]',
+                '[[button type="button" class="btn-wa" style="flex:1;font-size:0.76rem;padding:7px 10px;" onclick="ouvrirSelecteurPhotoJoueur()"]]📁 Parcourir un fichier / Appareil[[/button]]',
+              '[[/div]]',
+              '[[label for="inpPhotoUrlJoueur" style="font-size:0.73rem;color:#cbd5e1;display:block;margin-bottom:4px;"]]Ou coller une URL d\'image (https://...) :[[/label]]',
+              '[[div style="display:flex;gap:6px;"]]',
+                '[[input type="url" id="inpPhotoUrlJoueur" class="inp-field" style="font-size:0.78rem;padding:5px 8px;" placeholder="https://site.com/photo.jpg"]]',
+                '[[button type="button" class="btn-save" style="padding:5px 12px;font-size:0.76rem;white-space:nowrap;" onclick="enregistrerPhotoUrlJoueur()"]]Valider[[/button]]',
+              '[[/div]]',
+              '[[div style="display:flex;justify-content:flex-end;margin-top:6px;"]]',
+                '[[button type="button" class="btn-reset" style="font-size:0.72rem;padding:3px 8px;color:#f87171;border-color:rgba(239,68,68,0.25);" onclick="supprimerMaPhotoJoueur()"]]Retirer ma photo[[/button]]',
+              '[[/div]]',
             '[[/div]]',
             '[[div id="posteSelectBox" style="width:100%;text-align:left;display:none;background:rgba(15,23,42,0.7);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);"]]',
               '[[label style="font-size:0.78rem;color:#94a3b8;font-weight:600;display:block;margin-bottom:6px;"]]Mon poste préféré sur le terrain :[[/label]]',
@@ -4003,8 +4036,15 @@ function construireHtmlWebApp() {
           '[[/div]]',
           '[[input type="file" id="fileCoachPhoto" accept="image/*" style="display:none;" onchange="chargerPhotoDepuisModal(event)"]]',
           '[[div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;"]]',
-            '[[button class="btn-enter" style="font-size:0.8rem;padding:7px 14px;width:auto;" onclick="ouvrirSelecteurPhotoCoach()"]]Modifier la photo[[/button]]',
+            '[[button class="btn-enter" style="font-size:0.8rem;padding:7px 14px;width:auto;" onclick="ouvrirSelecteurPhotoCoach()"]]📁 Modifier la photo[[/button]]',
             '[[button type="button" id="btnModalChouchou" class="btn-reset" style="font-size:0.8rem;padding:7px 12px;border-radius:8px;border:1px solid #f43f5e;color:#fda4af;background:rgba(244,63,94,0.12);display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;" onclick="toggleChouchouCourant()"]]❤️ Chouchou[[/button]]',
+          '[[/div]]',
+          '[[div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:3px;margin-top:2px;text-align:center;"]]',
+            '[[label for="modalJoueurPhotoUrl" style="font-size:0.72rem;color:#94a3b8;"]]Ou coller une URL d\'image web (https://...) :[[/label]]',
+            '[[div style="display:flex;gap:6px;"]]',
+              '[[input type="url" id="modalJoueurPhotoUrl" class="inp-field" style="font-size:0.78rem;padding:5px 8px;" placeholder="https://site.com/photo.jpg" oninput="changerUrlPhotoCoach(this.value)"]]',
+              '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.75rem;color:#f87171;border-color:rgba(239,68,68,0.3);" title="Retirer la photo" onclick="effacerPhotoModalCoach()"]]🗑️[[/button]]',
+            '[[/div]]',
           '[[/div]]',
         '[[/div]]',
         '[[div style="display:flex;flex-direction:column;gap:10px;text-align:left;"]]',
@@ -4049,6 +4089,7 @@ function construireHtmlWebApp() {
         '[[div style="display:flex;flex-direction:column;gap:10px;text-align:left;"]]',
           '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Nom et Prénom * :[[/label]][[input type="text" id="inpNouvNom" class="inp-field" placeholder="Ex : Thomas Dubois" required]][[/div]]',
           '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Numéro de téléphone (optionnel) :[[/label]][[input type="tel" id="inpNouvTel" class="inp-field" placeholder="Ex : 06 12 34 56 78"]][[/div]]',
+          '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Photo (URL externe ou Drive, optionnel) :[[/label]][[input type="url" id="inpNouvPhoto" class="inp-field" placeholder="https://site.com/photo.jpg"]][[/div]]',
           '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
             '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Poste :[[/label]][[select id="selNouvPoste" class="inp-field"]][[option value="Gardien"]]Gardien[[/option]][[option value="Ailier Gauche"]]Ailier Gauche[[/option]][[option value="Arrière Gauche"]]Arrière Gauche[[/option]][[option value="Demi-Centre" selected]]Demi-Centre[[/option]][[option value="Pivot"]]Pivot[[/option]][[option value="Arrière Droit"]]Arrière Droit[[/option]][[option value="Ailier Droit"]]Ailier Droit[[/option]][[/select]][[/div]]',
             '[[div]][[label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;"]]Équipe :[[/label]][[select id="selNouvEquipe" class="inp-field"]][[/select]][[/div]]',
@@ -5282,6 +5323,29 @@ function construireHtmlWebApp() {
         'afficherToast(err.message, "erreur");',
       '}).enregistrerCouleursClub(SESSION_TEL, SESSION_PIN, payloadCouleurs);',
     '}',
+    'function ajouterCacheBusterPhoto(url){',
+      'if(!url) return "";',
+      'if(url.indexOf("data:") === 0) return url;',
+      'var sep = url.indexOf("?") === -1 ? "?" : "&";',
+      'return url + sep + "_t=" + Date.now();',
+    '}',
+    'function actualiserPhotoDansMemoire(nom, nouvellePhoto){',
+      'if(!nom) return;',
+      'var nLow = String(nom).trim().toLowerCase();',
+      'var nSimple = nLow.replace(/\\s*\\([^)]*\\)\\s*/g, "").trim();',
+      '(EFFECTIF_COMPLET || []).forEach(function(x){',
+        'var xL = String(x.nom || "").trim().toLowerCase();',
+        'if(xL === nLow || xL.replace(/\\s*\\([^)]*\\)\\s*/g, "").trim() === nSimple){',
+          'x.photo = nouvellePhoto;',
+        '}',
+      '});',
+      '(JOUEURS || []).forEach(function(x){',
+        'var xL = String(x.nom || "").trim().toLowerCase();',
+        'if(xL === nLow || xL.replace(/\\s*\\([^)]*\\)\\s*/g, "").trim() === nSimple){',
+          'x.photo = nouvellePhoto;',
+        '}',
+      '});',
+    '}',
     'function ouvrirSelecteurPhotoJoueur(){ document.getElementById("filePhoto").click(); }',
     'function ouvrirSelecteurPhotoCoach(){ document.getElementById("fileCoachPhoto").click(); }',
     'function comparerJoueursAlpha(a, b){ return String(a.nom || "").localeCompare(String(b.nom || ""), "fr", { sensitivity: "base" }); }',
@@ -6498,11 +6562,14 @@ function construireHtmlWebApp() {
         'google.script.run.withSuccessHandler(function(res){',
           'masquerLoading();',
           'document.getElementById("photoStatus").textContent = "Photo enregistrée !";',
-          'document.getElementById("playerImgPreview").src = res.photo;',
-          'document.getElementById("playerImgPreview").style.display = "block";',
-          'document.getElementById("playerInitialPreview").style.display = "none";',
-          'afficherToast("Photo de profil mise à jour !", "succes");',
+          'var photoBusted = res.photo ? ajouterCacheBusterPhoto(res.photo) : "";',
+          'actualiserPhotoDansMemoire(SESSION_NOM, photoBusted);',
           'majEspaceJoueur(SESSION_NOM);',
+          'rendreRosterGrid();',
+          'initialiserColonnes();',
+          'afficherToast("Photo de profil mise à jour !", "succes");',
+          'var b = document.getElementById("photoSelectBox");',
+          'if(b) b.style.display = "none";',
         '}).withFailureHandler(function(err){',
           'masquerLoading();',
           'document.getElementById("photoStatus").textContent = "Erreur : " + err.message;',
@@ -6511,9 +6578,81 @@ function construireHtmlWebApp() {
       '};',
       'r.readAsDataURL(f);',
     '}',
+    'function togglePhotoSelect(){',
+      'var b = document.getElementById("photoSelectBox");',
+      'if(!b) return;',
+      'var ouv = (b.style.display === "none" || !b.style.display);',
+      'b.style.display = ouv ? "block" : "none";',
+      'if(ouv){',
+        'var pBox = document.getElementById("posteSelectBox");',
+        'if(pBox) pBox.style.display = "none";',
+        'var pObj = (EFFECTIF_COMPLET || []).find(function(x){ return x.nom.toLowerCase() === (SESSION_NOM || "").toLowerCase(); });',
+        'var inp = document.getElementById("inpPhotoUrlJoueur");',
+        'if(inp && pObj && pObj.photo && pObj.photo.indexOf("http") === 0) inp.value = pObj.photo;',
+      '}',
+    '}',
+    'function enregistrerPhotoUrlJoueur(){',
+      'var inp = document.getElementById("inpPhotoUrlJoueur");',
+      'if(!inp) return;',
+      'var url = inp.value.trim();',
+      'if(!url){',
+        'afficherToast("Veuillez saisir une URL valide (https://...)", "erreur");',
+        'return;',
+      '}',
+      'if(url.indexOf("http://") !== 0 && url.indexOf("https://") !== 0){',
+        'afficherToast("L\'URL doit commencer par https:// ou http://", "erreur");',
+        'return;',
+      '}',
+      'document.getElementById("photoStatus").innerHTML = "<span class=\'spinner-badge\'></span>Envoi photo...";',
+      'afficherLoading("Photo de profil...", "Enregistrement de votre photo externe...");',
+      'google.script.run.withSuccessHandler(function(res){',
+        'masquerLoading();',
+        'document.getElementById("photoStatus").textContent = "Photo enregistrée !";',
+        'var photoBusted = res.photo ? ajouterCacheBusterPhoto(res.photo) : "";',
+        'actualiserPhotoDansMemoire(SESSION_NOM, photoBusted);',
+        'majEspaceJoueur(SESSION_NOM);',
+        'rendreRosterGrid();',
+        'initialiserColonnes();',
+        'afficherToast("Photo de profil mise à jour !", "succes");',
+        'var b = document.getElementById("photoSelectBox");',
+        'if(b) b.style.display = "none";',
+      '}).withFailureHandler(function(err){',
+        'masquerLoading();',
+        'document.getElementById("photoStatus").textContent = "Erreur : " + err.message;',
+        'afficherToast("Erreur photo : " + err.message, "erreur");',
+      '}).enregistrerMaPhoto(SESSION_TEL, SESSION_PIN, url);',
+    '}',
+    'function supprimerMaPhotoJoueur(){',
+      'if(!confirm("Voulez-vous vraiment retirer votre photo de profil ?")) return;',
+      'document.getElementById("photoStatus").innerHTML = "<span class=\'spinner-badge\'></span>Suppression...";',
+      'afficherLoading("Photo de profil...", "Suppression de votre photo...");',
+      'google.script.run.withSuccessHandler(function(res){',
+        'masquerLoading();',
+        'document.getElementById("photoStatus").textContent = "Photo supprimée.";',
+        'actualiserPhotoDansMemoire(SESSION_NOM, "");',
+        'majEspaceJoueur(SESSION_NOM);',
+        'rendreRosterGrid();',
+        'initialiserColonnes();',
+        'afficherToast("Photo de profil retirée.", "info");',
+        'var b = document.getElementById("photoSelectBox");',
+        'if(b) b.style.display = "none";',
+        'var inp = document.getElementById("inpPhotoUrlJoueur");',
+        'if(inp) inp.value = "";',
+      '}).withFailureHandler(function(err){',
+        'masquerLoading();',
+        'document.getElementById("photoStatus").textContent = "Erreur : " + err.message;',
+        'afficherToast("Erreur photo : " + err.message, "erreur");',
+      '}).enregistrerMaPhoto(SESSION_TEL, SESSION_PIN, "");',
+    '}',
     'function togglePosteSelect(){',
       'var b = document.getElementById("posteSelectBox");',
-      'if(b) b.style.display = (b.style.display === "none" || !b.style.display) ? "block" : "none";',
+      'if(!b) return;',
+      'var ouv = (b.style.display === "none" || !b.style.display);',
+      'b.style.display = ouv ? "block" : "none";',
+      'if(ouv){',
+        'var pB = document.getElementById("photoSelectBox");',
+        'if(pB) pB.style.display = "none";',
+      '}',
     '}',
     'function partagerMaCarteJoueur(){',
       'var clubNom = (CLUB_CONFIG && CLUB_CONFIG.nomClub) || "Mon Club de Handball";',
@@ -6572,11 +6711,15 @@ function construireHtmlWebApp() {
       'var pLtr = (pObj.nom || "").trim().charAt(0).toUpperCase();',
       'if(pInit) pInit.textContent = pLtr;',
       'if(pObj.photo){',
-        'if(pImg){ pImg.src = pObj.photo; pImg.style.display = "block"; }',
+        'if(pImg){',
+          'pImg.src = pObj.photo;',
+          'pImg.style.display = "block";',
+          'pImg.onerror = function(){ pImg.style.display = "none"; if(pInit) pInit.style.display = "flex"; };',
+        '}',
         'if(pInit) pInit.style.display = "none";',
       '} else {',
         'if(pInit) pInit.style.display = "flex";',
-        'if(pImg) pImg.style.display = "none";',
+        'if(pImg){ pImg.src = ""; pImg.style.display = "none"; }',
       '}',
       'var isChou = (CLUB_CONFIG && CLUB_CONFIG.chouchou && String(nom).trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase());',
       'var chouBadge = document.getElementById("playerChouchouBadgeCard");',
@@ -8175,6 +8318,8 @@ function construireHtmlWebApp() {
     '  }',
     '  document.getElementById("modalJoueurStatus").textContent = "";',
     '  PHOTO_MODAL_DATA = undefined;',
+    '  var inpPhotoUrl = document.getElementById("modalJoueurPhotoUrl");',
+    '  if(inpPhotoUrl) inpPhotoUrl.value = (p.photo && p.photo.indexOf("http") === 0) ? p.photo : "";',
     '  var mImg = document.getElementById("modalJoueurImg"), mInit = document.getElementById("modalJoueurInitiale");',
     '  var bdrop = document.getElementById("modalJoueurBackdrop");',
     '  if(bdrop) bdrop.style.opacity = "0";',
@@ -8284,14 +8429,49 @@ function construireHtmlWebApp() {
       'var r = new FileReader();',
       'r.onload = function(evt){',
         'PHOTO_MODAL_DATA = evt.target.result;',
-        'document.getElementById("modalJoueurImg").src = PHOTO_MODAL_DATA;',
-        'document.getElementById("modalJoueurImg").style.display = "block";',
-        'document.getElementById("modalJoueurInitiale").style.display = "none";',
+        'var inpUrl = document.getElementById("modalJoueurPhotoUrl");',
+        'if(inpUrl) inpUrl.value = "";',
+        'var mImg = document.getElementById("modalJoueurImg");',
+        'var mInit = document.getElementById("modalJoueurInitiale");',
+        'mImg.src = PHOTO_MODAL_DATA;',
+        'mImg.style.display = "block";',
+        'mInit.style.display = "none";',
         'var bdrop = document.getElementById("modalJoueurBackdrop");',
         'if(bdrop){ bdrop.style.backgroundImage = "url(\'" + PHOTO_MODAL_DATA + "\')"; bdrop.style.opacity = "0.55"; }',
         'document.getElementById("modalJoueurStatus").textContent = "Photo prête à être enregistrée.";',
       '};',
       'r.readAsDataURL(f);',
+    '}',
+    'function changerUrlPhotoCoach(url){',
+      'var u = String(url || "").trim();',
+      'var mImg = document.getElementById("modalJoueurImg");',
+      'var mInit = document.getElementById("modalJoueurInitiale");',
+      'var bdrop = document.getElementById("modalJoueurBackdrop");',
+      'if(u){',
+        'PHOTO_MODAL_DATA = u;',
+        'mImg.src = u;',
+        'mImg.style.display = "block";',
+        'mInit.style.display = "none";',
+        'if(bdrop){ bdrop.style.backgroundImage = "url(\'" + u + "\')"; bdrop.style.opacity = "0.55"; }',
+        'mImg.onerror = function(){',
+          'mImg.style.display = "none";',
+          'mInit.style.display = "flex";',
+          'if(bdrop){ bdrop.style.opacity = "0"; bdrop.style.backgroundImage = "none"; }',
+        '};',
+        'document.getElementById("modalJoueurStatus").textContent = "Lien photo prêt à être enregistré.";',
+      '} else {',
+        'PHOTO_MODAL_DATA = "__EFFACER__";',
+        'mImg.src = "";',
+        'mImg.style.display = "none";',
+        'mInit.style.display = "flex";',
+        'if(bdrop){ bdrop.style.opacity = "0"; bdrop.style.backgroundImage = "none"; }',
+        'document.getElementById("modalJoueurStatus").textContent = "Photo retirée.";',
+      '}',
+    '}',
+    'function effacerPhotoModalCoach(){',
+      'var inp = document.getElementById("modalJoueurPhotoUrl");',
+      'if(inp) inp.value = "";',
+      'changerUrlPhotoCoach("");',
     '}',
     'function sauvegarderFicheDepuisModal(){',
       'if(!JOUEUR_MODAL_COURANT) return;',
@@ -8302,16 +8482,29 @@ function construireHtmlWebApp() {
       'var nEq = document.getElementById("modalJoueurEquipe") ? document.getElementById("modalJoueurEquipe").value : "Équipe 1";',
       'var chkTres = document.getElementById("modalJoueurTresorier");',
       'var estTres = chkTres ? chkTres.checked : false;',
-      'var jCible = { nom: JOUEUR_MODAL_COURANT, poste: np, photo: PHOTO_MODAL_DATA || "", note: nn, tel: nTel, equipe: nEq, estTresorier: estTres };',
+      'var photoAEnvoyer = undefined;',
+      'if(PHOTO_MODAL_DATA === "__EFFACER__"){',
+        'photoAEnvoyer = "";',
+      '} else if(PHOTO_MODAL_DATA !== undefined){',
+        'photoAEnvoyer = PHOTO_MODAL_DATA;',
+      '}',
+      'var jCible = { nom: JOUEUR_MODAL_COURANT, poste: np, note: nn, tel: nTel, equipe: nEq, estTresorier: estTres };',
+      'if(photoAEnvoyer !== undefined){ jCible.photo = photoAEnvoyer; }',
       'google.script.run.withSuccessHandler(function(res){',
         'masquerLoading();',
         'document.getElementById("modalJoueurStatus").textContent = "Enregistré avec succès !";',
         'afficherToast("Fiche de " + res.joueur.nom + " mise à jour !", "succes");',
+        'var photoBusted = res.joueur.photo ? ajouterCacheBusterPhoto(res.joueur.photo) : "";',
+        'res.joueur.photo = photoBusted;',
         'var idx = EFFECTIF_COMPLET.findIndex(function(x){ return x.nom.toLowerCase() === res.joueur.nom.toLowerCase(); });',
         'if(idx !== -1) EFFECTIF_COMPLET[idx] = res.joueur;',
+        'actualiserPhotoDansMemoire(res.joueur.nom, photoBusted);',
         'var jObj = JOUEURS.find(function(x){ return x.nom.toLowerCase() === res.joueur.nom.toLowerCase(); });',
-        'if(jObj){ jObj.poste = res.joueur.poste; jObj.photo = res.joueur.photo; jObj.note = res.joueur.note; }',
+        'if(jObj){ jObj.poste = res.joueur.poste; jObj.photo = photoBusted; jObj.note = res.joueur.note; jObj.equipe = res.joueur.equipe; }',
         'rendreRosterGrid(); initialiserColonnes();',
+        'if(SESSION_NOM && SESSION_NOM.toLowerCase() === res.joueur.nom.toLowerCase()){',
+          'majEspaceJoueur(SESSION_NOM);',
+        '}',
         'setTimeout(function(){ fermerModalJoueur(); }, 800);',
       '}).withFailureHandler(function(err){',
         'masquerLoading();',
@@ -8340,6 +8533,7 @@ function construireHtmlWebApp() {
     'function ouvrirModalNouveauJoueur(){',
       'document.getElementById("inpNouvNom").value = "";',
       'document.getElementById("inpNouvTel").value = "";',
+      'if(document.getElementById("inpNouvPhoto")) document.getElementById("inpNouvPhoto").value = "";',
       'document.getElementById("inpNouvNote").value = "";',
       'document.getElementById("selNouvPoste").value = "Demi-Centre";',
       'var boxNTres = document.getElementById("boxNouvJoueurTresorier");',
@@ -8359,6 +8553,7 @@ function construireHtmlWebApp() {
       'var nom = document.getElementById("inpNouvNom").value.trim();',
       'if(!nom){ document.getElementById("statusNouvJoueur").textContent = "Le nom est obligatoire."; return; }',
       'var tel = document.getElementById("inpNouvTel").value.trim();',
+      'var photo = document.getElementById("inpNouvPhoto") ? document.getElementById("inpNouvPhoto").value.trim() : "";',
       'var poste = document.getElementById("selNouvPoste").value;',
       'var eq = document.getElementById("selNouvEquipe").value;',
       'var note = document.getElementById("inpNouvNote").value.trim();',
@@ -8376,7 +8571,7 @@ function construireHtmlWebApp() {
         'masquerLoading();',
         'document.getElementById("statusNouvJoueur").textContent = err.message;',
         'afficherToast(err.message, "erreur");',
-      '}).ajouterJoueurParCoach(SESSION_TEL, SESSION_PIN, { nom: nom, tel: tel, poste: poste, equipe: eq, note: note, estTresorier: estNTres });',
+      '}).ajouterJoueurParCoach(SESSION_TEL, SESSION_PIN, { nom: nom, tel: tel, poste: poste, equipe: eq, photo: photo, note: note, estTresorier: estNTres });',
     '}',
     'var MODAL_RENFORT_IS_TRAIN = false;',
     'function ouvrirModalRenfort(estTrain){',
