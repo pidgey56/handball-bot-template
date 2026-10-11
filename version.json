@@ -3,6 +3,7 @@
   "releaseDate": "2026-10-11",
   "title": "Animations festives MVP & Chèvre, synchronisation Google Sheets & stabilité WebApp",
   "changelog": [
+    "Affichage automatique des emojis MVP (🏆) et Chèvre (🐐) à côté du nom des joueurs dans les messages WhatsApp de convocation et d'entraînement",
     "Animations festives plein écran lors de l'élection du MVP (trophées dorés, étoiles, confettis) et de la Chèvre du match (bêlements, chèvres bondissantes, confettis)",
     "Sélection et distinction directe du MVP et de la Chèvre du match depuis la composition tactique et les fiches joueurs",
     "Chargement instantané et sécurisé de la WebApp : initialisation résiliente multi-événements et watchdog automatique anti-blocage",
