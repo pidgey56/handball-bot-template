@@ -373,6 +373,66 @@ function getClubConfig(ss) {
   const labelEq2 = (equipesActives[1] && equipesActives[1].labelSondage) ? equipesActives[1].labelSondage : 'Équipe 2';
   const labelEq3 = (equipesActives[2] && equipesActives[2].labelSondage) ? equipesActives[2].labelSondage : 'Équipe 3';
 
+  // Lecture ou déduction des trésoriers et chouchou(x)
+  let chouchouConfig = '';
+  let tresoriersConfig = '';
+  const tresorierPhones = [];
+
+  if (shCfg) {
+    try {
+      const rowsCfg = shCfg.getRange('B18:C38').getValues();
+      for (let i = 0; i < rowsCfg.length; i++) {
+        const lbl = String(rowsCfg[i][0] || '').toLowerCase();
+        if (lbl.indexOf('chouchou') !== -1) {
+          const val = String(rowsCfg[i][1] || '').trim();
+          if (val) chouchouConfig = val;
+        }
+        if (lbl.indexOf('trésorier') !== -1 || lbl.indexOf('tresorier') !== -1) {
+          const val = String(rowsCfg[i][1] || '').trim();
+          if (val) {
+            tresoriersConfig = val;
+            val.split(',').forEach(function(item) {
+              const cleaned = normaliserNumero(item.trim());
+              if (cleaned && cleaned.length >= 10 && !tresorierPhones.includes(cleaned)) {
+                tresorierPhones.push(cleaned);
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  try {
+    const shEff = classeur.getSheetByName('Effectif');
+    if (shEff && shEff.getLastRow() > 1) {
+      const maxCols = Math.max(shEff.getLastColumn(), 9);
+      const rowsEff = shEff.getRange(2, 1, shEff.getLastRow() - 1, maxCols).getValues();
+      const chous = [];
+      const tres = [];
+      for (let i = 0; i < rowsEff.length; i++) {
+        const nom = String(rowsEff[i][0] || '').replace(/\s*\([^)]*\)\s*/g, '').trim();
+        if (!nom) continue;
+        const valH = rowsEff[i][7];
+        if (valH === true || /oui|true|tr[eé]sorier/i.test(String(valH || '').trim())) {
+          tres.push(nom);
+          const tPhone = normaliserNumero(dechiffrerNumero(rowsEff[i][1]));
+          if (tPhone && !tresorierPhones.includes(tPhone)) tresorierPhones.push(tPhone);
+        }
+        const valI = rowsEff[i][8];
+        if (valI === true || /oui|true|chouchou/i.test(String(valI || '').trim())) {
+          chous.push(nom);
+        }
+      }
+      if (!chouchouConfig && chous.length > 0) chouchouConfig = chous.join(', ');
+      if (!tresoriersConfig && tres.length > 0) tresoriersConfig = tres.join(', ');
+    }
+  } catch (e) {}
+
+  if (!chouchouConfig) {
+    try { chouchouConfig = PropertiesService.getScriptProperties().getProperty('CHOUCHOU_NOM') || ''; } catch (e) {}
+  }
+
   return {
     nomClub: nomClub,
     logoUrl: logoFinal,
@@ -395,7 +455,9 @@ function getClubConfig(ss) {
     couleurEquipe2: couleurEquipe2,
     couleurEquipe3: couleurEquipe3,
     urlFfhbClub: urlFfhbClub,
-    chouchou: (function(){ try { return PropertiesService.getScriptProperties().getProperty('CHOUCHOU_NOM') || ''; } catch(e){ return ''; } })()
+    tresoriers: tresoriersConfig,
+    tresorierPhones: tresorierPhones,
+    chouchou: chouchouConfig
   };
 }
 
@@ -429,6 +491,8 @@ function getDefaultConfig() {
     nomEquipe1: 'Équipe 1',
     nomEquipe2: 'Équipe 2',
     nomEquipe3: 'Équipe 3',
+    tresoriers: '',
+    tresorierPhones: [],
     chouchou: (function(){ try { return PropertiesService.getScriptProperties().getProperty('CHOUCHOU_NOM') || ''; } catch(e){ return ''; } })()
   };
 }
@@ -543,12 +607,16 @@ function initialiserOngletsWebApp(nbEquipesForce) {
   let shEff = ss.getSheetByName('Effectif');
   if (!shEff) {
     shEff = ss.insertSheet('Effectif');
-    shEff.getRange('A1:H1').setValues([['Nom / Surnom', 'Téléphone (format 336...)', 'Poste', 'Équipe habituelle', 'Photo (URL ou lien Drive)', 'Code PIN (Auto)', 'Notes Coach', 'Trésorier']]).setFontWeight('bold');
+    shEff.getRange('A1:I1').setValues([['Nom / Surnom', 'Téléphone (format 336...)', 'Poste', 'Équipe habituelle', 'Photo (URL ou lien Drive)', 'Code PIN (Auto)', 'Notes Coach', 'Trésorier', 'Chouchou']]).setFontWeight('bold');
   } else {
     try {
       const hVal = shEff.getRange('H1').getValue();
       if (!hVal) {
         shEff.getRange('H1').setValue('Trésorier').setFontWeight('bold');
+      }
+      const iVal = shEff.getRange('I1').getValue();
+      if (!iVal) {
+        shEff.getRange('I1').setValue('Chouchou').setFontWeight('bold');
       }
     } catch (e) {}
   }
@@ -643,6 +711,14 @@ function initialiserOngletsWebApp(nbEquipesForce) {
       if (!valB32) {
         shCfg.getRange('B32:D32').setValues([['Page FFHB du Club (URL)', '', 'Lien vers monclub.ffhandball.fr (logo et couleurs auto)']]);
       }
+      const valB33 = String(shCfg.getRange('B33').getValue() || '').trim();
+      if (!valB33) {
+        shCfg.getRange('B33:D33').setValues([['Trésoriers Caisse Noire', '', 'Liste des trésoriers autorisés (synchronisé avec l\'onglet Effectif)']]);
+      }
+      const valB34 = String(shCfg.getRange('B34').getValue() || '').trim();
+      if (!valB34) {
+        shCfg.getRange('B34:D34').setValues([['Chouchou(x) du Coach', '', 'Nom(s) du ou des chouchoux du coach (synchronisé avec l\'onglet Effectif)']]);
+      }
     }
 
     // Restaurer les libellés B22 à B25 s'ils ont été effacés ou modifiés par erreur (sans toucher aux valeurs de C22:C25)
@@ -665,7 +741,196 @@ function initialiserOngletsWebApp(nbEquipesForce) {
         shCfg.getRange('D25').setValue('Numéros des coachs autorisés (séparés par virgules)');
       }
     } catch (e) {}
+
+    try {
+      synchroniserTresoriersEtChouchouxSheet(ss);
+    } catch (e) {}
   }
+}
+
+/**
+ * Synchronise bidirectionnellement les Trésoriers et Chouchoux entre
+ * l'onglet "Effectif" (cols H & I) et l'onglet "Configuration" (lignes Trésoriers / Chouchou).
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - Le classeur Google Sheets (optionnel)
+ * @param {string} source - 'effectif' | 'configuration' | 'auto' (défaut: 'auto')
+ * @return {Object} { tresoriers: string[], chouchoux: string[] }
+ */
+function synchroniserTresoriersEtChouchouxSheet(ss, source) {
+  if (!ss) ss = getSpreadsheet();
+  source = String(source || 'auto').toLowerCase();
+
+  const shEff = ss.getSheetByName('Effectif');
+  const shCfg = ss.getSheetByName('Configuration');
+  if (!shEff) return { tresoriers: [], chouchoux: [] };
+
+  // Vérifier et initialiser les en-têtes colonnes H et I dans Effectif si absents
+  try {
+    const h1 = shEff.getRange('H1').getValue();
+    if (!h1) shEff.getRange('H1').setValue('Trésorier').setFontWeight('bold');
+    const i1 = shEff.getRange('I1').getValue();
+    if (!i1) shEff.getRange('I1').setValue('Chouchou').setFontWeight('bold');
+  } catch (e) {}
+
+  // Trouver les lignes Trésoriers et Chouchoux dans Configuration
+  let rowTresCfg = -1;
+  let rowChouCfg = -1;
+  let valTresCfg = '';
+  let valChouCfg = '';
+
+  if (shCfg) {
+    try {
+      const cfgRange = shCfg.getRange('B18:D38').getValues();
+      for (let r = 0; r < cfgRange.length; r++) {
+        const lbl = String(cfgRange[r][0] || '').toLowerCase();
+        if (lbl.indexOf('trésorier') !== -1 || lbl.indexOf('tresorier') !== -1) {
+          rowTresCfg = 18 + r;
+          valTresCfg = String(cfgRange[r][1] || '').trim();
+        } else if (lbl.indexOf('chouchou') !== -1) {
+          rowChouCfg = 18 + r;
+          valChouCfg = String(cfgRange[r][1] || '').trim();
+        }
+      }
+
+      // Si non trouvés, créer les lignes B33 / B34
+      if (rowTresCfg === -1) {
+        rowTresCfg = 33;
+        shCfg.getRange('B33:D33').setValues([['Trésoriers Caisse Noire', '', 'Liste des trésoriers autorisés (synchronisé avec l\'onglet Effectif)']]);
+      }
+      if (rowChouCfg === -1) {
+        rowChouCfg = 34;
+        shCfg.getRange('B34:D34').setValues([['Chouchou(x) du Coach', '', 'Nom(s) du ou des chouchoux du coach (synchronisé avec l\'onglet Effectif)']]);
+      }
+    } catch (e) {}
+  }
+
+  // Lecture des joueurs de l'onglet Effectif
+  const lastRowEff = shEff.getLastRow();
+  const maxColsEff = Math.max(shEff.getLastColumn(), 9);
+  let rowsEff = [];
+  if (lastRowEff > 1) {
+    rowsEff = shEff.getRange(2, 1, lastRowEff - 1, maxColsEff).getValues();
+  }
+
+  const nomsEff = [];
+  const tresoriersEff = [];
+  const chouchouxEff = [];
+
+  for (let i = 0; i < rowsEff.length; i++) {
+    const rawNom = String(rowsEff[i][0] || '').trim();
+    const nom = rawNom.replace(/\s*\([^)]*\)\s*/g, '').trim();
+    if (!nom) continue;
+    nomsEff.push({ index: i, nom: nom, rawNom: rawNom });
+
+    const valH = rowsEff[i][7];
+    if (valH === true || /oui|true|tr[eé]sorier/i.test(String(valH || '').trim())) {
+      tresoriersEff.push(nom);
+    }
+
+    const valI = rowsEff[i][8];
+    if (valI === true || /oui|true|chouchou/i.test(String(valI || '').trim())) {
+      chouchouxEff.push(nom);
+    }
+  }
+
+  let tresoriersFinaux = [];
+  let chouchouxFinaux = [];
+
+  if (source === 'configuration') {
+    // La feuille Configuration fait foi : propager vers Effectif
+    const listeNomsTresCfg = valTresCfg.split(',').map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
+    const listeNomsChouCfg = valChouCfg.split(',').map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
+
+    for (let k = 0; k < nomsEff.length; k++) {
+      const nom = nomsEff[k].nom;
+      const rowIndex = nomsEff[k].index + 2;
+
+      const isTres = (listeNomsTresCfg.indexOf(nom.toLowerCase()) !== -1);
+      shEff.getRange(rowIndex, 8).setValue(isTres ? 'OUI' : 'NON');
+      if (isTres) tresoriersFinaux.push(nom);
+
+      const isChou = (listeNomsChouCfg.indexOf(nom.toLowerCase()) !== -1);
+      shEff.getRange(rowIndex, 9).setValue(isChou ? 'OUI' : 'NON');
+      if (isChou) chouchouxFinaux.push(nom);
+    }
+  } else if (source === 'effectif') {
+    // La feuille Effectif fait foi : propager vers Configuration
+    tresoriersFinaux = tresoriersEff;
+    chouchouxFinaux = chouchouxEff;
+
+    if (shCfg) {
+      if (rowTresCfg > 0) shCfg.getRange(rowTresCfg, 3).setValue(tresoriersFinaux.join(', '));
+      if (rowChouCfg > 0) shCfg.getRange(rowChouCfg, 3).setValue(chouchouxFinaux.join(', '));
+    }
+  } else {
+    // Mode 'auto' : réconciliation intelligente
+    // 1. Trésoriers
+    if (tresoriersEff.length > 0) {
+      tresoriersFinaux = tresoriersEff;
+      if (shCfg && rowTresCfg > 0) {
+        shCfg.getRange(rowTresCfg, 3).setValue(tresoriersFinaux.join(', '));
+      }
+    } else if (valTresCfg) {
+      const listeTresCfg = valTresCfg.split(',').map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
+      for (let k = 0; k < nomsEff.length; k++) {
+        const nom = nomsEff[k].nom;
+        const rowIndex = nomsEff[k].index + 2;
+        const isTres = (listeTresCfg.indexOf(nom.toLowerCase()) !== -1);
+        if (isTres) {
+          shEff.getRange(rowIndex, 8).setValue('OUI');
+          tresoriersFinaux.push(nom);
+        } else {
+          shEff.getRange(rowIndex, 8).setValue('NON');
+        }
+      }
+    }
+
+    // 2. Chouchoux
+    if (chouchouxEff.length > 0) {
+      chouchouxFinaux = chouchouxEff;
+      if (shCfg && rowChouCfg > 0) {
+        shCfg.getRange(rowChouCfg, 3).setValue(chouchouxFinaux.join(', '));
+      }
+    } else if (valChouCfg) {
+      const listeChouCfg = valChouCfg.split(',').map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
+      for (let k = 0; k < nomsEff.length; k++) {
+        const nom = nomsEff[k].nom;
+        const rowIndex = nomsEff[k].index + 2;
+        const isChou = (listeChouCfg.indexOf(nom.toLowerCase()) !== -1);
+        if (isChou) {
+          shEff.getRange(rowIndex, 9).setValue('OUI');
+          chouchouxFinaux.push(nom);
+        } else {
+          shEff.getRange(rowIndex, 9).setValue('NON');
+        }
+      }
+    } else {
+      let propChou = '';
+      try { propChou = PropertiesService.getScriptProperties().getProperty('CHOUCHOU_NOM') || ''; } catch (e) {}
+      if (propChou) {
+        const listePropChou = propChou.split(',').map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
+        for (let k = 0; k < nomsEff.length; k++) {
+          const nom = nomsEff[k].nom;
+          const rowIndex = nomsEff[k].index + 2;
+          const isChou = (listePropChou.indexOf(nom.toLowerCase()) !== -1);
+          if (isChou) {
+            shEff.getRange(rowIndex, 9).setValue('OUI');
+            chouchouxFinaux.push(nom);
+          }
+        }
+        if (shCfg && rowChouCfg > 0) shCfg.getRange(rowChouCfg, 3).setValue(chouchouxFinaux.join(', '));
+      }
+    }
+  }
+
+  // Synchroniser ScriptProperties avec le ou les chouchou(x) finaux
+  try {
+    PropertiesService.getScriptProperties().setProperty('CHOUCHOU_NOM', chouchouxFinaux.join(', '));
+  } catch (e) {}
+
+  return {
+    tresoriers: tresoriersFinaux,
+    chouchoux: chouchouxFinaux
+  };
 }
 
 /**
@@ -745,7 +1010,7 @@ function initialiserClasseurComplet() {
   ]);
 
   shCfg.getRange('B17:D17').setValues([['Paramètre', 'Valeur', 'Aperçu / Description']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  shCfg.getRange('B18:D32').setValues([
+  shCfg.getRange('B18:D34').setValues([
     ['ID du Groupe WhatsApp', '120363xxxxxxxxx@g.us', 'Identifiant du groupe WhatsApp (...@g.us)'],
     ['Dépôt GitHub (owner/repo)', 'votre-pseudo/handball-bot', 'Format: utilisateur/depot'],
     ['Token GitHub (PAT)', 'ghp_VOTRE_TOKEN_ICI', 'Token GitHub classic avec droit repo'],
@@ -760,7 +1025,9 @@ function initialiserClasseurComplet() {
     ['Couleur Équipe 2 (Hex)', '#f97316', 'Couleur des maillots / colonne Équipe 2'],
     ['Couleur Équipe 3 (Hex)', '#10b981', 'Couleur des maillots / colonne Équipe 3'],
     ['Nombre d\'Équipes dans le groupe', nbEquipesChoisi, 'Nombre d\'équipes gérées (1, 2 ou 3 - défaut : 3)'],
-    ['Page FFHB du Club (URL)', '', 'Lien vers monclub.ffhandball.fr (logo et couleurs auto)']
+    ['Page FFHB du Club (URL)', '', 'Lien vers monclub.ffhandball.fr (logo et couleurs auto)'],
+    ['Trésoriers Caisse Noire', '', 'Liste des trésoriers autorisés (synchronisé avec l\'onglet Effectif)'],
+    ['Chouchou(x) du Coach', '', 'Nom(s) du ou des chouchoux du coach (synchronisé avec l\'onglet Effectif)']
   ]);
 
   try {
@@ -1309,6 +1576,8 @@ function verifierDroitsCoachOuDev(ss, tel, pin) {
 function verifierDroitsCoachOuTresorier(ss, tel, pin) {
   if (!tel) return false;
   if (verifierDroitsCoachOuDev(ss, tel, pin)) return true;
+  const cfg = getClubConfig(ss);
+  if (cfg.tresorierPhones && cfg.tresorierPhones.indexOf(tel) !== -1) return true;
   const shEff = ss.getSheetByName('Effectif');
   if (!shEff) return false;
   const rows = shEff.getDataRange().getValues();
@@ -1485,6 +1754,7 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
       shEff.getRange(i + 1, 7).setValue(nouvelleNote);
       if (estVraiCoach && joueurCible.estTresorier !== undefined) {
         shEff.getRange(i + 1, 8).setValue(joueurCible.estTresorier ? 'OUI' : 'NON');
+        try { synchroniserTresoriersEtChouchouxSheet(ss, 'effectif'); } catch (e) {}
       }
 
       if (nouveauPoste) {
@@ -1523,7 +1793,7 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
 }
 
 /**
- * Enregistre ou retire le chouchou du coach (Easter egg)
+ * Enregistre ou retire le ou les chouchou(x) du coach (Easter egg)
  */
 function enregistrerChouchou(telCoach, pinCoach, nomJoueur) {
   const ss = getSpreadsheet();
@@ -1532,6 +1802,31 @@ function enregistrerChouchou(telCoach, pinCoach, nomJoueur) {
   }
   const cleanNom = String(nomJoueur || '').trim();
   PropertiesService.getScriptProperties().setProperty('CHOUCHOU_NOM', cleanNom);
+
+  const shEff = ss.getSheetByName('Effectif');
+  if (shEff && shEff.getLastRow() > 1) {
+    const rows = shEff.getRange(2, 1, shEff.getLastRow() - 1, 1).getValues();
+    const listeNoms = cleanNom.split(',').map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
+    for (let i = 0; i < rows.length; i++) {
+      const nomP = String(rows[i][0] || '').replace(/\s*\([^)]*\)\s*/g, '').trim().toLowerCase();
+      const isChou = (listeNoms.indexOf(nomP) !== -1);
+      shEff.getRange(i + 2, 9).setValue(isChou ? 'OUI' : 'NON');
+    }
+  }
+
+  const shCfg = ss.getSheetByName('Configuration');
+  if (shCfg) {
+    try {
+      const cfgRange = shCfg.getRange('B18:B38').getValues();
+      for (let r = 0; r < cfgRange.length; r++) {
+        if (String(cfgRange[r][0] || '').toLowerCase().indexOf('chouchou') !== -1) {
+          shCfg.getRange(18 + r, 3).setValue(cleanNom);
+          break;
+        }
+      }
+    } catch (e) {}
+  }
+
   return { succes: true, chouchou: cleanNom };
 }
 
@@ -2642,8 +2937,10 @@ function ajouterJoueurParCoach(telCoach, pinCoach, joueurData) {
   const pin = String(joueurData.pin || ('0000' + Math.floor(Math.random() * 9000 + 1000)).slice(-4));
   const note = String(joueurData.note || '').trim();
   const estTresorier = (joueurData.estTresorier && estVraiCoach) ? 'OUI' : 'NON';
+  const estChouchou = (joueurData.estChouchou && estVraiCoach) ? 'OUI' : 'NON';
 
-  shEff.appendRow([nomNettoye, telNormalise ? chiffrerNumero(telNormalise) : '', poste, equipe, photo, pin, note, estTresorier]);
+  shEff.appendRow([nomNettoye, telNormalise ? chiffrerNumero(telNormalise) : '', poste, equipe, photo, pin, note, estTresorier, estChouchou]);
+  try { synchroniserTresoriersEtChouchouxSheet(ss, 'effectif'); } catch (e) {}
 
   // Ajouter également dans Votes_Semaine pour qu'il apparaisse dans les disponibilités
   const cfg = getClubConfig(ss);
@@ -2668,7 +2965,8 @@ function ajouterJoueurParCoach(telCoach, pinCoach, joueurData) {
       photo: convertirUrlPhoto(photo),
       pin: pin,
       note: note,
-      estTresorier: (estTresorier === 'OUI')
+      estTresorier: (estTresorier === 'OUI'),
+      estChouchou: (estChouchou === 'OUI')
     }
   };
 }
@@ -2694,6 +2992,7 @@ function supprimerJoueurParCoach(telCoach, pinCoach, nomJoueur) {
     if (nomExistant === nomCible) {
       shEff.deleteRow(i + 1);
       trouve = true;
+      try { synchroniserTresoriersEtChouchouxSheet(ss, 'effectif'); } catch (e) {}
       break;
     }
   }
@@ -2983,7 +3282,8 @@ function lireDonneesCoach() {
       if (note) mapNotes[cle] = note;
       const nbTr = (mapEntrainements[cle] !== undefined) ? mapEntrainements[cle] : 0;
       const estTresorier = Boolean(r[7] === true || String(r[7] || '').toLowerCase() === 'oui' || String(r[7] || '').toLowerCase() === 'true' || /tr[eé]sorier/i.test(String(r[7] || '')));
-      effectifComplet.push({ nom: nomPropre, tel: dechiffrerNumero(r[1]), poste: posteEff, equipe: equipeEff, photo: photo, note: note, entrainements: nbTr, estTresorier: estTresorier });
+      const estChouchou = Boolean(r[8] === true || String(r[8] || '').toLowerCase() === 'oui' || String(r[8] || '').toLowerCase() === 'true' || /chouchou/i.test(String(r[8] || '')));
+      effectifComplet.push({ nom: nomPropre, tel: dechiffrerNumero(r[1]), poste: posteEff, equipe: equipeEff, photo: photo, note: note, entrainements: nbTr, estTresorier: estTresorier, estChouchou: estChouchou });
     });
   }
   const joueurs = [];
@@ -4907,6 +5207,12 @@ function construireHtmlWebApp() {
     '[[/div]]',
     '[[script]]',
     'var CLUB_CONFIG = { nomClub: "' + cfg.nomClub + '", githubRepo: "' + (cfg.githubRepo || '') + '", chouchou: "' + (cfg.chouchou || '') + '", nbEquipes: ' + (cfg.nbEquipes || 2) + ', equipes: ' + JSON.stringify(cfg.equipes || []) + ', nomEquipe1: "' + cfg.nomEquipe1 + '", nomEquipe2: "' + cfg.nomEquipe2 + '", nomEquipe3: "' + (cfg.nomEquipe3 || 'Équipe 3') + '", couleurPrimaire: "' + cfg.couleurPrimaire + '", couleurSecondaire: "' + cfg.couleurSecondaire + '", couleurEquipe1: "' + cfg.couleurEquipe1 + '", couleurEquipe2: "' + cfg.couleurEquipe2 + '", couleurEquipe3: "' + (cfg.couleurEquipe3 || '#10b981') + '", logoUrl: "' + cfg.logoUrl + '", urlFfhbClub: "' + (cfg.urlFfhbClub || '') + '" };',
+    'function estJoueurChouchou(nom){',
+    '  if(!nom || !CLUB_CONFIG || !CLUB_CONFIG.chouchou) return false;',
+    '  var cible = String(nom).trim().toLowerCase();',
+    '  var liste = String(CLUB_CONFIG.chouchou).split(",").map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);',
+    '  return liste.indexOf(cible) !== -1;',
+    '}',
     'var NOUVEAU_LOGO_IMPORTE = ""; var NOUVEAU_NOM_CLUB_IMPORTE = ""; var NOUVEAU_SALLE_IMPORTEE = "";',
     'var SEANCES_TRAIN = ' + JSON.stringify(cfg.seancesTrain || [{ id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi (20h30)", actif: true }, { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi (20h30)", actif: true }, { id: "jeu", jour: "Jeudi", horaire: "20h30", label: "Jeudi (20h30)", actif: false }]) + ';',
     'var DERNIERE_COMPO = null;',
@@ -5540,7 +5846,7 @@ function construireHtmlWebApp() {
       '};',
       'var pleft = document.createElement("div"); pleft.className = "pleft";',
       'var pmini = document.createElement("div"); pmini.className = "pmini";',
-      'var isChou = (CLUB_CONFIG && CLUB_CONFIG.chouchou && String(j.nom || "").trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase());',
+      'var isChou = estJoueurChouchou(j.nom);',
       'if(isChou) pmini.classList.add("is-chouchou");',
       'var initMini = (j.nom || "").trim().charAt(0).toUpperCase();',
       'if(j.photo){ var img = document.createElement("img"); img.src = j.photo; img.onerror = function(){ this.remove(); pmini.textContent = initMini; }; pmini.appendChild(img); }',
@@ -6023,7 +6329,7 @@ function construireHtmlWebApp() {
             'executerPermutationTactique(eqKey, d, { source: "court", posCode: pos.code, nom: nomJ });',
           '};',
           'var av = document.createElement("div"); av.className = "court-player-avatar";',
-          'if(jObj && CLUB_CONFIG && CLUB_CONFIG.chouchou && String(jObj.nom || "").trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase()){ av.classList.add("is-chouchou"); }',
+          'if(jObj && estJoueurChouchou(jObj.nom)){ av.classList.add("is-chouchou"); }',
           'var initLtr = jObj ? (jObj.nom || "").trim().charAt(0).toUpperCase() : "-";',
           'if(jObj && jObj.photo){',
             'var img = document.createElement("img"); img.src = jObj.photo; img.alt = jObj.nom;',
@@ -6076,7 +6382,7 @@ function construireHtmlWebApp() {
               'if(d.source === "bench" && d.nom === nom) return;',
               'executerPermutationTactique(eqKey, d, { source: "bench", nom: nom });',
             '};',
-            'var chouMark = (CLUB_CONFIG && CLUB_CONFIG.chouchou && String(jObj.nom || "").trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase()) ? "❤️ " : "";',
+            'var chouMark = (jObj && estJoueurChouchou(jObj.nom)) ? "❤️ " : "";',
             'bChip.textContent = chouMark + jObj.nom + " (" + (jObj.poste || "Demi-Centre") + ")";',
             'bChip.title = "Glissez ou cliquez pour placer " + jObj.nom + " sur le terrain";',
             'bChip.onclick = function(e){ e.stopPropagation(); gererClicTactique(eqKey, { source: "bench", nom: jObj.nom }); };',
@@ -6707,7 +7013,7 @@ function construireHtmlWebApp() {
         'if(pInit) pInit.style.display = "flex";',
         'if(pImg){ pImg.src = ""; pImg.style.display = "none"; }',
       '}',
-      'var isChou = (CLUB_CONFIG && CLUB_CONFIG.chouchou && String(nom).trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase());',
+      'var isChou = estJoueurChouchou(nom);',
       'var chouBadge = document.getElementById("playerChouchouBadgeCard");',
       'if(chouBadge) chouBadge.style.display = isChou ? "block" : "none";',
       'var nbTr = 0;',
@@ -8219,7 +8525,7 @@ function construireHtmlWebApp() {
       'document.getElementById("rosterCount").textContent = EFFECTIF_COMPLET.length + " joueurs";',
       'EFFECTIF_COMPLET.forEach(function(p){',
         'var card = document.createElement("div"); card.className = "rcard"; card.onclick = function(){ ouvrirModalJoueur(p.nom); };',
-        'var isChou = (CLUB_CONFIG && CLUB_CONFIG.chouchou && String(p.nom || "").trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase());',
+        'var isChou = estJoueurChouchou(p.nom);',
         'var av = document.createElement("div"); av.className = "pmini" + (isChou ? " is-chouchou" : "");',
         'var rInit = (p.nom || "").trim().charAt(0).toUpperCase();',
         'if(p.photo){ var img = document.createElement("img"); img.src = p.photo; img.onerror = function(){ this.remove(); av.textContent = rInit; }; av.appendChild(img); }',
@@ -8319,7 +8625,7 @@ function construireHtmlWebApp() {
     '    mImg.style.display = "none"; mInit.style.display = "flex";',
     '    if(bdrop){ bdrop.style.opacity = "0"; bdrop.style.backgroundImage = "none"; }',
     '  }',
-    '  var isChou = (CLUB_CONFIG && CLUB_CONFIG.chouchou && String(nom).trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase());',
+    '  var isChou = estJoueurChouchou(nom);',
     '  majBoutonChouchouModal(isChou);',
     '  document.getElementById("modalJoueurBg").style.display = "flex";',
     '}',
@@ -8359,7 +8665,7 @@ function construireHtmlWebApp() {
     '}',
     'function verifierChouchouSelectionne(nomJoueur){',
     '  if(!nomJoueur || !CLUB_CONFIG || !CLUB_CONFIG.chouchou) return;',
-    '  if(String(nomJoueur).trim().toLowerCase() === String(CLUB_CONFIG.chouchou).trim().toLowerCase()){',
+    '  if(estJoueurChouchou(nomJoueur)){',
     '    declencherInondationCoeurs(nomJoueur);',
     '  }',
     '}',
@@ -8387,10 +8693,19 @@ function construireHtmlWebApp() {
     '}',
     'function toggleChouchouCourant(){',
     '  if(!JOUEUR_MODAL_COURANT) return;',
-    '  var nomActuel = (CLUB_CONFIG && CLUB_CONFIG.chouchou) ? String(CLUB_CONFIG.chouchou).trim().toLowerCase() : "";',
     '  var cibleNom = String(JOUEUR_MODAL_COURANT).trim();',
-    '  var devientChouchou = (nomActuel !== cibleNom.toLowerCase());',
-    '  var nouveauChouchou = devientChouchou ? cibleNom : "";',
+    '  var liste = (CLUB_CONFIG && CLUB_CONFIG.chouchou) ? String(CLUB_CONFIG.chouchou).split(",").map(function(s){ return s.trim(); }).filter(Boolean) : [];',
+    '  var idx = -1;',
+    '  for(var i=0; i<liste.length; i++){',
+    '    if(liste[i].toLowerCase() === cibleNom.toLowerCase()){ idx = i; break; }',
+    '  }',
+    '  var devientChouchou = (idx === -1);',
+    '  if(devientChouchou){',
+    '    liste.push(cibleNom);',
+    '  } else {',
+    '    liste.splice(idx, 1);',
+    '  }',
+    '  var nouveauChouchou = liste.join(", ");',
     '  if(!CLUB_CONFIG) CLUB_CONFIG = {};',
     '  CLUB_CONFIG.chouchou = nouveauChouchou;',
     '  majBoutonChouchouModal(devientChouchou);',
@@ -8400,9 +8715,9 @@ function construireHtmlWebApp() {
     '  if(typeof afficherApercuTactique === "function" && typeof EQUIPE_TACTIQUE_COURANTE !== "undefined" && EQUIPE_TACTIQUE_COURANTE){ afficherApercuTactique(EQUIPE_TACTIQUE_COURANTE); }',
     '  if(devientChouchou){',
     '    declencherInondationCoeurs(cibleNom);',
-    '    afficherToast(cibleNom + " est désormais le Chouchou du coach ! ❤️", "succes");',
+    '    afficherToast(cibleNom + " est désormais dans les Chouchoux du coach ! ❤️", "succes");',
     '  } else {',
-    '    afficherToast("Chouchou retiré.", "info");',
+    '    afficherToast(cibleNom + " retiré des chouchoux.", "info");',
     '  }',
     '  google.script.run.withSuccessHandler(function(res){',
     '    if(res && res.chouchou !== undefined) CLUB_CONFIG.chouchou = res.chouchou;',
@@ -9298,6 +9613,7 @@ function onOpen() {
       .addItem('🔐 9. Chiffrer tous les numéros de l\'effectif (RGPD)', 'menuChiffrerNumerosEffectif')
       .addItem('🔓 10. Déchiffrer tous les numéros de l\'effectif', 'menuDechiffrerNumerosEffectif')
       .addItem('🧹 11. Purger les absences terminées (Notes & WebApp)', 'menuPurgerAbsencesTerminees')
+      .addItem('📋 12. Lister Trésoriers & Chouchoux', 'menuListerTresoriersEtChouchoux')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
@@ -9312,5 +9628,80 @@ function menuPurgerAbsencesTerminees() {
   } catch (e) {
     SpreadsheetApp.getUi().alert('Erreur lors de la purge : ' + e.message);
   }
+}
+
+/**
+ * Affiche la liste des Trésoriers et Chouchoux dans une boîte de dialogue Google Sheets
+ */
+function menuListerTresoriersEtChouchoux() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const res = synchroniserTresoriersEtChouchouxSheet(ss, 'auto');
+    const ui = SpreadsheetApp.getUi();
+
+    let msg = '';
+    msg += '💰 TRÉSORIERS CAISSE NOIRE (' + (res.tresoriers ? res.tresoriers.length : 0) + ') :\n';
+    if (res.tresoriers && res.tresoriers.length > 0) {
+      res.tresoriers.forEach(function(nom) {
+        msg += '  • ' + nom + '\n';
+      });
+    } else {
+      msg += '  (Aucun trésorier configuré)\n';
+    }
+
+    msg += '\n❤️ CHOUCHOU(X) DU COACH (' + (res.chouchoux ? res.chouchoux.length : 0) + ') :\n';
+    if (res.chouchoux && res.chouchoux.length > 0) {
+      res.chouchoux.forEach(function(nom) {
+        msg += '  • ' + nom + '\n';
+      });
+    } else {
+      msg += '  (Aucun chouchou configuré)\n';
+    }
+
+    msg += '\n💡 Astuce : Vous pouvez modifier les trésoriers et chouchoux :\n';
+    msg += '  1. Dans l\'onglet "Effectif" (Colonnes H "Trésorier" & I "Chouchou" avec OUI/NON)\n';
+    msg += '  2. Dans l\'onglet "Configuration" (Lignes Trésoriers & Chouchou)\n';
+    msg += '  3. Directement depuis la WebApp (Espace Coach / Fiche joueur)\n';
+    msg += 'Toutes les modifications sont synchronisées automatiquement !';
+
+    ui.alert('📋 Trésoriers & Chouchoux du Club', msg, ui.ButtonSet.OK);
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur : ' + e.message);
+  }
+}
+
+/**
+ * Déclencheur automatique lors de modifications manuelles dans les onglets Google Sheets
+ */
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const sheet = e.range.getSheet();
+    if (!sheet) return;
+    const sheetName = sheet.getName();
+    const row = e.range.getRow();
+    const col = e.range.getColumn();
+
+    // 1. Modification dans l'onglet Effectif sur colonnes Trésorier (Col H = 8) ou Chouchou (Col I = 9)
+    if (sheetName === 'Effectif' && row > 1 && (col === 8 || col === 9)) {
+      const ss = e.source || sheet.getParent();
+      synchroniserTresoriersEtChouchouxSheet(ss, 'effectif');
+      try {
+        ss.toast('Trésoriers et Chouchoux synchronisés !', '⚡ Handball Bot', 3);
+      } catch (err) {}
+    }
+
+    // 2. Modification dans l'onglet Configuration sur la colonne C (valeurs)
+    if (sheetName === 'Configuration' && col === 3 && row >= 18 && row <= 38) {
+      const label = String(sheet.getRange(row, 2).getValue() || '').toLowerCase();
+      if (label.indexOf('trésorier') !== -1 || label.indexOf('tresorier') !== -1 || label.indexOf('chouchou') !== -1) {
+        const ss = e.source || sheet.getParent();
+        synchroniserTresoriersEtChouchouxSheet(ss, 'configuration');
+        try {
+          ss.toast('Effectif synchronisé avec la Configuration !', '⚡ Handball Bot', 3);
+        } catch (err) {}
+      }
+    }
+  } catch (err) {}
 }
 

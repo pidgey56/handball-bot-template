@@ -21,3 +21,5 @@ Thumbs.db
 # NOTE : Ne pas ignorer auth_info/, last_poll.json et votes_semaine.json !
 # GitHub Actions les sauvegarde automatiquement sur la branche principale
 # pour maintenir la session WhatsApp et synchroniser les votes.
+
+todo.md
