@@ -502,7 +502,8 @@ function sauvegarderFichierVotesLocal(botJid, botLid, afficherBilan) {
     }
     const optName = option.name;
     const optNameUp = optName.toUpperCase();
-    const isTraining = optNameUp.includes('ENTRAÎNEMENT') || optNameUp.includes('ENTRAINEMENT') || optNameUp.includes('TRAINING');
+    const isAbsence = (optNameUp.includes('ABS') || optNameUp.includes('ABSENT') || optNameUp.includes('INDISPO')) && !optNameUp.includes('DISPO');
+    const isTraining = (optNameUp.includes('ENTRAÎNEMENT') || optNameUp.includes('ENTRAINEMENT') || optNameUp.includes('TRAINING')) && !isAbsence;
 
     for (const rawVoter of option.voters) {
       let cleanJid = (rawVoter === 'me' && botJid) ? jidNormalizedUser(botJid) : jidNormalizedUser(rawVoter);
@@ -532,7 +533,14 @@ function sauvegarderFichierVotesLocal(botJid, botLid, afficherBilan) {
           dispoJeudi: false,
           dispoVendredi: false,
           dispoSamedi: false,
-          dispoDimanche: false
+          dispoDimanche: false,
+          absentLundi: false,
+          absentMardi: false,
+          absentMercredi: false,
+          absentJeudi: false,
+          absentVendredi: false,
+          absentSamedi: false,
+          absentDimanche: false
         };
       }
 
@@ -540,13 +548,35 @@ function sauvegarderFichierVotesLocal(botJid, botLid, afficherBilan) {
         joueursMap[phone].selectedOptions.push(optName);
       }
 
-      if (isTraining) {
-        joueursMap[phone].nbTrainings += 1;
+      if (isAbsence) {
         for (const day of DAYS) {
           if (optNameUp.includes(day)) {
-            const prop = 'dispo' + day.charAt(0) + day.slice(1).toLowerCase();
-            joueursMap[phone][prop] = true;
+            const propDispo = 'dispo' + day.charAt(0) + day.slice(1).toLowerCase();
+            const propAbs = 'absent' + day.charAt(0) + day.slice(1).toLowerCase();
+            joueursMap[phone][propAbs] = true;
+            if (joueursMap[phone][propDispo]) {
+              joueursMap[phone][propDispo] = false;
+              joueursMap[phone].nbTrainings = Math.max(0, joueursMap[phone].nbTrainings - 1);
+            }
           }
+        }
+      }
+
+      if (isTraining) {
+        let matchedDay = false;
+        for (const day of DAYS) {
+          if (optNameUp.includes(day)) {
+            matchedDay = true;
+            const propDispo = 'dispo' + day.charAt(0) + day.slice(1).toLowerCase();
+            const propAbs = 'absent' + day.charAt(0) + day.slice(1).toLowerCase();
+            if (!joueursMap[phone][propAbs]) {
+              joueursMap[phone][propDispo] = true;
+              joueursMap[phone].nbTrainings += 1;
+            }
+          }
+        }
+        if (!matchedDay) {
+          joueursMap[phone].nbTrainings += 1;
         }
       }
 

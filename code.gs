@@ -198,66 +198,114 @@ function getClubConfig(ss) {
   const equipesActives = equipes.slice(0, nbEquipesCfg);
   const nbEquipes = nbEquipesCfg;
 
-  // Lecture des entraînements configurés (ScriptProperties ou feuille Configuration B9:D14)
+  // Lecture des entraînements configurés (Feuille Configuration B9:D18 ou ScriptProperties)
   const extraireHoraire = function(str) {
     const m = String(str || '').match(/(\d{1,2}[h:]\d{0,2})/i);
     return m ? m[1].replace(':', 'h') : '20h30';
   };
 
-  let seancesTrain = [];
-  try {
-    const rawProp = PropertiesService.getScriptProperties().getProperty('CONFIG_SEANCES_TRAIN');
-    if (rawProp) {
-      const parsed = JSON.parse(rawProp);
-      if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= 5) {
-        seancesTrain = parsed.map(function(s, idx) {
-          const j = String(s.jour || ('Séance ' + (idx + 1))).trim();
-          const h = extraireHoraire(s.horaire || '20h30');
-          return {
-            id: s.id || ('s' + (idx + 1)),
-            jour: j,
-            horaire: h,
-            label: s.label || ('Entraînement ' + j + ' ' + h),
-            actif: s.actif !== false
-          };
-        });
+  const extraireJour = function(str) {
+    const s = String(str || '').toUpperCase();
+    const jours = ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI', 'DIMANCHE'];
+    for (let i = 0; i < jours.length; i++) {
+      if (s.includes(jours[i])) {
+        return jours[i].charAt(0) + jours[i].slice(1).toLowerCase();
       }
     }
-  } catch (e) {
-    Logger.log('Erreur lecture CONFIG_SEANCES_TRAIN : ' + e.message);
+    return '';
+  };
+
+  const mapJourId = {
+    'lundi': 'lun', 'mardi': 'mar', 'mercredi': 'mer',
+    'jeudi': 'jeu', 'vendredi': 'ven', 'samedi': 'sam', 'dimanche': 'dim'
+  };
+  const defJours = ['Lundi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  const defHoraires = ['20h30', '20h30', '20h30', '20h00', '10h00'];
+
+  let seancesTrain = [];
+
+  // 1. Lire depuis la feuille Configuration (B9:D18) si elle contient des créneaux
+  if (shCfg) {
+    try {
+      const rowsTrain = shCfg.getRange('B9:D18').getValues();
+      for (let i = 0; i < 5; i++) {
+        const rEnt = rowsTrain[i * 2];
+        const rAbs = rowsTrain[i * 2 + 1];
+        if (!rEnt || !rEnt[1]) continue;
+        const rawLabelEnt = String(rEnt[1]).trim();
+        if (!rawLabelEnt || rawLabelEnt.toLowerCase() === 'désactivé' || rawLabelEnt.toLowerCase() === 'desactive') continue;
+
+        const j = extraireJour(rawLabelEnt) || defJours[i] || ('Séance ' + (i + 1));
+        const h = extraireHoraire(rawLabelEnt) || defHoraires[i] || '20h30';
+        const baseId = mapJourId[j.toLowerCase()] || ('s' + (i + 1));
+        const id = seancesTrain.some(function(x){ return x.id === baseId; }) ? (baseId + '_' + (i + 1)) : baseId;
+        const actifEnt = (String(rEnt[2] || '').trim().toUpperCase() === 'OUI');
+
+        let rawLabelAbs = (rAbs && rAbs[1]) ? String(rAbs[1]).trim() : '';
+        if (rawLabelAbs.toLowerCase() === 'désactivé' || rawLabelAbs.toLowerCase() === 'desactive') rawLabelAbs = '';
+        const labelAbs = rawLabelAbs || ('Absent ' + j);
+        const actifAbs = (rAbs && rAbs[2]) ? (String(rAbs[2] || '').trim().toUpperCase() === 'OUI') : true;
+
+        seancesTrain.push({
+          id: id,
+          jour: j,
+          horaire: h,
+          label: rawLabelEnt,
+          labelAbsent: labelAbs,
+          actif: actifEnt,
+          actifAbsent: actifAbs
+        });
+      }
+    } catch (e) {
+      Logger.log('Erreur lecture B9:D18 shCfg : ' + e.message);
+    }
   }
 
+  // 2. Si la feuille est vide, tenter depuis ScriptProperties
   if (!seancesTrain.length) {
-    const rowsTrain = shCfg.getRange('B9:D14').getValues();
-    seancesTrain = [
-      {
-        id: 'lun',
-        jour: 'Lundi',
-        label: (rowsTrain[0] && rowsTrain[0][1]) ? String(rowsTrain[0][1]).trim() : 'Entraînement Lundi 20h30',
-        horaire: extraireHoraire(rowsTrain[0] ? rowsTrain[0][1] : ''),
-        actif: (rowsTrain[0] && String(rowsTrain[0][2]).toUpperCase() === 'OUI')
-      },
-      {
-        id: 'mer',
-        jour: 'Mercredi',
-        label: (rowsTrain[2] && rowsTrain[2][1]) ? String(rowsTrain[2][1]).trim() : 'Entraînement Mercredi 20h30',
-        horaire: extraireHoraire(rowsTrain[2] ? rowsTrain[2][1] : ''),
-        actif: (rowsTrain[2] && String(rowsTrain[2][2]).toUpperCase() === 'OUI')
-      },
-      {
-        id: 'jeu',
-        jour: 'Jeudi',
-        label: (rowsTrain[4] && rowsTrain[4][1]) ? String(rowsTrain[4][1]).trim() : 'Entraînement Jeudi 20h30',
-        horaire: extraireHoraire(rowsTrain[4] ? rowsTrain[4][1] : ''),
-        actif: (rowsTrain[4] && String(rowsTrain[4][2]).toUpperCase() === 'OUI')
+    try {
+      const rawProp = PropertiesService.getScriptProperties().getProperty('CONFIG_SEANCES_TRAIN');
+      if (rawProp) {
+        const parsed = JSON.parse(rawProp);
+        if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= 5) {
+          seancesTrain = parsed.map(function(s, idx) {
+            const j = String(s.jour || ('Séance ' + (idx + 1))).trim();
+            const h = extraireHoraire(s.horaire || '20h30');
+            return {
+              id: s.id || ('s' + (idx + 1)),
+              jour: j,
+              horaire: h,
+              label: s.label || ('Entraînement ' + j + ' ' + h),
+              labelAbsent: s.labelAbsent || ('Absent ' + j),
+              actif: s.actif !== false,
+              actifAbsent: s.actifAbsent !== false
+            };
+          });
+        }
       }
+    } catch (e) {
+      Logger.log('Erreur lecture CONFIG_SEANCES_TRAIN : ' + e.message);
+    }
+  }
+
+  // 3. Fallback par défaut (3 séances)
+  if (!seancesTrain.length) {
+    seancesTrain = [
+      { id: 'lun', jour: 'Lundi', horaire: '20h30', label: 'Entraînement Lundi 20h30', labelAbsent: 'Absent Lundi', actif: true, actifAbsent: true },
+      { id: 'mer', jour: 'Mercredi', horaire: '20h30', label: 'Entraînement Mercredi 20h30', labelAbsent: 'Absent Mercredi', actif: true, actifAbsent: true },
+      { id: 'jeu', jour: 'Jeudi', horaire: '20h30', label: 'Entraînement Jeudi 20h30', labelAbsent: 'Absent Jeudi', actif: false, actifAbsent: false }
     ];
   }
 
   const entrainements = [];
   seancesTrain.forEach(function(s) {
     if (s.label) {
-      entrainements.push({ label: s.label, actif: s.actif });
+      entrainements.push({
+        label: s.label,
+        actif: s.actif,
+        labelAbsent: s.labelAbsent || ('Absent ' + (s.jour || '')),
+        actifAbsent: (s.actifAbsent !== false && s.actif)
+      });
     }
   });
 
@@ -437,9 +485,20 @@ function genererSondageHebdo() {
 
   const optionsFinales = [];
   cfg.entrainements.forEach(function(tr) {
-    if (tr.actif && tr.label) optionsFinales.push(tr.label);
+    if (tr.actif && tr.label) {
+      optionsFinales.push(tr.label);
+      if (tr.actifAbsent && tr.labelAbsent) {
+        optionsFinales.push(tr.labelAbsent);
+      }
+    }
   });
   optionsMatchs.forEach(function(opt) { optionsFinales.push(opt); });
+
+  // Sécurité : WhatsApp limite les sondages à 12 options maximum
+  if (optionsFinales.length > 12) {
+    Logger.log('Tronquage du sondage à 12 options (WhatsApp limite)');
+    optionsFinales = optionsFinales.slice(0, 12);
+  }
 
   if (sheetApercu) {
     sheetApercu.getRange('B3').setValue('Titre du sondage : ' + titreSondage);
@@ -678,11 +737,11 @@ function initialiserClasseurComplet() {
   shCfg.getRange('B8:D8').setValues([['Ordre', "Intitulé de l'option dans le sondage", 'Actif (OUI/NON)']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
   shCfg.getRange('B9:D14').setValues([
     [1, 'Entraînement Lundi 20h30', 'OUI'],
-    [2, 'ABS Lundi', 'OUI'],
+    [2, 'Absent Lundi', 'OUI'],
     [3, 'Entraînement Mercredi 20h30', 'OUI'],
-    [4, 'ABS Mercredi', 'OUI'],
+    [4, 'Absent Mercredi', 'OUI'],
     [5, 'Entraînement Jeudi 20h30', 'NON'],
-    [6, 'ABS Jeudi', 'NON']
+    [6, 'Absent Jeudi', 'NON']
   ]);
 
   shCfg.getRange('B17:D17').setValues([['Paramètre', 'Valeur', 'Aperçu / Description']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
@@ -2367,17 +2426,31 @@ function enregistrerVotesDansSheet(votes) {
       const jourUp = (s.jour || '').toUpperCase();
       let dispoSeance = false;
       const propDay = 'dispo' + (s.jour || '').charAt(0).toUpperCase() + (s.jour || '').slice(1).toLowerCase();
-      if (v[propDay] !== undefined) {
+      const propAbs = 'absent' + (s.jour || '').charAt(0).toUpperCase() + (s.jour || '').slice(1).toLowerCase();
+
+      const aVoteAbsent = (v[propAbs] === true) || (selOpts.length > 0 && jourUp && selOpts.some(function(opt){
+        return opt.includes(jourUp) && (opt.includes('ABS') || opt.includes('ABSENT') || opt.includes('INDISPO')) && !opt.includes('DISPO');
+      }));
+
+      if (aVoteAbsent) {
+        dispoSeance = false;
+      } else if (v[propDay] !== undefined) {
         dispoSeance = !!v[propDay];
       } else if (selOpts.length > 0 && jourUp) {
         dispoSeance = selOpts.some(function(opt){
-          return opt.includes(jourUp) && (opt.includes('ENTRAÎNEMENT') || opt.includes('ENTRAINEMENT') || opt.includes('TRAINING'));
+          return opt.includes(jourUp) && (opt.includes('ENTRAÎNEMENT') || opt.includes('ENTRAINEMENT') || opt.includes('TRAINING')) && !opt.includes('ABS');
         });
       } else {
         dispoSeance = (ancienVal === 'OUI');
       }
       ligne.push(dispoSeance ? 'OUI' : 'NON');
     });
+
+    let nbTrReel = 0;
+    for (let c = 3 + cfg.nbEquipes; c < ligne.length; c++) {
+      if (ligne[c] === 'OUI') nbTrReel++;
+    }
+    ligne[2] = nbTrReel;
 
     dictionnaireJoueurs[fiche.nom.toLowerCase()] = ligne;
   });
@@ -2725,12 +2798,16 @@ function enregistrerConfigEntrainements(telCoach, pinCoach, creneaux, nbSeances)
   cList = cList.map(function(c, i) {
     const j = String(c.jour || ('Séance ' + (i + 1))).trim();
     const h = String(c.horaire || '20h30').trim();
+    const lEnt = c.label ? String(c.label).trim() : ('Entraînement ' + j + ' ' + h);
+    const lAbs = c.labelAbsent ? String(c.labelAbsent).trim() : ('Absent ' + j);
     return {
       id: c.id || ('s' + (i + 1)),
       jour: j,
       horaire: h,
-      label: 'Entraînement ' + j + ' ' + h,
-      actif: (c.actif === true || c.actif === 'OUI')
+      label: lEnt,
+      labelAbsent: lAbs,
+      actif: (c.actif === true || c.actif === 'OUI'),
+      actifAbsent: (c.actifAbsent !== false && c.actifAbsent !== 'NON')
     };
   });
 
@@ -2751,16 +2828,21 @@ function enregistrerConfigEntrainements(telCoach, pinCoach, creneaux, nbSeances)
       if (i < cList.length) {
         const c = cList[i];
         const labelEnt = c.label;
-        const labelAbs = 'ABS ' + c.jour;
+        const labelAbs = c.labelAbsent || ('Absent ' + c.jour);
         const actifStr = c.actif ? 'OUI' : 'NON';
+        const actifAbsStr = (c.actif && c.actifAbsent !== false) ? 'OUI' : 'NON';
         shCfg.getRange(rowIdx, 3, 1, 2).setValues([[labelEnt, actifStr]]);
-        shCfg.getRange(rowIdx + 1, 3, 1, 2).setValues([[labelAbs, actifStr]]);
+        shCfg.getRange(rowIdx + 1, 3, 1, 2).setValues([[labelAbs, actifAbsStr]]);
       } else {
         shCfg.getRange(rowIdx, 3, 1, 2).setValues([['Désactivé', 'NON']]);
         shCfg.getRange(rowIdx + 1, 3, 1, 2).setValues([['Désactivé', 'NON']]);
       }
     }
   }
+
+  try {
+    genererSondageHebdo();
+  } catch (e) {}
 
   return { ok: true, count: cList.length, seances: cList };
 }
@@ -3735,7 +3817,10 @@ function construireHtmlWebApp() {
           '[[div id="boxCfgTrain1" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
             '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
               '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 1[[/span]]',
-              '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif1" checked]] Actif sondage[[/label]]',
+              '[[div style="display:flex;gap:10px;align-items:center;"]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif1" checked]] Actif sondage[[/label]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l\'option Absent dans le sondage WhatsApp"]][[input type="checkbox" id="cfgTrActifAbs1" checked]] Option Absent[[/label]]',
+              '[[/div]]',
             '[[/div]]',
             '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Jour :[[/label]][[select id="cfgTrJour1" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"]][[option value="Lundi" selected]]Lundi[[/option]][[option value="Mardi"]]Mardi[[/option]][[option value="Mercredi"]]Mercredi[[/option]][[option value="Jeudi"]]Jeudi[[/option]][[option value="Vendredi"]]Vendredi[[/option]][[option value="Samedi"]]Samedi[[/option]][[option value="Dimanche"]]Dimanche[[/option]][[/select]][[/div]]',
@@ -3745,7 +3830,10 @@ function construireHtmlWebApp() {
           '[[div id="boxCfgTrain2" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
             '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
               '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 2[[/span]]',
-              '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif2" checked]] Actif sondage[[/label]]',
+              '[[div style="display:flex;gap:10px;align-items:center;"]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif2" checked]] Actif sondage[[/label]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l\'option Absent dans le sondage WhatsApp"]][[input type="checkbox" id="cfgTrActifAbs2" checked]] Option Absent[[/label]]',
+              '[[/div]]',
             '[[/div]]',
             '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Jour :[[/label]][[select id="cfgTrJour2" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"]][[option value="Lundi"]]Lundi[[/option]][[option value="Mardi"]]Mardi[[/option]][[option value="Mercredi" selected]]Mercredi[[/option]][[option value="Jeudi"]]Jeudi[[/option]][[option value="Vendredi"]]Vendredi[[/option]][[option value="Samedi"]]Samedi[[/option]][[option value="Dimanche"]]Dimanche[[/option]][[/select]][[/div]]',
@@ -3755,7 +3843,10 @@ function construireHtmlWebApp() {
           '[[div id="boxCfgTrain3" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);"]]',
             '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
               '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 3[[/span]]',
-              '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif3"]] Actif sondage[[/label]]',
+              '[[div style="display:flex;gap:10px;align-items:center;"]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif3"]] Actif sondage[[/label]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l\'option Absent dans le sondage WhatsApp"]][[input type="checkbox" id="cfgTrActifAbs3" checked]] Option Absent[[/label]]',
+              '[[/div]]',
             '[[/div]]',
             '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Jour :[[/label]][[select id="cfgTrJour3" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"]][[option value="Lundi"]]Lundi[[/option]][[option value="Mardi"]]Mardi[[/option]][[option value="Mercredi"]]Mercredi[[/option]][[option value="Jeudi" selected]]Jeudi[[/option]][[option value="Vendredi"]]Vendredi[[/option]][[option value="Samedi"]]Samedi[[/option]][[option value="Dimanche"]]Dimanche[[/option]][[/select]][[/div]]',
@@ -3765,7 +3856,10 @@ function construireHtmlWebApp() {
           '[[div id="boxCfgTrain4" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);display:none;"]]',
             '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
               '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 4[[/span]]',
-              '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif4"]] Actif sondage[[/label]]',
+              '[[div style="display:flex;gap:10px;align-items:center;"]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif4"]] Actif sondage[[/label]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l\'option Absent dans le sondage WhatsApp"]][[input type="checkbox" id="cfgTrActifAbs4" checked]] Option Absent[[/label]]',
+              '[[/div]]',
             '[[/div]]',
             '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Jour :[[/label]][[select id="cfgTrJour4" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"]][[option value="Lundi"]]Lundi[[/option]][[option value="Mardi"]]Mardi[[/option]][[option value="Mercredi"]]Mercredi[[/option]][[option value="Jeudi"]]Jeudi[[/option]][[option value="Vendredi" selected]]Vendredi[[/option]][[option value="Samedi"]]Samedi[[/option]][[option value="Dimanche"]]Dimanche[[/option]][[/select]][[/div]]',
@@ -3775,7 +3869,10 @@ function construireHtmlWebApp() {
           '[[div id="boxCfgTrain5" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);display:none;"]]',
             '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
               '[[span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);"]]Séance 5[[/span]]',
-              '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif5"]] Actif sondage[[/label]]',
+              '[[div style="display:flex;gap:10px;align-items:center;"]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="cfgTrActif5"]] Actif sondage[[/label]]',
+                '[[label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l\'option Absent dans le sondage WhatsApp"]][[input type="checkbox" id="cfgTrActifAbs5" checked]] Option Absent[[/label]]',
+              '[[/div]]',
             '[[/div]]',
             '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Jour :[[/label]][[select id="cfgTrJour5" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"]][[option value="Lundi"]]Lundi[[/option]][[option value="Mardi"]]Mardi[[/option]][[option value="Mercredi"]]Mercredi[[/option]][[option value="Jeudi"]]Jeudi[[/option]][[option value="Vendredi"]]Vendredi[[/option]][[option value="Samedi" selected]]Samedi[[/option]][[option value="Dimanche"]]Dimanche[[/option]][[/select]][[/div]]',
@@ -5422,6 +5519,8 @@ function construireHtmlWebApp() {
     '    }',
     '    if(hInp) hInp.value = s ? (s.horaire || defHoraires[i - 1]) : defHoraires[i - 1];',
     '    if(aInp) aInp.checked = s ? (s.actif !== false) : (i <= 2);',
+    '    var aAbsInp = document.getElementById("cfgTrActifAbs" + i);',
+    '    if(aAbsInp) aAbsInp.checked = s ? (s.actifAbsent !== false) : true;',
     '  }',
     '  ajusterAffichageNombreSeances();',
     '  document.getElementById("statusConfigEntrainements").textContent = "";',
@@ -5443,13 +5542,15 @@ function construireHtmlWebApp() {
     '    var jVal = (document.getElementById("cfgTrJour" + i) && document.getElementById("cfgTrJour" + i).value.trim()) || ("Séance " + i);',
     '    var hVal = (document.getElementById("cfgTrHoraire" + i) && document.getElementById("cfgTrHoraire" + i).value.trim()) || "20h30";',
     '    var aVal = document.getElementById("cfgTrActif" + i) ? document.getElementById("cfgTrActif" + i).checked : true;',
+    '    var aAbsVal = document.getElementById("cfgTrActifAbs" + i) ? document.getElementById("cfgTrActifAbs" + i).checked : true;',
     '    var baseId = mapJourId[jVal.toLowerCase()] || ("s" + i);',
     '    var idVal = baseId;',
     '    if(creneaux.some(function(c){ return c.id === idVal; })){',
     '      idVal = baseId + "_" + i;',
     '    }',
     '    var labelVal = "Entraînement " + jVal + " " + hVal;',
-    '    creneaux.push({ id: idVal, jour: jVal, horaire: hVal, label: labelVal, actif: aVal });',
+    '    var labelAbsVal = "Absent " + jVal;',
+    '    creneaux.push({ id: idVal, jour: jVal, horaire: hVal, label: labelVal, labelAbsent: labelAbsVal, actif: aVal, actifAbsent: aAbsVal });',
     '  }',
     '  document.getElementById("statusConfigEntrainements").textContent = "Enregistrement des " + nb + " séances...";',
     '  document.getElementById("btnSaveConfigTrain").disabled = true;',
@@ -8125,12 +8226,7 @@ function declencherActionGitHub(eventType, extraPayload) {
 }
 
 function declencherEnvoiWhatsApp() {
-  let sondageJson = PropertiesService.getScriptProperties().getProperty('DERNIER_SONDAGE_JSON');
-  if (!sondageJson) {
-    genererSondageHebdo();
-    sondageJson = PropertiesService.getScriptProperties().getProperty('DERNIER_SONDAGE_JSON');
-  }
-  const donnees = JSON.parse(sondageJson);
+  const donnees = genererSondageHebdo();
   declencherActionGitHub('send_whatsapp_poll', { poll_title: donnees.titre, poll_options: donnees.options });
 }
 
