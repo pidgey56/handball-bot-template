@@ -1,8 +1,10 @@
 {
-  "version": "1.20.3",
+  "version": "1.20.4",
   "releaseDate": "2026-10-12",
-  "title": "Suppression du créneau d'entraînement fantôme du samedi et nettoyage des colonnes de disponibilités",
+  "title": "Suppression de la liste des non retenus dans les annonces WhatsApp",
   "changelog": [
+    "Préservation des ego et cohésion d'équipe : suppression automatique de la mention et de la liste des joueurs 'Au repos / Non retenus' dans les messages diffusés sur WhatsApp (compositions des matchs et séances d'entraînement)",
+    "Affichage public ciblé : seuls les joueurs sélectionnés et convoqués sont désormais listés dans le message WhatsApp, tandis que les joueurs non retenus restent visibles sur la WebApp coach et archivés dans Google Sheets",
     "Correction de la détection des entraînements : restriction stricte aux lignes B9:D16 de l'onglet Configuration, empêchant l'en-tête de la table des Paramètres (ligne 17 'Paramètre | Valeur') d'être interprété par erreur comme un créneau d'entraînement 'Samedi 20h30'",
     "Exclusion automatique des matchs de la liste des entraînements : détection des mots-clés (match, poule, coupe) pour empêcher toute confusion entre match officiel et séance d'entraînement",
     "Filtrage strict des séances actives : seules les séances cochées 'OUI' sont désormais affichées dans la WebApp et intégrées dans le calcul 'Nb Entraînements (0-X)' et les colonnes de 'Votes_Semaine'",

@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.20.3';
+const APP_VERSION = '1.20.4';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -9217,10 +9217,6 @@ function construireHtmlWebApp() {
         'var l1D = (compo.equipe1D && compo.equipe1D.length) ? compo.equipe1D.map(function(n){ return "- " + formaterNomPourMessage(n); }).join("\\n") : "Aucun joueur sélectionné";',
         'lignes.push(""); lignes.push(" *" + titre1D + "* :"); lignes.push(l1D);',
       '}',
-      'if(compo.repos && compo.repos.length){',
-        'lignes.push(""); lignes.push(" *Au repos / Non retenus* :");',
-        'lignes.push(compo.repos.map(function(n){ return "- " + formaterNomPourMessage(n); }).join("\\n"));',
-      '}',
       'return lignes.join("\\n");',
     '}',
     'function sauvegarder(envoyerWhatsApp){',
@@ -11468,11 +11464,6 @@ function construireHtmlWebApp() {
         'lignes.push(g.joueurs.length ? g.joueurs.map(function(n){ return "- " + formaterNomPourMessage(n); }).join("\\n") : "Aucun");',
         'lignes.push("");',
       '});',
-      'if(d.nonRetenus && d.nonRetenus.length){',
-        'lignes.push("• *Repos / Non retenus* (" + d.nonRetenus.length + ") :");',
-        'lignes.push(d.nonRetenus.map(function(n){ return "- " + formaterNomPourMessage(n); }).join("\\n"));',
-        'lignes.push("");',
-      '}',
       'return lignes.join("\\n");',
     '}',
     'function sauvegarderEntrainement(publierWa){',
