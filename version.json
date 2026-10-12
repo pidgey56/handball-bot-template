@@ -1,8 +1,13 @@
 {
-  "version": "1.19.0",
+  "version": "1.20.0",
   "releaseDate": "2026-10-12",
-  "title": "Refonte visuelle et réorganisation ergonomique complète du classeur Google Sheets",
+  "title": "Cycle hebdomadaire automatique : purge des entraînements, réinitialisation des disponibilités et conservation unique de la composition précédente",
   "changelog": [
+    "Réinitialisation automatique des disponibilités (Votes_Semaine) à l'envoi de chaque nouveau sondage WhatsApp : tous les joueurs de l'Effectif sont réinitialisés à 0 entraînement et 'NON' sur les créneaux de la nouvelle semaine",
+    "Purge automatique des présences d'entraînement (Entrainements) à chaque nouveau sondage hebdomadaire pour repartir d'un tableau vierge",
+    "Conservation unique de la composition précédente (Compositions) : purge de l'historique antérieur obsolète et maintien exclusif de la dernière feuille de match validée",
+    "Réinitialisation automatique du brouillon tactique (Brouillon_Compo) pour préparer la nouvelle journée de match",
+    "Nouveau menu interactif Google Sheets '🧹 19. Réinitialiser la semaine (Dispos, Entraînements, Compo)' pour déclencher un cycle propre à la demande avec boîte de confirmation",
     "Refonte visuelle complète de l'onglet 'Configuration' : bannière d'en-tête premium personnalisée aux couleurs du club, sections structurées avec badges, séparation des blocs et suppression de l'espace vide à gauche",
     "Réorganisation logique de l'ordre des onglets : flux opérationnel naturel (Configuration ➔ Effectif ➔ Compositions ➔ Entrainements ➔ Votes ➔ Trophées ➔ Caisse Noire ➔ Covoiturage ➔ Absences ➔ Vacances...)",
     "Harmonisation globale des couleurs d'onglets (Tab Colors) selon la charte graphique officielle du club",

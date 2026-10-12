@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.19.0';
+const APP_VERSION = '1.20.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -12711,7 +12711,163 @@ function declencherActionGitHub(eventType, extraPayload) {
   });
 }
 
+/**
+ * Réinitialise les disponibilités, entraînements et compositions lors de l'envoi d'un nouveau sondage :
+ * 1. Votes_Semaine : réinitialise tous les joueurs de l'Effectif à 0 entraînement et 'NON' pour la nouvelle semaine
+ * 2. Entrainements : purge les séances d'entraînement de la semaine précédente
+ * 3. Compositions : purge l'historique et ne conserve UNIQUEMENT que la dernière composition validée (la précédente)
+ * 4. Brouillon_Compo : réinitialise le terrain tactique pour repartir sur une nouvelle feuille de match
+ */
+function reinitialiserPourNouvelleSemaine(ss) {
+  if (!ss) ss = getSpreadsheet();
+  if (!ss) return { ok: false, error: 'Classeur introuvable' };
+
+  const cfg = getClubConfig(ss);
+
+  // 1. Réinitialisation de l'onglet 'Votes_Semaine'
+  try {
+    let shVotes = ss.getSheetByName('Votes_Semaine');
+    if (!shVotes) {
+      shVotes = ss.insertSheet('Votes_Semaine');
+    }
+    const shEff = ss.getSheetByName('Effectif');
+    if (shVotes) {
+      const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [
+        { jour: 'Lundi' }, { jour: 'Mercredi' }, { jour: 'Jeudi' }
+      ];
+      const nbCols = 3 + cfg.nbEquipes + seances.length;
+
+      // Réécriture des en-têtes
+      const maxTrainStr = 'Nb Entraînements (0-' + seances.length + ')';
+      const entetesVotes = ['Joueur', 'Poste', maxTrainStr, 'Dispo ' + cfg.nomEquipe1];
+      if (cfg.nbEquipes >= 2) entetesVotes.push('Dispo ' + cfg.nomEquipe2);
+      if (cfg.nbEquipes >= 3) entetesVotes.push('Dispo ' + cfg.nomEquipe3);
+      seances.forEach(function(s) {
+        entetesVotes.push('Dispo ' + (s.jour || 'Entraînement'));
+      });
+      shVotes.getRange(1, 1, 1, entetesVotes.length).setValues([entetesVotes])
+        .setBackground(cfg.couleurSecondaire || '#334155')
+        .setFontColor(getContrastColor(cfg.couleurSecondaire || '#334155'))
+        .setFontWeight('bold')
+        .setFontSize(10)
+        .setVerticalAlignment('middle')
+        .setHorizontalAlignment('center');
+      shVotes.setRowHeight(1, 30);
+
+      // Vider tout le contenu sous la ligne 1
+      const lastRowVotes = shVotes.getLastRow();
+      if (lastRowVotes > 1) {
+        shVotes.getRange(2, 1, lastRowVotes - 1, Math.max(shVotes.getLastColumn(), nbCols)).clearContent();
+      }
+
+      // Remplir avec tous les joueurs de l'Effectif
+      if (shEff && shEff.getLastRow() > 1) {
+        const rowsEff = shEff.getRange(2, 1, shEff.getLastRow() - 1, Math.max(shEff.getLastColumn(), 3)).getValues();
+        const lignesInitiales = [];
+        rowsEff.forEach(function(r) {
+          const rawNom = String(r[0] || '').trim();
+          const nom = rawNom.replace(/\s*\([^)]*\)\s*/g, '').trim();
+          if (!nom) return;
+          let poste = String(r[2] || 'Demi-Centre').trim();
+          if (/polyvalent|joueur/i.test(poste)) poste = 'Demi-Centre';
+
+          const ligne = [nom, poste, 0, 'NON'];
+          if (cfg.nbEquipes >= 2) ligne.push('NON');
+          if (cfg.nbEquipes >= 3) ligne.push('NON');
+          for (let s = 0; s < seances.length; s++) {
+            ligne.push('NON');
+          }
+          lignesInitiales.push(ligne);
+        });
+
+        lignesInitiales.sort(function(a, b) {
+          return String(a[0]).localeCompare(String(b[0]), 'fr', { sensitivity: 'base' });
+        });
+
+        if (lignesInitiales.length > 0) {
+          shVotes.getRange(2, 1, lignesInitiales.length, nbCols).setValues(lignesInitiales);
+          for (let r = 2; r <= lignesInitiales.length + 1; r++) {
+            shVotes.setRowHeight(r, 24);
+            shVotes.getRange(r, 1, 1, nbCols).setVerticalAlignment('middle');
+          }
+        }
+      }
+      shVotes.setHiddenGridlines(false);
+    }
+  } catch (errVotes) {
+    Logger.log('Erreur reinitialiserPourNouvelleSemaine (Votes_Semaine): ' + errVotes.message);
+  }
+
+  // 2. Purge de l'onglet 'Entrainements'
+  try {
+    const shEnt = ss.getSheetByName('Entrainements');
+    if (shEnt && shEnt.getLastRow() > 1) {
+      shEnt.getRange(2, 1, shEnt.getLastRow() - 1, shEnt.getLastColumn()).clearContent();
+    }
+  } catch (errEnt) {
+    Logger.log('Erreur reinitialiserPourNouvelleSemaine (Entrainements): ' + errEnt.message);
+  }
+
+  // 3. Purge de l'onglet 'Compositions' en conservant UNIQUEMENT la composition précédente
+  try {
+    const shComp = ss.getSheetByName('Compositions');
+    if (shComp && shComp.getLastRow() > 1) {
+      const lastRow = shComp.getLastRow();
+      const lastCol = shComp.getLastColumn();
+      if (lastRow > 2) {
+        // Récupérer la dernière composition validée (la précédente)
+        const derniereCompoVals = shComp.getRange(lastRow, 1, 1, lastCol).getValues();
+        // Vider tout le tableau sous l'en-tête
+        shComp.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+        // Réinsérer uniquement la composition précédente en ligne 2
+        shComp.getRange(2, 1, 1, lastCol).setValues(derniereCompoVals);
+      }
+      // Si lastRow === 2, il n'y a déjà qu'une seule composition (la précédente), elle est donc préservée
+    }
+  } catch (errComp) {
+    Logger.log('Erreur reinitialiserPourNouvelleSemaine (Compositions): ' + errComp.message);
+  }
+
+  // 4. Réinitialisation du Brouillon de Compo pour repartir d'un terrain tactique frais
+  try {
+    const shBrouillon = ss.getSheetByName('Brouillon_Compo');
+    if (shBrouillon && shBrouillon.getLastRow() >= 2) {
+      shBrouillon.getRange(2, 1, Math.max(shBrouillon.getLastRow() - 1, 1), 2).clearContent();
+    }
+    PropertiesService.getScriptProperties().deleteProperty('TACTIQUE_BROUILLON_JSON');
+  } catch (errBrouillon) {}
+
+  return { ok: true };
+}
+
+/**
+ * Menu interactif pour réinitialiser la semaine manuellement
+ */
+function menuReinitialiserPourNouvelleSemaine() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ui = SpreadsheetApp.getUi();
+    const rep = ui.alert(
+      '🧹 Réinitialiser la semaine',
+      'Cette action va :\n' +
+      '1. Remettre à zéro les disponibilités (Votes_Semaine) pour tous les joueurs\n' +
+      '2. Purger les présences aux entraînements de la semaine précédente\n' +
+      '3. Purger les anciennes compositions pour ne conserver que la dernière (la précédente)\n' +
+      '4. Réinitialiser le brouillon tactique\n\n' +
+      'Confirmez-vous la réinitialisation ?',
+      ui.ButtonSet.YES_NO
+    );
+    if (rep === ui.Button.YES) {
+      reinitialiserPourNouvelleSemaine(ss);
+      ss.toast('Semaine réinitialisée : disponibilités à zéro, entraînements purgés et composition précédente conservée !', '🧹 Handball Bot', 6);
+    }
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur : ' + e.message);
+  }
+}
+
 function declencherEnvoiWhatsApp(force) {
+  const ss = getSpreadsheet();
   const donnees = genererSondageHebdo();
   if (donnees && donnees.enVacances && !force) {
     Logger.log('[Vacances] Envoi WhatsApp ignoré car nous sommes en vacances : ' + donnees.nomVacances);
@@ -12724,7 +12880,21 @@ function declencherEnvoiWhatsApp(force) {
     Logger.log('Aucune option de sondage disponible. Envoi annulé.');
     return { ok: false, message: 'Aucune option de sondage disponible.' };
   }
+
+  // Réinitialisation automatique pour la nouvelle semaine :
+  // Disponibilités remises à zéro, entraînements purgés, seule la composition précédente conservée
+  try {
+    reinitialiserPourNouvelleSemaine(ss);
+  } catch (errReinit) {
+    Logger.log('Erreur reinitialiserPourNouvelleSemaine : ' + errReinit.message);
+  }
+
   declencherActionGitHub('send_whatsapp_poll', { poll_title: donnees.titre, poll_options: donnees.options });
+
+  try {
+    if (ss) ss.toast('Nouveau sondage envoyé ! Disponibilités et entraînements réinitialisés, composition précédente conservée.', '⚡ Handball Bot', 6);
+  } catch (e) {}
+
   return { ok: true };
 }
 
@@ -12836,6 +13006,7 @@ function onOpen() {
       .addItem('🏖️ 16. Gérer les Vacances & Trêves', 'menuGererVacances')
       .addItem('💰 17. Actualiser l\'onglet Caisse Noire', 'menuActualiserCaisseNoireSheet')
       .addItem('🚗 18. Actualiser l\'onglet Covoiturage', 'menuActualiserCovoiturageSheet')
+      .addItem('🧹 19. Réinitialiser la semaine (Dispos, Entraînements, Compo)', 'menuReinitialiserPourNouvelleSemaine')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
