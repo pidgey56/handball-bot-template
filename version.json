@@ -1,8 +1,11 @@
 {
-  "version": "1.13.1",
+  "version": "1.13.2",
   "releaseDate": "2026-10-12",
-  "title": "Nouvel onglet Google Sheet 'Trophées & Bêtisier' (Palmarès MVP & Chèvre en direct)",
+  "title": "Nouvel onglet Google Sheet 'Absences' et correction de la suppression d'absence",
   "changelog": [
+    "Correction du bug de suppression d'absence ('Identifiant d'absence introuvable') : auto-migration des absences sans identifiant et suppression robuste multi-critères",
+    "Nouvel onglet Google Sheet '📅 Absences' synchronisé en direct : tableau complet des indisponibilités (Statut en cours/à venir, dates, motifs, joueur)",
+    "Nouveau menu Google Sheets '📅 14. Actualiser l'onglet Absences'",
     "Nouvel onglet Google Sheet '🏆 Trophées & Bêtisier' synchronisé en temps réel : palmarès complet de l'élection du MVP et bêtisier d'équipe de la Chèvre",
     "Mise à jour automatique du tableur lors de chaque vote ou proposition dans la WebApp, avec menu dédié '🏆 13. Actualiser l'onglet Trophées & Bêtisier'",
     "Bouton Déconnexion adapté en pleine largeur pour un confort visuel optimal sur desktop et mobile",

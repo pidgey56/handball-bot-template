@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.13.1';
+const APP_VERSION = '1.13.2';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -689,6 +689,11 @@ function initialiserOngletsWebApp(nbEquipesForce) {
   let shTrophees = ss.getSheetByName('Trophées & Bêtisier');
   if (!shTrophees) {
     try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
+  }
+
+  let shAbsences = ss.getSheetByName('Absences');
+  if (!shAbsences) {
+    try { synchroniserOngletAbsencesSheet(ss); } catch (e) {}
   }
 
   // Vérifier et ajouter les paramètres de couleurs dans Configuration si absents
@@ -2556,6 +2561,14 @@ function purgerAbsencesTerminees(ssOpt) {
   } catch (e) { absences = []; }
 
   let modifie = false;
+  // Assurer que CHAQUE absence possède un ID unique (migration automatique des absences legacy)
+  absences.forEach(function(a, idx) {
+    if (!a.id) {
+      a.id = 'abs_' + (a.nom ? String(a.nom).replace(/[^a-zA-Z0-9]/g, '_') : 'j') + '_' + (a.dateDebut || '').replace(/[^0-9]/g, '') + '_' + idx;
+      modifie = true;
+    }
+  });
+
   const absencesActives = absences.filter(function(a) {
     const dFin = normaliserDateIsoAbsence(a.dateFin) || normaliserDateIsoAbsence(a.dateDebut);
     if (dFin && dFin < aujourdhuiIso) {
@@ -2613,6 +2626,7 @@ function purgerAbsencesTerminees(ssOpt) {
         rangeNotes.setValues(valsNotes);
       }
     }
+    if (ss) synchroniserOngletAbsencesSheet(ss);
   } catch (err) {
     Logger.log('Purge Effectif absences notice: ' + err.message);
   }
@@ -2687,10 +2701,12 @@ function declarerAbsenceJoueur(tel, pin, dateDebut, dateFin, motif, idAbsence) {
     }
   }
 
+  try { synchroniserOngletAbsencesSheet(ss); } catch (e) {}
+
   return { ok: true, absences: absences };
 }
 
-function supprimerAbsenceJoueur(tel, pin, idAbsence) {
+function supprimerAbsenceJoueur(tel, pin, idAbsence, fallbackNom, fallbackDebut, fallbackFin) {
   const auth = authentifierUtilisateur(tel, pin);
   const ss = getSpreadsheet();
   const props = PropertiesService.getScriptProperties();
@@ -2700,8 +2716,21 @@ function supprimerAbsenceJoueur(tel, pin, idAbsence) {
     if (raw) absences = JSON.parse(raw);
   } catch (e) { absences = []; }
 
+  const idCible = String(idAbsence || '').trim();
+  const fNom = String(fallbackNom || '').trim().toLowerCase().replace(/\s*\([^)]*\)\s*/g, '');
+  const fDeb = String(fallbackDebut || '').trim();
+  const fFin = String(fallbackFin || '').trim();
+
   absences = absences.filter(function(a) {
-    if (a.id) return a.id !== idAbsence;
+    if (idCible && a.id && String(a.id) === idCible) return false;
+    const aNomClean = String(a.nom || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
+    if (fNom && aNomClean === fNom) {
+      if (fDeb && String(a.dateDebut || '').trim() === fDeb) return false;
+      if (!fDeb && (idCible.indexOf(aNomClean) !== -1 || !a.id)) return false;
+    }
+    if (idCible && a.nom && idCible.indexOf(encodeURIComponent(String(a.nom).trim())) !== -1 && a.dateDebut && idCible.indexOf(String(a.dateDebut).trim()) !== -1) {
+      return false;
+    }
     return true;
   });
 
@@ -2719,19 +2748,21 @@ function supprimerAbsenceJoueur(tel, pin, idAbsence) {
       const telRow = normaliserNumero(dechiffrerNumero(rows[i][1]));
       const nomRow = String(rows[i][0] || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
 
-      if (telRow === telAuthNorm || (nomAuthClean && nomRow === nomAuthClean)) {
+      if (telRow === telAuthNorm || (nomAuthClean && nomRow === nomAuthClean) || (fNom && nomRow === fNom)) {
         const noteActuelle = String(rows[i][6] || '').trim();
         const absCeJoueur = absences.filter(function(a) {
           const tA = normaliserNumero(a.tel);
           const nA = String(a.nom || '').toLowerCase().replace(/\s*\([^)]*\)\s*/g, '').trim();
-          return (tA && tA === telAuthNorm) || (nA && nA === nomAuthClean);
+          return (tA && tA === telAuthNorm) || (nA && (nA === nomAuthClean || nA === fNom));
         });
         const nouvelleNote = synchroniserNotesAbsenceJoueur(noteActuelle, absCeJoueur, aujourdhuiIso);
         shEff.getRange(i + 1, 7).setValue(nouvelleNote);
-        break;
+        if (!fNom || nomRow === fNom) break;
       }
     }
   }
+
+  try { synchroniserOngletAbsencesSheet(ss); } catch (e) {}
 
   return { ok: true, absences: absences };
 }
@@ -2746,10 +2777,145 @@ function getAbsencesJoueurs() {
     const props = PropertiesService.getScriptProperties();
     try {
       const raw = props.getProperty('ABSENCES_JOUEURS');
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.forEach(function(a, idx) {
+          if (!a.id) a.id = 'abs_' + (a.nom ? String(a.nom).replace(/[^a-zA-Z0-9]/g, '_') : 'j') + '_' + (a.dateDebut || '').replace(/[^0-9]/g, '') + '_' + idx;
+        });
+        return parsed;
+      }
     } catch (err) {}
     return [];
   }
+}
+
+/**
+ * Synchronise et met en forme l'onglet "Absences" dans Google Sheets
+ * Présente le tableau de toutes les indisponibilités déclarées par les joueurs
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - Le classeur Google Sheets (optionnel)
+ * @return {Object} Résumé de la synchronisation
+ */
+function synchroniserOngletAbsencesSheet(ss) {
+  if (!ss) ss = getSpreadsheet();
+  if (!ss) return { ok: false, error: 'Classeur introuvable' };
+
+  let sh = ss.getSheetByName('Absences');
+  if (!sh) {
+    sh = ss.insertSheet('Absences');
+  }
+  try {
+    sh.setTabColor('#38bdf8');
+  } catch (e) {}
+
+  sh.clear();
+
+  const absences = getAbsencesJoueurs();
+  const horodatage = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+  const aujourdhuiIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'yyyy-MM-dd');
+
+  // Lignes 1-2 : Bannière Titre
+  sh.getRange('A1:G1').merge()
+    .setValue('📅 GESTION DES ABSENCES & INDISPONIBILITÉS DU CLUB')
+    .setBackground('#0f172a')
+    .setFontColor('#f8fafc')
+    .setFontWeight('bold')
+    .setFontSize(13)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(1, 38);
+
+  sh.getRange('A2:G2').merge()
+    .setValue('Dernière synchronisation : ' + horodatage + ' • Synchronisé automatiquement depuis le Hub Joueur WebApp')
+    .setBackground('#1e293b')
+    .setFontColor('#94a3b8')
+    .setFontStyle('italic')
+    .setFontSize(9)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(2, 22);
+
+  const entetes = ['Statut', 'Joueur', 'Date Début', 'Date Fin', 'Période / Durée', 'Motif', 'Déclaré le'];
+  sh.getRange(4, 1, 1, 7).setValues([entetes])
+    .setBackground('#0284c7')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(10);
+  sh.setRowHeight(4, 26);
+
+  let curRow = 5;
+
+  if (!absences || absences.length === 0) {
+    sh.getRange(curRow, 1, 1, 7).merge()
+      .setValue('Aucune absence déclarée pour le moment. (Déclaration disponible depuis le Hub Joueur de la WebApp)')
+      .setFontColor('#64748b')
+      .setFontStyle('italic')
+      .setHorizontalAlignment('center');
+    sh.setRowHeight(curRow, 24);
+    curRow++;
+  } else {
+    const triees = absences.slice().sort(function(a, b) {
+      return String(a.dateDebut || '').localeCompare(String(b.dateDebut || ''));
+    });
+
+    triees.forEach(function(a) {
+      const dDeb = String(a.dateDebut || '').trim();
+      const dFin = String(a.dateFin || dDeb).trim();
+      const motif = String(a.motif || 'Non renseigné').trim();
+      const nom = String(a.nom || 'Joueur').trim();
+
+      let statut = '⏳ À venir';
+      if (dDeb <= aujourdhuiIso && dFin >= aujourdhuiIso) {
+        statut = '🔴 En cours';
+      }
+
+      let periode = (dDeb === dFin) ? ('Le ' + dDeb) : ('Du ' + dDeb + ' au ' + dFin);
+
+      let dateCreation = '';
+      if (a.creeLe) {
+        try {
+          const dC = new Date(a.creeLe);
+          dateCreation = Utilities.formatDate(dC, Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+        } catch (e) {
+          dateCreation = String(a.creeLe).split('T')[0];
+        }
+      }
+
+      sh.getRange(curRow, 1, 1, 7).setValues([[
+        statut,
+        nom,
+        dDeb,
+        dFin,
+        periode,
+        motif,
+        dateCreation
+      ]]);
+
+      if (statut.indexOf('En cours') !== -1) {
+        sh.getRange(curRow, 1, 1, 7).setBackground('#fef2f2');
+      }
+      sh.setRowHeight(curRow, 22);
+      curRow++;
+    });
+
+    sh.getRange(curRow, 1, 1, 7).merge()
+      .setValue('Total : ' + triees.length + ' absence(s) enregistrée(s)')
+      .setFontSize(9)
+      .setFontColor('#64748b')
+      .setFontStyle('italic');
+    curRow++;
+  }
+
+  try {
+    sh.setColumnWidth(1, 110);
+    sh.setColumnWidth(2, 160);
+    sh.setColumnWidth(3, 110);
+    sh.setColumnWidth(4, 110);
+    sh.setColumnWidth(5, 180);
+    sh.setColumnWidth(6, 200);
+    sh.setColumnWidth(7, 140);
+  } catch (e) {}
+
+  return { ok: true, maj: horodatage, total: absences.length };
 }
 
 /**
@@ -7859,8 +8025,9 @@ function construireHtmlWebApp() {
       'if(bAnn) bAnn.style.display = "inline-block";',
       'afficherToast("Modifiez les dates ou le motif puis enregistrez.", "info", 2000);',
     '}',
-    'function supprimerAbsenceClient(id){',
-      'if(!id){ afficherToast("Identifiant d\'absence introuvable.", "erreur"); return; }',
+    'function supprimerAbsenceClient(id, nom, deb, fin){',
+      'var targetId = id || "";',
+      'if(!targetId && !deb){ afficherToast("Identifiant d\'absence introuvable.", "erreur"); return; }',
       'if(!confirm("Voulez-vous vraiment supprimer cette déclaration d\'absence ?")) return;',
       'afficherLoading("Suppression...", "Mise à jour de vos absences...");',
       'google.script.run.withSuccessHandler(function(res){',
@@ -7873,7 +8040,7 @@ function construireHtmlWebApp() {
       '}).withFailureHandler(function(err){',
         'masquerLoading();',
         'afficherToast("Erreur suppression : " + err.message, "erreur");',
-      '}).supprimerAbsenceJoueur(SESSION_TEL, SESSION_PIN, id);',
+      '}).supprimerAbsenceJoueur(SESSION_TEL, SESSION_PIN, targetId, decodeURIComponent(nom || ""), deb || "", fin || "");',
     '}',
     'function declarerNouvelleAbsence(){',
       'var deb = document.getElementById("inpAbsenceDebut").value;',
@@ -7927,12 +8094,17 @@ function construireHtmlWebApp() {
         'var dStr = (a.dateDebut === a.dateFin) ? ("Le " + a.dateDebut) : ("Du " + a.dateDebut + " au " + a.dateFin);',
         'var nomTxt = EST_COACH ? ("<b>" + a.nom + "</b> • ") : "";',
         'var estMoi = String(a.nom || "").toLowerCase() === String(SESSION_NOM || "").toLowerCase();',
+        'var safeId = a.id || ("abs_" + encodeURIComponent(a.nom || "") + "_" + (a.dateDebut || "") + "_" + (a.dateFin || ""));',
+        'a.id = safeId;',
+        'var nomEnc = encodeURIComponent(a.nom || "");',
+        'var dDebVal = a.dateDebut || "";',
+        'var dFinVal = a.dateFin || "";',
         'html += "<div class=\'absence-chip\' style=\'display:flex;justify-content:space-between;align-items:center;\'>";',
         'html += "<div><div>" + nomTxt + dStr + "</div><div style=\'font-size:0.72rem;color:#fecaca;margin-top:2px;\'>Motif : " + a.motif + "</div></div>";',
         'if(estMoi || EST_COACH){',
           'html += "<div style=\'display:flex;gap:4px;flex-shrink:0;margin-left:8px;\'>";',
-          'html += "<button type=\'button\' class=\'btn-reset\' style=\'padding:3px 7px;font-size:0.75rem;color:#38bdf8;border-color:rgba(56,189,248,0.3);\' onclick=\'editerAbsenceClient(\\\"" + (a.id || "") + "\\\")\' title=\'Modifier\'>✏️</button>";',
-          'html += "<button type=\'button\' class=\'btn-reset\' style=\'padding:3px 7px;font-size:0.75rem;color:#f87171;border-color:rgba(239,68,68,0.3);\' onclick=\'supprimerAbsenceClient(\\\"" + (a.id || "") + "\\\")\' title=\'Supprimer\'>🗑️</button>";',
+          'html += "<button type=\'button\' class=\'btn-reset\' style=\'padding:3px 7px;font-size:0.75rem;color:#38bdf8;border-color:rgba(56,189,248,0.3);\' onclick=\'editerAbsenceClient(\\\"" + safeId + "\\\")\' title=\'Modifier\'>✏️</button>";',
+          'html += "<button type=\'button\' class=\'btn-reset\' style=\'padding:3px 7px;font-size:0.75rem;color:#f87171;border-color:rgba(239,68,68,0.3);\' onclick=\'supprimerAbsenceClient(\\\"" + safeId + "\\\", \\\"" + nomEnc + "\\\", \\\"" + dDebVal + "\\\", \\\"" + dFinVal + "\\\")\' title=\'Supprimer\'>🗑️</button>";',
           'html += "</div>";',
         '}',
         'html += "</div>";',
@@ -10106,6 +10278,7 @@ function onOpen() {
       .addItem('🧹 11. Purger les absences terminées (Notes & WebApp)', 'menuPurgerAbsencesTerminees')
       .addItem('📋 12. Lister Trésoriers & Chouchoux', 'menuListerTresoriersEtChouchoux')
       .addItem('🏆 13. Actualiser l\'onglet Trophées & Bêtisier', 'menuActualiserTropheesSheet')
+      .addItem('📅 14. Actualiser l\'onglet Absences', 'menuActualiserAbsencesSheet')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
@@ -10121,6 +10294,18 @@ function menuActualiserTropheesSheet() {
     }
   } catch (e) {
     SpreadsheetApp.getUi().alert('Erreur lors de la synchronisation : ' + e.message);
+  }
+}
+
+function menuActualiserAbsencesSheet() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const res = synchroniserOngletAbsencesSheet(ss);
+    if (res && res.ok) {
+      ss.toast('Onglet "Absences" synchronisé avec succès ! (' + (res.total || 0) + ' absence(s))', '📅 Handball Bot', 5);
+    }
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur lors de la synchronisation des absences : ' + e.message);
   }
 }
 
