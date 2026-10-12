@@ -12,7 +12,10 @@ import pino from 'pino';
 import fs from 'fs';
 
 const MODE = process.env.MODE || 'poll';
-const PHONE_NUMBER = (process.env.PHONE_NUMBER || '').replace(/[^0-9]/g, '');
+let PHONE_NUMBER = (process.env.PHONE_NUMBER || '').replace(/[^0-9]/g, '');
+if (PHONE_NUMBER.startsWith('0') && PHONE_NUMBER.length === 10) {
+  PHONE_NUMBER = '33' + PHONE_NUMBER.slice(1);
+}
 const GROUP_ID = (process.env.GROUP_ID || '').trim();
 const POLL_TITLE = (process.env.POLL_TITLE || '').trim();
 const TEXT_MESSAGE = process.env.TEXT_MESSAGE || '';
