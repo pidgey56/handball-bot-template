@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.16.0';
+const APP_VERSION = '1.17.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -600,6 +600,39 @@ function genererSondageHebdo() {
   const dateLundiComplet = Utilities.formatDate(lundiEnCours, 'Europe/Paris', 'dd/MM/yyyy');
   const titreSondage = 'Disponibilités semaine du ' + dateLundiCourt;
 
+  // 1. Détection des périodes de vacances & trêves sportives
+  const infoVac = getInfoVacancesSemaine(lundiEnCours, dimancheSemaine, ss);
+  if (infoVac && infoVac.enVacances) {
+    if (sheetMatchs) {
+      const nbLignesAClean = Math.max(sheetMatchs.getLastRow() - 3, 2);
+      if (nbLignesAClean > 0) sheetMatchs.getRange(4, 1, nbLignesAClean, 11).clearContent();
+      const lignesVac = [
+        ['', dateLundiComplet, 'Toutes Équipes', '🏖️ Période de vacances : ' + infoVac.nom, '-', '-', '-', '-', '-', 'Pas de match', 'Vacances (' + infoVac.debutTexte + ' au ' + infoVac.finTexte + ')']
+      ];
+      sheetMatchs.getRange(4, 1, 1, 11).setValues(lignesVac);
+    }
+    if (sheetApercu) {
+      sheetApercu.getRange('B3').setValue('Titre du sondage : [VACANCES] Aucun sondage cette semaine');
+      sheetApercu.getRange('B4').setValue('🏖️ ' + infoVac.nom + ' (du ' + infoVac.debutTexte + ' au ' + infoVac.finTexte + ')');
+      sheetApercu.getRange('B5').setValue('Pas d\'entraînement ni match programmé. L\'envoi automatique WhatsApp est suspendu.');
+      sheetApercu.getRange('B6:B25').clearContent();
+    }
+    PropertiesService.getScriptProperties().setProperty('DERNIER_SONDAGE_JSON', JSON.stringify({
+      titre: '',
+      options: [],
+      enVacances: true,
+      nomVacances: infoVac.nom,
+      vacances: infoVac
+    }));
+    return {
+      titre: '',
+      options: [],
+      enVacances: true,
+      nomVacances: infoVac.nom,
+      vacances: infoVac
+    };
+  }
+
   const optionsMatchs = [];
   const lignesDetectees = [];
 
@@ -800,6 +833,11 @@ function initialiserOngletsWebApp(nbEquipesForce) {
     try { synchroniserOngletAbsencesSheet(ss); } catch (e) {}
   }
 
+  let shVac = ss.getSheetByName('Vacances');
+  if (!shVac) {
+    try { synchroniserOngletVacancesSheet(ss); } catch (e) {}
+  }
+
   // Vérifier et ajouter les paramètres de couleurs dans Configuration si absents
   const shCfg = ss.getSheetByName('Configuration');
   if (shCfg) {
@@ -846,6 +884,10 @@ function initialiserOngletsWebApp(nbEquipesForce) {
       const valB35 = String(shCfg.getRange('B35').getValue() || '').trim();
       if (!valB35) {
         shCfg.getRange('B35:D35').setValues([['Caisse Noire & Amendes (Statut)', 'OUVERTE', 'Statut de la caisse : OUVERTE, FERMÉE ou DÉSACTIVÉE (ex: équipe jeune)']]);
+      }
+      const valB36 = String(shCfg.getRange('B36').getValue() || '').trim();
+      if (!valB36) {
+        shCfg.getRange('B36:D36').setValues([['Périodes de Vacances & Trêves', 'Voir onglet Vacances', 'Périodes sans entraînements, sans matchs et sans sondages WhatsApp']]);
       }
     }
 
@@ -3036,6 +3078,419 @@ function synchroniserOngletAbsencesSheet(ss) {
 }
 
 /**
+ * =============================================================
+ * PÉRIODES DE VACANCES & TRÊVES SPORTIVES
+ * =============================================================
+ */
+
+/**
+ * Retourne le calendrier standard des vacances scolaires de la saison (2026-2027)
+ */
+function getVacancesDefautSaison() {
+  return [
+    {
+      id: 'vac_toussaint',
+      nom: 'Vacances de la Toussaint',
+      dateDebut: '2026-10-17',
+      dateFin: '2026-11-02',
+      actif: true,
+      commentaire: 'Trêve automnale • Reprise le lundi 2 novembre'
+    },
+    {
+      id: 'vac_noel',
+      nom: 'Trêve de Noël & Nouvel An',
+      dateDebut: '2026-12-19',
+      dateFin: '2027-01-04',
+      actif: true,
+      commentaire: 'Fêtes de fin d\'année • Reprise début janvier'
+    },
+    {
+      id: 'vac_hiver',
+      nom: 'Vacances d\'Hiver (Février)',
+      dateDebut: '2027-02-06',
+      dateFin: '2027-02-22',
+      actif: true,
+      commentaire: 'Trêve hivernale'
+    },
+    {
+      id: 'vac_printemps',
+      nom: 'Vacances de Printemps (Pâques)',
+      dateDebut: '2027-04-03',
+      dateFin: '2027-04-19',
+      actif: true,
+      commentaire: 'Trêve printanière'
+    },
+    {
+      id: 'vac_ete',
+      nom: 'Trêve Estivale (Fin de Saison)',
+      dateDebut: '2027-06-20',
+      dateFin: '2027-08-31',
+      actif: true,
+      commentaire: 'Fin de saison officielle'
+    }
+  ];
+}
+
+/**
+ * Formate une date au format français JJ/MM/AAAA
+ */
+function formaterDateFr(val) {
+  const iso = normaliserDateIsoAbsence(val);
+  if (!iso) return '';
+  const parts = iso.split('-');
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+/**
+ * Récupère la liste des périodes de vacances (ScriptProperties ou feuille Vacances ou défaut)
+ */
+function getVacancesClub(ss) {
+  const props = PropertiesService.getScriptProperties();
+  try {
+    const raw = props.getProperty('VACANCES_CONFIG_JSON');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (classeur) {
+      const vFromSheet = lireVacancesDepuisSheet(classeur);
+      if (vFromSheet && vFromSheet.length > 0) {
+        props.setProperty('VACANCES_CONFIG_JSON', JSON.stringify(vFromSheet));
+        return vFromSheet;
+      }
+    }
+  } catch (e) {}
+
+  const defVac = getVacancesDefautSaison();
+  try {
+    props.setProperty('VACANCES_CONFIG_JSON', JSON.stringify(defVac));
+    const classeur = ss || getSpreadsheet();
+    if (classeur) synchroniserOngletVacancesSheet(classeur, defVac);
+  } catch (e) {}
+  return defVac;
+}
+
+/**
+ * Vérifie si une date précise tombe dans une période de vacances active
+ */
+function estDateEnVacances(date, ss) {
+  try {
+    const vacances = getVacancesClub(ss);
+    if (!vacances || vacances.length === 0) return { enVacances: false };
+    const iso = normaliserDateIsoAbsence(date);
+    if (!iso) return { enVacances: false };
+
+    for (let i = 0; i < vacances.length; i++) {
+      const v = vacances[i];
+      if (v.actif === false) continue;
+      const deb = normaliserDateIsoAbsence(v.dateDebut);
+      const fin = normaliserDateIsoAbsence(v.dateFin);
+      if (deb && fin && iso >= deb && iso <= fin) {
+        return {
+          enVacances: true,
+          nom: v.nom || 'Vacances',
+          dateDebut: deb,
+          dateFin: fin,
+          debutTexte: formaterDateFr(deb),
+          finTexte: formaterDateFr(fin),
+          commentaire: v.commentaire || '',
+          vacance: v
+        };
+      }
+    }
+  } catch (e) {}
+  return { enVacances: false };
+}
+
+/**
+ * Analyse une semaine complète (lundi à dimanche) pour déterminer si elle est en vacances
+ */
+function getInfoVacancesSemaine(lundi, dimanche, ss) {
+  try {
+    const vacances = getVacancesClub(ss);
+    if (!vacances || vacances.length === 0) return { enVacances: false };
+
+    const dLundi = new Date(lundi);
+    dLundi.setHours(0, 0, 0, 0);
+    const dDimanche = new Date(dimanche);
+    dDimanche.setHours(23, 59, 59, 999);
+
+    for (let i = 0; i < vacances.length; i++) {
+      const v = vacances[i];
+      if (v.actif === false) continue;
+      const isoDeb = normaliserDateIsoAbsence(v.dateDebut);
+      const isoFin = normaliserDateIsoAbsence(v.dateFin);
+      if (!isoDeb || !isoFin) continue;
+
+      const pD = isoDeb.split('-');
+      const pF = isoFin.split('-');
+      const dDeb = new Date(parseInt(pD[0], 10), parseInt(pD[1], 10) - 1, parseInt(pD[2], 10), 0, 0, 0);
+      const dFin = new Date(parseInt(pF[0], 10), parseInt(pF[1], 10) - 1, parseInt(pF[2], 10), 23, 59, 59);
+
+      if (dDimanche.getTime() >= dDeb.getTime() && dLundi.getTime() <= dFin.getTime()) {
+        const debutOverlap = Math.max(dLundi.getTime(), dDeb.getTime());
+        const finOverlap = Math.min(dDimanche.getTime(), dFin.getTime());
+        const nbJours = Math.round((finOverlap - debutOverlap) / (1000 * 60 * 60 * 24)) + 1;
+
+        if (nbJours >= 2 || dDeb.getTime() <= dLundi.getTime()) {
+          return {
+            enVacances: true,
+            nom: v.nom || 'Vacances',
+            dateDebut: isoDeb,
+            dateFin: isoFin,
+            debutTexte: formaterDateFr(isoDeb),
+            finTexte: formaterDateFr(isoFin),
+            commentaire: v.commentaire || '',
+            vacance: v
+          };
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('Erreur getInfoVacancesSemaine : ' + e.message);
+  }
+  return { enVacances: false };
+}
+
+/**
+ * Récupère le modèle de données complet pour la WebApp
+ */
+function getVacancesData(ss) {
+  const classeur = ss || getSpreadsheet();
+  const list = getVacancesClub(classeur);
+  const now = new Date();
+  const lundiEnCours = getLundiSemaineEnCours(now);
+  const dimancheSemaine = new Date(lundiEnCours);
+  dimancheSemaine.setDate(lundiEnCours.getDate() + 6);
+  dimancheSemaine.setHours(23, 59, 59, 999);
+
+  const infoSemaine = getInfoVacancesSemaine(lundiEnCours, dimancheSemaine, classeur);
+  const infoAujourdhui = estDateEnVacances(now, classeur);
+
+  return {
+    periodes: list,
+    enVacancesCetteSemaine: Boolean(infoSemaine && infoSemaine.enVacances),
+    infoSemaine: infoSemaine,
+    enVacancesAujourdhui: Boolean(infoAujourdhui && infoAujourdhui.enVacances),
+    infoAujourdhui: infoAujourdhui
+  };
+}
+
+/**
+ * Synchronise et stylise l'onglet "Vacances" dans Google Sheets
+ */
+function synchroniserOngletVacancesSheet(ss, listeVacances) {
+  if (!ss) ss = getSpreadsheet();
+  if (!ss) return { ok: false, error: 'Classeur introuvable' };
+
+  let sh = ss.getSheetByName('Vacances');
+  if (!sh) {
+    sh = ss.insertSheet('Vacances');
+  }
+  try {
+    sh.setTabColor('#0ea5e9');
+  } catch (e) {}
+
+  sh.clear();
+
+  const vacances = Array.isArray(listeVacances) ? listeVacances : getVacancesClub(ss);
+  const horodatage = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+  const aujourdhuiIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'yyyy-MM-dd');
+
+  sh.getRange('A1:F1').merge()
+    .setValue('🏖️ PÉRIODES DE VACANCES & TRÊVES SPORTIVES (Suspension auto des sondages & entraînements)')
+    .setFontWeight('bold')
+    .setFontSize(12)
+    .setBackground('#0369a1')
+    .setFontColor('#ffffff')
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(1, 38);
+
+  sh.getRange('A2:F2').merge()
+    .setValue('Dernière synchronisation : ' + horodatage + ' • Les périodes cochées "OUI" suspendent automatiquement les entraînements, la recherche de matchs FFHB et l\'envoi du sondage WhatsApp.')
+    .setFontSize(9)
+    .setFontStyle('italic')
+    .setBackground('#f0f9ff')
+    .setFontColor('#0369a1')
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(2, 24);
+
+  const headers = ['Période / Intitulé', 'Date Début (JJ/MM/AAAA)', 'Date Fin (JJ/MM/AAAA)', 'Actif (OUI/NON)', 'Statut Actuel', 'Commentaire / Consignes'];
+  sh.getRange(3, 1, 1, headers.length)
+    .setValues([headers])
+    .setFontWeight('bold')
+    .setFontSize(10)
+    .setBackground('#1e293b')
+    .setFontColor('#ffffff')
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(3, 28);
+
+  if (vacances.length > 0) {
+    const rows = vacances.map(function(v) {
+      const dDebIso = normaliserDateIsoAbsence(v.dateDebut);
+      const dFinIso = normaliserDateIsoAbsence(v.dateFin);
+      const debFr = formaterDateFr(dDebIso);
+      const finFr = formaterDateFr(dFinIso);
+      const actifStr = (v.actif !== false) ? 'OUI' : 'NON';
+
+      let statutStr = '⏳ À VENIR';
+      if (v.actif === false) {
+        statutStr = '⚪ DÉSACTIVÉE';
+      } else if (aujourdhuiIso >= dDebIso && aujourdhuiIso <= dFinIso) {
+        statutStr = '🏖️ EN COURS';
+      } else if (aujourdhuiIso > dFinIso) {
+        statutStr = '✔️ PASSÉE';
+      }
+
+      return [v.nom || 'Vacances', debFr, finFr, actifStr, statutStr, v.commentaire || ''];
+    });
+
+    sh.getRange(4, 1, rows.length, 6)
+      .setValues(rows)
+      .setFontSize(10)
+      .setVerticalAlignment('middle');
+
+    sh.getRange(4, 1, rows.length, 1).setHorizontalAlignment('left').setFontWeight('bold');
+    sh.getRange(4, 2, rows.length, 2).setHorizontalAlignment('center');
+    sh.getRange(4, 4, rows.length, 2).setHorizontalAlignment('center');
+    sh.getRange(4, 6, rows.length, 1).setHorizontalAlignment('left');
+
+    for (let r = 0; r < rows.length; r++) {
+      const rowNum = 4 + r;
+      sh.setRowHeight(rowNum, 26);
+      const st = rows[r][4];
+      if (st.indexOf('EN COURS') !== -1) {
+        sh.getRange(rowNum, 1, 1, 6).setBackground('#ecfdf5');
+      } else if (st.indexOf('DÉSACTIVÉE') !== -1) {
+        sh.getRange(rowNum, 1, 1, 6).setFontColor('#94a3b8');
+      }
+    }
+
+    const ruleOuiNon = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['OUI', 'NON'], true)
+      .setAllowInvalid(false)
+      .build();
+    sh.getRange(4, 4, rows.length, 1).setDataValidation(ruleOuiNon);
+  }
+
+  sh.setColumnWidth(1, 240);
+  sh.setColumnWidth(2, 140);
+  sh.setColumnWidth(3, 140);
+  sh.setColumnWidth(4, 110);
+  sh.setColumnWidth(5, 130);
+  sh.setColumnWidth(6, 260);
+
+  return { ok: true, total: vacances.length };
+}
+
+/**
+ * Lit les périodes de vacances directement depuis l'onglet "Vacances"
+ */
+function lireVacancesDepuisSheet(classeur) {
+  try {
+    const ss = classeur || getSpreadsheet();
+    if (!ss) return [];
+    const sh = ss.getSheetByName('Vacances');
+    if (!sh || sh.getLastRow() < 4) return [];
+
+    const values = sh.getRange(4, 1, sh.getLastRow() - 3, 6).getValues();
+    const vacances = [];
+
+    for (let i = 0; i < values.length; i++) {
+      const row = values[i];
+      const nom = String(row[0] || '').trim();
+      if (!nom) continue;
+      const debIso = normaliserDateIsoAbsence(row[1]);
+      const finIso = normaliserDateIsoAbsence(row[2]);
+      if (!debIso || !finIso) continue;
+
+      const actif = (String(row[3] || '').trim().toUpperCase() !== 'NON');
+      const com = String(row[5] || '').trim();
+
+      vacances.push({
+        id: 'vac_' + i + '_' + debIso.replace(/[^0-9]/g, ''),
+        nom: nom,
+        dateDebut: debIso,
+        dateFin: finIso,
+        actif: actif,
+        commentaire: com
+      });
+    }
+
+    return vacances;
+  } catch (e) {
+    Logger.log('Erreur lireVacancesDepuisSheet : ' + e.message);
+    return [];
+  }
+}
+
+/**
+ * Enregistre les périodes de vacances (RPC appelé depuis la WebApp coach)
+ */
+function enregistrerVacancesClub(telCoach, pinCoach, nouvellesVacances) {
+  const ss = getSpreadsheet();
+  if (!verifierDroitsCoachOuDev(ss, normaliserNumero(telCoach), String(pinCoach || '').trim())) {
+    throw new Error('Action réservée aux coachs autorisés.');
+  }
+
+  if (!Array.isArray(nouvellesVacances)) {
+    throw new Error('Format de données invalide pour les périodes de vacances.');
+  }
+
+  const valides = nouvellesVacances.map(function(v, idx) {
+    const nom = String(v.nom || ('Période ' + (idx + 1))).trim();
+    const debIso = normaliserDateIsoAbsence(v.dateDebut);
+    const finIso = normaliserDateIsoAbsence(v.dateFin);
+    if (!debIso || !finIso) {
+      throw new Error('Dates invalides pour la période "' + nom + '".');
+    }
+    return {
+      id: v.id || ('vac_' + Date.now() + '_' + idx),
+      nom: nom,
+      dateDebut: debIso,
+      dateFin: finIso,
+      actif: (v.actif !== false),
+      commentaire: String(v.commentaire || '').trim()
+    };
+  });
+
+  valides.sort(function(a, b) {
+    return a.dateDebut.localeCompare(b.dateDebut);
+  });
+
+  PropertiesService.getScriptProperties().setProperty('VACANCES_CONFIG_JSON', JSON.stringify(valides));
+
+  try {
+    synchroniserOngletVacancesSheet(ss, valides);
+  } catch (e) {
+    Logger.log('Erreur synchronisation onglet Vacances : ' + e.message);
+  }
+
+  try {
+    genererSondageHebdo();
+  } catch (e) {}
+
+  return { ok: true, count: valides.length, data: getVacancesData(ss) };
+}
+
+/**
+ * Réinitialise les vacances avec le calendrier scolaire officiel
+ */
+function reinitialiserVacancesDefaut(telCoach, pinCoach) {
+  const def = getVacancesDefautSaison();
+  return enregistrerVacancesClub(telCoach, pinCoach, def);
+}
+
+/**
  * -------------------------------------------------------------
  * CAISSE NOIRE & AMENDES DE L'ÉQUIPE (GESTION & ADMINISTRATION)
  * -------------------------------------------------------------
@@ -4098,6 +4553,7 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
     chevreData: getChevreData(),
     absences: getAbsencesJoueurs(),
     caisseNoire: getCaisseNoireData(),
+    vacances: getVacancesData(ss),
     clubConfig: {
       nomClub: cfg.nomClub,
       logoUrl: cfg.logoUrl,
@@ -4786,6 +5242,17 @@ function construireHtmlWebApp() {
                   '[[button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalCaisseNoire()"]]👀 Vue Joueurs[[/button]]',
                 '[[/div]]',
               '[[/div]]',
+              '[[div class="dash-tile" id="dashTileVacancesCoach" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(14,116,144,0.35),rgba(15,23,42,0.95));border:1px solid rgba(14,165,233,0.35);" onclick="ouvrirModalVacances()"]]',
+                '[[div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"]]',
+                  '[[div class="dash-tile-title" style="color:#38bdf8;"]]🏖️ Vacances & Trêves Scolaires[[/div]]',
+                  '[[span id="badgeCoachVacances" style="font-size:0.75rem;padding:2px 8px;border-radius:99px;background:rgba(14,165,233,0.2);color:#7dd3fc;font-weight:800;"]]0 en cours[[/span]]',
+                '[[/div]]',
+                '[[div id="dashDescVacances" class="dash-tile-desc"]]Gérer les congés et trêves scolaires (suspension auto des sondages et entraînements)[[/div]]',
+                '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()"]]',
+                  '[[button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;background:rgba(14,165,233,0.25);border:1px solid #0ea5e9;color:#e0f2fe;font-weight:700;" onclick="ouvrirModalVacances()"]]⚙️ Gérer les vacances[[/button]]',
+                  '[[button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalConfigEntrainements()"]]🏃 Horaires Entraînement[[/button]]',
+                '[[/div]]',
+              '[[/div]]',
             '[[/div]]',
             '[[button type="button" class="btn-enter btn-enter-alt" id="btnCheckUpdateCoach" onclick="verifierMiseAJourManuelle()" style="font-size:0.76rem;padding:8px;color:#94a3b8;border-color:rgba(148,163,184,0.2);width:100%;margin-top:8px;"]]Vérifier les mises à jour du Bot[[/button]]',
             '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;"]]',
@@ -4817,6 +5284,13 @@ function construireHtmlWebApp() {
     '[[div class="view-mode-tabs"]]',
       '[[button type="button" class="view-mode-tab active" id="tabClassicMode" onclick="choisirMode(false)"]]Mode Tactique[[/button]]',
       '[[button type="button" class="view-mode-tab" id="tabTinderMode" onclick="choisirMode(true)"]]Mode Tinder[[/button]]',
+    '[[/div]]',
+    '[[div id="banniereVacancesMatch" style="display:none;background:rgba(14,165,233,0.18);border:1px solid #0ea5e9;border-radius:12px;padding:9px 14px;max-width:1400px;margin:8px auto;align-items:center;justify-content:space-between;font-size:0.83rem;"]]',
+      '[[div style="display:flex;align-items:center;gap:8px;"]]',
+        '[[span style="font-size:1.15rem;"]]🏖️[[/span]]',
+        '[[span id="txtBanniereVacancesMatch" style="color:#e0f2fe;font-weight:600;"]]Semaine en période de vacances scolaires. Aucun match officiel programmé.[[/span]]',
+      '[[/div]]',
+      '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.75rem;border-color:rgba(14,165,233,0.4);color:#7dd3fc;" onclick="ouvrirModalVacances()"]]Gérer vacances[[/button]]',
     '[[/div]]',
     '[[div id="banniereBrouillon" style="display:none;background:rgba(2,132,199,0.18);border:1px solid #0284c7;border-radius:12px;padding:9px 14px;max-width:1400px;margin:8px auto;align-items:center;justify-content:space-between;font-size:0.83rem;"]]',
       '[[span style="color:#e0f2fe;font-weight:600;"]]Brouillon de sélection détecté pour ce week-end[[/span]]',
@@ -4915,6 +5389,13 @@ function construireHtmlWebApp() {
     '[[div class="view-mode-tabs" style="max-width:1200px;margin:8px auto;"]]',
       '[[button type="button" class="view-mode-tab active" id="tabTrainClassicMode" onclick="choisirModeTrain(false)"]]Mode Tactique[[/button]]',
       '[[button type="button" class="view-mode-tab" id="tabTrainTinderMode" onclick="choisirModeTrain(true)"]]Mode Tinder[[/button]]',
+    '[[/div]]',
+    '[[div id="banniereVacancesTrain" style="display:none;background:rgba(14,165,233,0.18);border:1px solid #0ea5e9;border-radius:12px;padding:9px 14px;max-width:1400px;margin:8px auto;align-items:center;justify-content:space-between;font-size:0.83rem;"]]',
+      '[[div style="display:flex;align-items:center;gap:8px;"]]',
+        '[[span style="font-size:1.15rem;"]]🏖️[[/span]]',
+        '[[span id="txtBanniereVacancesTrain" style="color:#e0f2fe;font-weight:600;"]]Semaine en période de vacances scolaires. Les entraînements habituels sont suspendus.[[/span]]',
+      '[[/div]]',
+      '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.75rem;border-color:rgba(14,165,233,0.4);color:#7dd3fc;" onclick="ouvrirModalVacances()"]]Gérer vacances[[/button]]',
     '[[/div]]',
     '[[div class="board" id="trainBoardClassic"]]',
       '[[div class="col col-pool" id="trColPool"]]',
@@ -5840,9 +6321,60 @@ function construireHtmlWebApp() {
         '[[/div]]',
       '[[/div]]',
     '[[/div]]',
+    '[[div class="modal-bg" id="modalVacancesBg" onclick="fermerModalVacancesSurBg(event)"]]',
+      '[[div class="modal-box" style="border-top:4px solid #0ea5e9;max-width:540px;"]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(148,163,184,0.15);padding-bottom:10px;"]]',
+          '[[h2 style="margin:0;font-size:1.15rem;color:#f8fafc;display:flex;align-items:center;gap:8px;"]]🏖️ Vacances & Trêves Scolaires[[/h2]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.85rem;" onclick="fermerModalVacances()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[p style="font-size:0.8rem;color:#94a3b8;margin:0 0 14px 0;text-align:left;line-height:1.45;"]]Pendant ces périodes, les entraînements et la détection de matchs sont suspendus, et aucun sondage WhatsApp n\'est envoyé le lundi matin.[[/p]]',
+        '[[div style="background:#0e1626;border:1px solid rgba(14,165,233,0.25);border-radius:14px;padding:14px;margin-bottom:14px;text-align:left;"]]',
+          '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"]]',
+            '[[div id="titreFormVacance" style="font-weight:800;font-size:0.88rem;color:#38bdf8;"]]Ajouter une période de vacances :[[/div]]',
+            '[[button type="button" id="btnAnnulerEditVac" class="btn-reset" style="display:none;font-size:0.75rem;padding:3px 8px;color:#f87171;" onclick="annulerEditionVacanceClient()"]]Annuler modification[[/button]]',
+          '[[/div]]',
+          '[[input type="hidden" id="inpVacId" value=""]]',
+          '[[div style="margin-bottom:10px;"]]',
+            '[[label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Nom de la période :[[/label]]',
+            '[[input type="text" id="inpVacNom" class="inp-field" placeholder="ex: Vacances de la Toussaint, Trêve de Noël..." style="padding:8px 12px;font-size:0.85rem;"]]',
+          '[[/div]]',
+          '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;"]]',
+            '[[div]][[label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Du (début) :[[/label]][[input type="date" id="inpVacDebut" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"]][[/div]]',
+            '[[div]][[label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Au (fin inclus) :[[/label]][[input type="date" id="inpVacFin" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"]][[/div]]',
+          '[[/div]]',
+          '[[div style="margin-bottom:10px;"]]',
+            '[[label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Consignes / Commentaire (optionnel) :[[/label]]',
+            '[[input type="text" id="inpVacCommentaire" class="inp-field" placeholder="ex: Reprise des entraînements le lundi 2 novembre" style="padding:8px 12px;font-size:0.82rem;"]]',
+          '[[/div]]',
+          '[[div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"]]',
+            '[[label style="font-size:0.78rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"]][[input type="checkbox" id="chkVacActif" checked]] Actif (suspendre entraînements & sondage)[[/label]]',
+          '[[/div]]',
+          '[[div style="display:flex;gap:6px;"]]',
+            '[[button type="button" class="btn-enter" id="btnSubmitVacance" style="margin:0;flex:1;background:#0ea5e9;color:#fff;font-weight:700;" onclick="ajouterOuEditerVacanceClient()"]]+ Ajouter cette période[[/button]]',
+          '[[/div]]',
+          '[[div id="statusVacancesModal" style="font-size:0.78rem;color:var(--color-secondary);min-height:1.2em;text-align:center;margin-top:6px;"]][[/div]]',
+        '[[/div]]',
+        '[[button type="button" class="btn-reset" style="font-size:0.76rem;padding:7px 10px;background:rgba(14,165,233,0.12);border:1px solid rgba(14,165,233,0.3);color:#7dd3fc;width:100%;margin-bottom:12px;border-radius:10px;" onclick="chargerVacancesDefautSaisonClient()"]]📅 Charger le calendrier standard 2026-2027 (Toussaint, Noël, Hiver, Printemps, Été)[[/button]]',
+        '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;text-align:left;"]]',
+          '[[span style="font-weight:800;font-size:0.88rem;color:#e2e8f0;"]]Périodes programmées[[/span]]',
+          '[[span id="badgeNbVacancesTotal" style="font-size:0.72rem;color:#7dd3fc;background:rgba(14,165,233,0.18);padding:2px 8px;border-radius:99px;font-weight:700;"]]0 période(s)[[/span]]',
+        '[[/div]]',
+        '[[div id="listeVacancesContainer" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;text-align:left;padding-right:2px;margin-bottom:12px;"]][[/div]]',
+        '[[div style="display:flex;justify-content:flex-end;"]]',
+          '[[button type="button" class="btn-reset" style="margin-left:auto;" onclick="fermerModalVacances()"]]Fermer[[/button]]',
+        '[[/div]]',
+      '[[/div]]',
+    '[[/div]]',
     '[[div id="previewView" style="display:none;"]]',
       '[[main class="preview-page"]]',
         '[[div class="preview-header"]][[button class="btn-reset" onclick="retourApercu()"]]← Retour[[/button]][[h1 id="previewTitle" onclick="retourAccueil()" title="Retour à l\'accueil" style="cursor:pointer;"]]Aperçu Convocations & Terrain Tactique[[/h1]][[button class="btn-reset" onclick="retourAccueil()"]]Accueil[[/button]][[/div]]',
+        '[[div id="banniereVacancesPreview" style="display:none;background:rgba(14,165,233,0.18);border:1px solid #0ea5e9;border-radius:12px;padding:9px 14px;max-width:1400px;margin:8px auto;align-items:center;justify-content:space-between;font-size:0.83rem;"]]',
+          '[[div style="display:flex;align-items:center;gap:8px;"]]',
+            '[[span style="font-size:1.15rem;"]]🏖️[[/span]]',
+            '[[span id="txtBanniereVacancesPreview" style="color:#e0f2fe;font-weight:600;"]]Période de vacances active : aucun entraînement ni match cette semaine. L\'envoi automatique du sondage est suspendu.[[/span]]',
+          '[[/div]]',
+          '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.75rem;border-color:rgba(14,165,233,0.4);color:#7dd3fc;" onclick="ouvrirModalVacances()"]]Gérer vacances[[/button]]',
+        '[[/div]]',
         '[[div id="tacticalPreviewWrap" class="tactical-preview-wrap" style="display:none;"]]',
           '[[div class="tactical-header"]]',
             '[[div style="font-weight:800;font-size:0.95rem;color:var(--color-secondary);"]]Terrain Tactique - Attaque Placée & Gardien[[/div]]',
@@ -5959,6 +6491,7 @@ function construireHtmlWebApp() {
     'var SESSION_TEL = ""; var SESSION_PIN = ""; var SESSION_NOM = ""; var EST_COACH = false; var EST_TRESORIER = false; var ID_ABSENCE_EN_COURS = null; var CURRENT_MATCH_SALLE = "";',
     'var INFOS_MATCHS = null; var COVOITURAGE_DATA = { conducteurs: [], passagers: [] }; var VOTES_MVP_DATA = { totalVotes: 0, podiumMvp: [], monVoteMvp: "" }; var CHEVRE_DATA = { totalActions: 0, totalVotes: 0, actions: [], podiumChevre: [], monVoteActionId: "" }; var MES_ABSENCES = []; var STATUT_COVOIT_CHOISI = "conduis";',
     'var CAISSE_NOIRE_DATA = { config: { devise: "€", objectifCagnotte: 300, objectifDescription: "Resto & Tournée de fin d\'année", moyenPaiement: "Lydia / Espèces au vestiaire", bareme: [] }, amendes: [], depenses: [], stats: { totalCollecte: 0, totalDu: 0, soldeCaisse: 0, totalDepenses: 0 } };',
+    'var VACANCES_DATA = { periodes: [], enVacancesCetteSemaine: false, infoSemaine: {}, enVacancesAujourdhui: false, infoAujourdhui: {} };',
     'var JOUEUR_MODAL_COURANT = null; var POSTE_MODAL_COURANT = ""; var PHOTO_MODAL_DATA = undefined;',
     'function afficherLoading(titre, sousTitre){',
       'var el = document.getElementById("globalLoadingScreen"); if(!el) return;',
@@ -6544,6 +7077,7 @@ function construireHtmlWebApp() {
       'if(data.absences) MES_ABSENCES = data.absences;',
       'if(data.matchs) INFOS_MATCHS = data.matchs;',
       'if(data.caisseNoire) CAISSE_NOIRE_DATA = data.caisseNoire;',
+      'if(data.vacances){ VACANCES_DATA = data.vacances; majBannieresVacances(); }',
       'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
       'rendreRosterGrid(); majVueEntrainement();',
       'verifierBrouillonExistant();',
@@ -7848,11 +8382,22 @@ function construireHtmlWebApp() {
           'if(detEl) detEl.textContent = (detLignes.length ? detLignes.join(" • ") + " • " : "") + "Sélection finale en cours par le coach.";',
           'if(actBox) actBox.style.display = "flex";',
         '} else {',
-          'if(statutBadge){ statutBadge.textContent = "⏳ MATCH DU WEEK-END"; statutBadge.style.background = "rgba(234,179,8,0.2)"; statutBadge.style.color = "#facc15"; }',
-          'if(equipeBadge) equipeBadge.textContent = "Sélection en préparation";',
-          'if(advEl) advEl.textContent = "Convocations en cours...";',
-          'if(detEl) detEl.textContent = "Les feuilles de match seront publiées très prochainement par l\'entraîneur.";',
-          'if(actBox) actBox.style.display = "none";',
+          'if(VACANCES_DATA && VACANCES_DATA.enVacancesCetteSemaine){',
+            'var infoV = VACANCES_DATA.infoSemaine || {};',
+            'if(statutBadge){ statutBadge.textContent = "🏖️ VACANCES"; statutBadge.style.background = "rgba(14,165,233,0.25)"; statutBadge.style.color = "#7dd3fc"; }',
+            'if(equipeBadge) equipeBadge.textContent = infoV.nom || "Trêve sportive";',
+            'if(advEl) advEl.textContent = "🏖️ Pas de match cette semaine";',
+            'var txtVac = "Période de vacances : " + (infoV.nom || "Vacances") + " (du " + (infoV.debutTexte || "") + " au " + (infoV.finTexte || "") + "). Aucun entraînement ni match programmé. Bon repos !";',
+            'if(infoV.commentaire) txtVac += " • " + infoV.commentaire;',
+            'if(detEl) detEl.textContent = txtVac;',
+            'if(actBox) actBox.style.display = "none";',
+          '} else {',
+            'if(statutBadge){ statutBadge.textContent = "⏳ MATCH DU WEEK-END"; statutBadge.style.background = "rgba(234,179,8,0.2)"; statutBadge.style.color = "#facc15"; }',
+            'if(equipeBadge) equipeBadge.textContent = "Sélection en préparation";',
+            'if(advEl) advEl.textContent = "Convocations en cours...";',
+            'if(detEl) detEl.textContent = "Les feuilles de match seront publiées très prochainement par l\'entraîneur.";',
+            'if(actBox) actBox.style.display = "none";',
+          '}',
         '}',
       '}',
       'var tBadgeMvp = document.getElementById("tileBadgeMvp");',
@@ -8979,6 +9524,204 @@ function construireHtmlWebApp() {
         'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
         'afficherToast("Caisse noire réinitialisée pour la nouvelle période.", "info");',
       '}).withFailureHandler(function(err){ afficherToast(err.message, "erreur"); }).reinitialiserCaisseNoire(SESSION_TEL, SESSION_PIN);',
+    '}',
+    '/* --- GESTION DES VACANCES & TRÊVES SCOLAIRES (CLIENT) --- */',
+    'function ouvrirModalVacances(){',
+      'rendreListePeriodesVacances();',
+      'document.getElementById("modalVacancesBg").style.display = "flex";',
+    '}',
+    'function fermerModalVacances(){',
+      'document.getElementById("modalVacancesBg").style.display = "none";',
+      'annulerEditionVacanceClient();',
+    '}',
+    'function fermerModalVacancesSurBg(e){',
+      'if(e.target.id === "modalVacancesBg") fermerModalVacances();',
+    '}',
+    'function annulerEditionVacanceClient(){',
+      'var idEl = document.getElementById("inpVacId"); if(idEl) idEl.value = "";',
+      'var nEl = document.getElementById("inpVacNom"); if(nEl) nEl.value = "";',
+      'var dEl = document.getElementById("inpVacDebut"); if(dEl) dEl.value = "";',
+      'var fEl = document.getElementById("inpVacFin"); if(fEl) fEl.value = "";',
+      'var cEl = document.getElementById("inpVacCommentaire"); if(cEl) cEl.value = "";',
+      'var aEl = document.getElementById("chkVacActif"); if(aEl) aEl.checked = true;',
+      'var tEl = document.getElementById("titreFormVacance"); if(tEl) tEl.textContent = "Ajouter une période de vacances :";',
+      'var bSub = document.getElementById("btnSubmitVacance"); if(bSub) bSub.textContent = "+ Ajouter cette période";',
+      'var bAnn = document.getElementById("btnAnnulerEditVac"); if(bAnn) bAnn.style.display = "none";',
+      'var sEl = document.getElementById("statusVacancesModal"); if(sEl) sEl.textContent = "";',
+    '}',
+    'function editerVacanceClient(id){',
+      'var list = (VACANCES_DATA && VACANCES_DATA.periodes) ? VACANCES_DATA.periodes : [];',
+      'var v = list.find(function(x){ return x.id === id; });',
+      'if(!v) return;',
+      'var idEl = document.getElementById("inpVacId"); if(idEl) idEl.value = v.id;',
+      'var nEl = document.getElementById("inpVacNom"); if(nEl) nEl.value = v.nom || "";',
+      'var dEl = document.getElementById("inpVacDebut"); if(dEl) dEl.value = v.dateDebut || "";',
+      'var fEl = document.getElementById("inpVacFin"); if(fEl) fEl.value = v.dateFin || "";',
+      'var cEl = document.getElementById("inpVacCommentaire"); if(cEl) cEl.value = v.commentaire || "";',
+      'var aEl = document.getElementById("chkVacActif"); if(aEl) aEl.checked = (v.actif !== false);',
+      'var tEl = document.getElementById("titreFormVacance"); if(tEl) tEl.textContent = "Modifier la période : " + (v.nom || "");',
+      'var bSub = document.getElementById("btnSubmitVacance"); if(bSub) bSub.textContent = "💾 Enregistrer les modifications";',
+      'var bAnn = document.getElementById("btnAnnulerEditVac"); if(bAnn) bAnn.style.display = "inline-block";',
+      'if(nEl) nEl.focus();',
+    '}',
+    'function ajouterOuEditerVacanceClient(){',
+      'var id = (document.getElementById("inpVacId") ? document.getElementById("inpVacId").value.trim() : "");',
+      'var nom = (document.getElementById("inpVacNom") ? document.getElementById("inpVacNom").value.trim() : "");',
+      'var deb = (document.getElementById("inpVacDebut") ? document.getElementById("inpVacDebut").value.trim() : "");',
+      'var fin = (document.getElementById("inpVacFin") ? document.getElementById("inpVacFin").value.trim() : "");',
+      'var com = (document.getElementById("inpVacCommentaire") ? document.getElementById("inpVacCommentaire").value.trim() : "");',
+      'var actif = document.getElementById("chkVacActif") ? document.getElementById("chkVacActif").checked : true;',
+      'var stEl = document.getElementById("statusVacancesModal");',
+      'if(!nom){ if(stEl) stEl.textContent = "Veuillez saisir un nom pour la période."; return; }',
+      'if(!deb || !fin){ if(stEl) stEl.textContent = "Veuillez renseigner les dates de début et de fin."; return; }',
+      'if(deb > fin){ if(stEl) stEl.textContent = "La date de début ne peut pas être postérieure à la date de fin."; return; }',
+      'var list = (VACANCES_DATA && VACANCES_DATA.periodes) ? VACANCES_DATA.periodes.slice() : [];',
+      'if(id){',
+        'var idx = list.findIndex(function(x){ return x.id === id; });',
+        'if(idx !== -1){',
+          'list[idx] = { id: id, nom: nom, dateDebut: deb, dateFin: fin, commentaire: com, actif: actif };',
+        '}',
+      '} else {',
+        'var newId = "vac_" + Date.now();',
+        'list.push({ id: newId, nom: nom, dateDebut: deb, dateFin: fin, commentaire: com, actif: actif });',
+      '}',
+      'list.sort(function(a, b){ return String(a.dateDebut||"").localeCompare(String(b.dateDebut||"")); });',
+      'sauvegarderVacancesSurServeur(list);',
+      'annulerEditionVacanceClient();',
+    '}',
+    'function supprimerVacanceClient(id){',
+      'var list = (VACANCES_DATA && VACANCES_DATA.periodes) ? VACANCES_DATA.periodes.slice() : [];',
+      'var v = list.find(function(x){ return x.id === id; });',
+      'if(!v) return;',
+      'if(!confirm("Supprimer la période \\"" + v.nom + "\\" ?")) return;',
+      'var filtered = list.filter(function(x){ return x.id !== id; });',
+      'sauvegarderVacancesSurServeur(filtered);',
+    '}',
+    'function basculerActifVacanceClient(id){',
+      'var list = (VACANCES_DATA && VACANCES_DATA.periodes) ? VACANCES_DATA.periodes.slice() : [];',
+      'var v = list.find(function(x){ return x.id === id; });',
+      'if(!v) return;',
+      'v.actif = !v.actif;',
+      'sauvegarderVacancesSurServeur(list);',
+    '}',
+    'function chargerVacancesDefautSaisonClient(){',
+      'if(!confirm("Charger les vacances scolaires standard 2026-2027 ?\\n(Toussaint, Noël, Hiver, Printemps, Été)\\nCela réinitialisera les périodes.")) return;',
+      'afficherLoading("Vacances...", "Chargement du calendrier scolaire 2026-2027...");',
+      'google.script.run.withSuccessHandler(function(res){',
+        'masquerLoading();',
+        'VACANCES_DATA = res.data || VACANCES_DATA;',
+        'rendreListePeriodesVacances();',
+        'majBannieresVacances();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Calendrier des vacances 2026-2027 chargé !", "succes");',
+      '}).withFailureHandler(function(err){',
+        'masquerLoading();',
+        'afficherToast("Erreur : " + err.message, "erreur");',
+      '}).reinitialiserVacancesDefaut(SESSION_TEL, SESSION_PIN);',
+    '}',
+    'function sauvegarderVacancesSurServeur(list){',
+      'afficherLoading("Vacances...", "Synchronisation des vacances...");',
+      'google.script.run.withSuccessHandler(function(res){',
+        'masquerLoading();',
+        'VACANCES_DATA = res.data || VACANCES_DATA;',
+        'rendreListePeriodesVacances();',
+        'majBannieresVacances();',
+        'if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);',
+        'afficherToast("Périodes de vacances enregistrées !", "succes");',
+      '}).withFailureHandler(function(err){',
+        'masquerLoading();',
+        'afficherToast("Erreur enregistrement : " + err.message, "erreur");',
+      '}).enregistrerVacancesClub(SESSION_TEL, SESSION_PIN, list);',
+    '}',
+    'function formaterDateFrClient(isoStr){',
+      'if(!isoStr) return "";',
+      'var parts = String(isoStr).split("-");',
+      'if(parts.length !== 3) return isoStr;',
+      'return parts[2] + "/" + parts[1] + "/" + parts[0];',
+    '}',
+    'function rendreListePeriodesVacances(){',
+      'var cont = document.getElementById("listeVacancesContainer");',
+      'var badgeNb = document.getElementById("badgeNbVacancesTotal");',
+      'if(!cont) return;',
+      'cont.innerHTML = "";',
+      'var list = (VACANCES_DATA && VACANCES_DATA.periodes) ? VACANCES_DATA.periodes : [];',
+      'if(badgeNb) badgeNb.textContent = list.length + " période(s)";',
+      'if(list.length === 0){',
+        'cont.innerHTML = "<div style=\'font-size:0.8rem;color:#94a3b8;font-style:italic;padding:12px 0;text-align:center;\'>Aucune période configurée. Utilisez le formulaire ci-dessus ou chargez le calendrier standard.</div>";',
+        'return;',
+      '}',
+      'var todayIso = new Date().toISOString().split("T")[0];',
+      'list.forEach(function(v){',
+        'var isActif = (v.actif !== false);',
+        'var deb = v.dateDebut || "";',
+        'var fin = v.dateFin || deb;',
+        'var debFr = formaterDateFrClient(deb);',
+        'var finFr = formaterDateFrClient(fin);',
+        'var stBadge = "";',
+        'var cardBg = "background:#090d16;";',
+        'var cardBorder = "border:1px solid rgba(255,255,255,0.08);";',
+        'if(!isActif){',
+          'stBadge = "<span style=\'font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(148,163,184,0.15);color:#94a3b8;font-weight:700;\'>⚪ Désactivée</span>";',
+        '} else if(deb <= todayIso && fin >= todayIso){',
+          'stBadge = "<span style=\'font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(14,165,233,0.25);color:#38bdf8;border:1px solid #0ea5e9;font-weight:800;\'>🏖️ En cours</span>";',
+          'cardBg = "background:linear-gradient(135deg,rgba(14,116,144,0.25),rgba(15,23,42,0.95));";',
+          'cardBorder = "border:1px solid rgba(14,165,233,0.35);";',
+        '} else if(deb > todayIso){',
+          'stBadge = "<span style=\'font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(234,179,8,0.18);color:#facc15;font-weight:700;\'>⏳ À venir</span>";',
+        '} else {',
+          'stBadge = "<span style=\'font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(148,163,184,0.15);color:#94a3b8;font-weight:700;\'>✔️ Passée</span>";',
+        '}',
+        'var card = document.createElement("div");',
+        'card.style.cssText = cardBg + cardBorder + "border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;";',
+        'var left = document.createElement("div");',
+        'left.style.cssText = "flex:1;min-width:0;";',
+        'left.innerHTML = "<div style=\'display:flex;align-items:center;gap:6px;margin-bottom:2px;\'><span style=\'font-weight:800;font-size:0.85rem;color:" + (isActif ? "#f8fafc" : "#94a3b8") + ";\'>" + (v.nom || "Vacances") + "</span>" + stBadge + "</div><div style=\'font-size:0.75rem;color:#cbd5e1;margin-bottom:2px;\'>📅 Du " + debFr + " au " + finFr + "</div>" + (v.commentaire ? "<div style=\'font-size:0.72rem;color:#94a3b8;font-style:italic;\'>" + v.commentaire + "</div>" : "");',
+        'var right = document.createElement("div");',
+        'right.style.cssText = "display:flex;gap:4px;align-items:center;";',
+        'var btnToggle = document.createElement("button");',
+        'btnToggle.type = "button"; btnToggle.className = "btn-reset";',
+        'btnToggle.style.cssText = "font-size:0.72rem;padding:4px 8px;border-radius:6px;background:" + (isActif ? "rgba(14,165,233,0.18)" : "rgba(148,163,184,0.12)") + ";color:" + (isActif ? "#7dd3fc" : "#94a3b8") + ";";',
+        'btnToggle.textContent = isActif ? "Activée" : "Désactivée";',
+        'btnToggle.onclick = function(){ basculerActifVacanceClient(v.id); };',
+        'var btnEdit = document.createElement("button");',
+        'btnEdit.type = "button"; btnEdit.className = "btn-reset";',
+        'btnEdit.style.cssText = "font-size:0.75rem;padding:4px 8px;border-radius:6px;";',
+        'btnEdit.textContent = "✏️"; btnEdit.title = "Modifier les dates ou l\'intitulé";',
+        'btnEdit.onclick = function(){ editerVacanceClient(v.id); };',
+        'var btnDel = document.createElement("button");',
+        'btnDel.type = "button"; btnDel.className = "btn-reset";',
+        'btnDel.style.cssText = "font-size:0.75rem;padding:4px 8px;border-radius:6px;color:#f87171;";',
+        'btnDel.textContent = "🗑️"; btnDel.title = "Supprimer cette période";',
+        'btnDel.onclick = function(){ supprimerVacanceClient(v.id); };',
+        'right.appendChild(btnToggle); right.appendChild(btnEdit); right.appendChild(btnDel);',
+        'card.appendChild(left); card.appendChild(right);',
+        'cont.appendChild(card);',
+      '});',
+    '}',
+    'function majBannieresVacances(){',
+      'var bTr = document.getElementById("banniereVacancesTrain");',
+      'var bMt = document.getElementById("banniereVacancesMatch");',
+      'var bPr = document.getElementById("banniereVacancesPreview");',
+      'var bCoach = document.getElementById("badgeCoachVacances");',
+      'var enVac = Boolean(VACANCES_DATA && VACANCES_DATA.enVacancesCetteSemaine);',
+      'var info = (VACANCES_DATA && VACANCES_DATA.infoSemaine) || {};',
+      'var nom = info.nom || "Vacances scolaires";',
+      'if(enVac){',
+        'if(bTr){ bTr.style.display = "flex"; var txtTr = document.getElementById("txtBanniereVacancesTrain"); if(txtTr) txtTr.textContent = "🏖️ Semaine en période de vacances scolaires (" + nom + ") : entraînements réguliers suspendus."; }',
+        'if(bMt){ bMt.style.display = "flex"; var txtMt = document.getElementById("txtBanniereVacancesMatch"); if(txtMt) txtMt.textContent = "🏖️ Semaine en période de vacances scolaires (" + nom + ") : pas de match officiel programmé."; }',
+        'if(bPr){ bPr.style.display = "flex"; var txtPr = document.getElementById("txtBanniereVacancesPreview"); if(txtPr) txtPr.textContent = "🏖️ Période de vacances active (" + nom + ") : aucun entraînement ni match cette semaine. L\'envoi automatique du sondage est suspendu."; }',
+        'if(bCoach){ bCoach.textContent = "🏖️ En cours : " + nom; bCoach.style.background = "rgba(14,165,233,0.3)"; bCoach.style.color = "#7dd3fc"; }',
+      '} else {',
+        'if(bTr) bTr.style.display = "none";',
+        'if(bMt) bMt.style.display = "none";',
+        'if(bPr) bPr.style.display = "none";',
+        'if(bCoach){',
+          'var list = (VACANCES_DATA && VACANCES_DATA.periodes) ? VACANCES_DATA.periodes.filter(function(x){ return x.actif !== false; }) : [];',
+          'bCoach.textContent = list.length ? (list.length + " période(s) active(s)") : "0 en cours";',
+          'bCoach.style.background = "rgba(148,163,184,0.15)";',
+          'bCoach.style.color = "#94a3b8";',
+        '}',
+      '}',
     '}',
     'function majVueEntrainement(){',
       'if(!TRAIN_CONFIG[SEANCE_COURANTE]){',
@@ -10169,7 +10912,11 @@ function executionAutoLundiMatin() {
   } catch (e) {
     Logger.log('Purge automatique absences lundi matin : ' + e.message);
   }
-  genererSondageHebdo();
+  const sondage = genererSondageHebdo();
+  if (sondage && sondage.enVacances) {
+    Logger.log('[Auto Lundi] Semaine en période de vacances scolaires ("' + (sondage.nomVacances || 'Vacances') + '"). Envoi du sondage WhatsApp annulé.');
+    return;
+  }
   declencherEnvoiWhatsApp();
 }
 
@@ -10603,9 +11350,21 @@ function declencherActionGitHub(eventType, extraPayload) {
   });
 }
 
-function declencherEnvoiWhatsApp() {
+function declencherEnvoiWhatsApp(force) {
   const donnees = genererSondageHebdo();
+  if (donnees && donnees.enVacances && !force) {
+    Logger.log('[Vacances] Envoi WhatsApp ignoré car nous sommes en vacances : ' + donnees.nomVacances);
+    try {
+      SpreadsheetApp.getActiveSpreadsheet().toast('🏖️ Période de vacances : pas d\'entraînement ni match cette semaine. Aucun sondage envoyé.', '⚡ Handball Bot', 6);
+    } catch (e) {}
+    return { ok: true, ignoreVacances: true, nomVacances: donnees.nomVacances };
+  }
+  if (!donnees || !donnees.options || donnees.options.length === 0) {
+    Logger.log('Aucune option de sondage disponible. Envoi annulé.');
+    return { ok: false, message: 'Aucune option de sondage disponible.' };
+  }
   declencherActionGitHub('send_whatsapp_poll', { poll_title: donnees.titre, poll_options: donnees.options });
+  return { ok: true };
 }
 
 /**
@@ -10713,6 +11472,7 @@ function onOpen() {
       .addItem('🏆 13. Actualiser l\'onglet Trophées & Bêtisier', 'menuActualiserTropheesSheet')
       .addItem('📅 14. Actualiser l\'onglet Absences', 'menuActualiserAbsencesSheet')
       .addItem('💰 15. Statut Caisse Noire (Ouvrir / Fermer / Désactiver)', 'menuChangerStatutCaisseNoire')
+      .addItem('🏖️ 16. Gérer les Vacances & Trêves', 'menuGererVacances')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
@@ -10792,6 +11552,51 @@ function menuChangerStatutCaisseNoire() {
       'Le nouveau statut est : ' + labels[nouveauStatut] + '\n\nCe réglage est immédiatement pris en compte dans la WebApp et l\'onglet Configuration.',
       ui.ButtonSet.OK
     );
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur : ' + e.message);
+  }
+}
+
+/**
+ * Affiche la liste des périodes de vacances et l'état actuel de la semaine dans Google Sheets
+ */
+function menuGererVacances() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ui = SpreadsheetApp.getUi();
+    const dataVac = getVacancesData(ss);
+
+    let msg = '';
+    if (dataVac.enVacancesCetteSemaine) {
+      msg += '🏖️ SEMAINE EN COURS EN VACANCES / TRÊVE !\n';
+      msg += '• Période : ' + (dataVac.infoSemaine ? dataVac.infoSemaine.nom : 'En cours') + '\n';
+      msg += '• Conséquence : Entraînements suspendus, pas de match officiel, PAS de sondage WhatsApp ce lundi.\n\n';
+    } else {
+      msg += '🟢 SEMAINE NORMALE (Pas de vacances cette semaine)\n';
+      msg += '• Les entraînements, convocations et sondages WhatsApp sont actifs.\n\n';
+    }
+
+    msg += '📅 CALENDRIER DES VACANCES CONFIGURÉES (' + (dataVac.periodes ? dataVac.periodes.length : 0) + ') :\n';
+    if (dataVac.periodes && dataVac.periodes.length > 0) {
+      dataVac.periodes.forEach(function(v) {
+        const statut = v.actif ? '🟢 Actif' : '⚪ Désactivé';
+        const dDeb = v.dateDebut ? formaterDateFr(v.dateDebut) : '-';
+        const dFin = v.dateFin ? formaterDateFr(v.dateFin) : '-';
+        msg += '  • ' + (v.nom || 'Période') + ' : ' + dDeb + ' ➔ ' + dFin + ' (' + statut + ')\n';
+        if (v.commentaire) {
+          msg += '    Note : ' + v.commentaire + '\n';
+        }
+      });
+    } else {
+      msg += '  (Aucune période de vacances configurée)\n';
+    }
+
+    msg += '\n💡 Pour ajouter, modifier ou désactiver une période :\n';
+    msg += '  1. Rendez-vous dans l\'onglet "Vacances" du tableur\n';
+    msg += '  2. Ou ouvrez la WebApp Coach ➔ Tuile "Vacances & Trêves"\n';
+    msg += 'Toute modification est synchronisée instantanément !';
+
+    ui.alert('🏖️ Gestion des Vacances & Trêves', msg, ui.ButtonSet.OK);
   } catch (e) {
     SpreadsheetApp.getUi().alert('Erreur : ' + e.message);
   }
@@ -10926,6 +11731,16 @@ function onEdit(e) {
           ss.toast('Statut Caisse Noire synchronisé : ' + st.toUpperCase() + ' !', '⚡ Handball Bot', 3);
         } catch (errToast) {}
       }
+    }
+
+    // 3. Modification dans l'onglet Vacances sur les lignes de données (Row >= 4)
+    if (sheetName === 'Vacances' && row >= 4) {
+      const ss = e.source || sheet.getParent();
+      const vacs = lireVacancesDepuisSheet(ss);
+      PropertiesService.getScriptProperties().setProperty('VACANCES_CONFIG_JSON', JSON.stringify(vacs));
+      try {
+        ss.toast('Périodes de vacances synchronisées (' + vacs.length + ' période(s)) !', '🏖️ Handball Bot', 3);
+      } catch (err) {}
     }
   } catch (err) {}
 }

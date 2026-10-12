@@ -1,8 +1,15 @@
 {
-  "version": "1.16.0",
+  "version": "1.17.0",
   "releaseDate": "2026-10-12",
-  "title": "Gestion du statut et fermeture de la Caisse Noire (Ouverte, Fermée, Désactivée pour équipes jeunes)",
+  "title": "Gestion complète des périodes de vacances et trêves (suspension des entraînements, matchs et sondages WhatsApp)",
   "changelog": [
+    "Gestion complète des périodes de vacances et trêves : suspension automatique des entraînements, des matchs officiels et des sondages WhatsApp du lundi matin",
+    "Détection intelligente du calendrier de vacances : vérification automatique le lundi matin lors du déclenchement du sondage hebdomadaire pour éviter tout envoi intempestif aux joueurs",
+    "Double mode de gestion temps réel : configuration depuis l'onglet dédié 'Vacances' dans Google Sheets ou via la modale interactive 'Vacances & Trêves' dans la WebApp Coach",
+    "Bannières visuelles d'information : affichage proéminent sur l'Espace Joueur, la vue Entraînements, la vue Matchs et l'aperçu du sondage signalant la période de trêve et la date de reprise",
+    "Calendrier officiel pré-configuré (2026-2027) : Toussaint, Noël, Hiver, Printemps et Été chargeables en 1 clic avec possibilité d'ajouter des trêves personnalisées",
+    "Nouveau menu Google Sheets '🏖️ 16. Gérer les Vacances & Trêves' avec dialogue récapitulatif de la semaine et des périodes actives",
+    "Synchronisation automatique bidirectionnelle Google Sheets / WebApp lors de modifications manuelles dans l'onglet 'Vacances' via le trigger onEdit",
     "Contrôle d'accès et cycle de vie de la Caisse Noire : 3 statuts configurables (🟢 Ouverte, 🔒 Fermée, ⚪ Désactivée pour équipes jeunes)",
     "Mode Désactivée (Recommandé équipes jeunes) : la Caisse Noire et les amendes sont entièrement masquées pour les joueurs (tuiles, en-têtes et accès bloqués), tout en restant administrables par le coach",
     "Mode Fermée (Fin de saison ou trêve) : nouveaux signalements d'amendes bloqués, consultation des soldes et règlement des dettes conservés",
