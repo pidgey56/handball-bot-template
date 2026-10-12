@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.13.2';
+const APP_VERSION = '1.14.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -112,7 +112,7 @@ function getClubConfig(ss) {
   };
 
   // Lecture des équipes configurées (Lignes 4 à 6 : max 3 équipes pour préserver le Mode Tinder)
-  const rowsEq = shCfg.getRange('B4:F6').getValues();
+  const rowsEq = shCfg.getRange('B4:G6').getValues();
   const equipes = [];
   rowsEq.forEach(function(r, idx) {
     const code = String(r[0] || '').trim();
@@ -120,8 +120,9 @@ function getClubConfig(ss) {
     const labelSondage = String(r[2] || code || ('Équipe ' + (idx + 1))).trim();
     const delaiRdv = Number(r[3]) || 1;
     const urlPoule = String(r[4] || '').trim();
-    if (code && (urlPoule || motCle || labelSondage)) {
-      equipes.push({ code: code, motCle: motCle, labelSondage: labelSondage, delaiRdv: delaiRdv, urlPoule: urlPoule });
+    const urlCoupe = String(r[5] || '').trim();
+    if (code && (urlPoule || urlCoupe || motCle || labelSondage)) {
+      equipes.push({ code: code, motCle: motCle, labelSondage: labelSondage, delaiRdv: delaiRdv, urlPoule: urlPoule, urlCoupe: urlCoupe });
     }
   });
 
@@ -193,7 +194,7 @@ function getClubConfig(ss) {
   // Compléter ou ajuster la liste des équipes actives
   while (equipes.length < nbEquipesCfg) {
     const idx = equipes.length + 1;
-    equipes.push({ code: 'Équipe ' + idx, motCle: 'MON CLUB', labelSondage: 'Équipe ' + idx, delaiRdv: 1, urlPoule: '' });
+    equipes.push({ code: 'Équipe ' + idx, motCle: 'MON CLUB', labelSondage: 'Équipe ' + idx, delaiRdv: 1, urlPoule: '', urlCoupe: '' });
   }
   const equipesActives = equipes.slice(0, nbEquipesCfg);
   const nbEquipes = nbEquipesCfg;
@@ -490,9 +491,9 @@ function getDefaultConfig() {
     couleurEquipe2: '#f97316',
     couleurEquipe3: '#10b981',
     equipes: [
-      { code: 'Équipe 1', motCle: 'MON CLUB', labelSondage: 'Équipe 1', delaiRdv: 1, urlPoule: '' },
-      { code: 'Équipe 2', motCle: 'MON CLUB', labelSondage: 'Équipe 2', delaiRdv: 1, urlPoule: '' },
-      { code: 'Équipe 3', motCle: 'MON CLUB', labelSondage: 'Équipe 3', delaiRdv: 1, urlPoule: '' }
+      { code: 'Équipe 1', motCle: 'MON CLUB', labelSondage: 'Équipe 1', delaiRdv: 1, urlPoule: '', urlCoupe: '' },
+      { code: 'Équipe 2', motCle: 'MON CLUB', labelSondage: 'Équipe 2', delaiRdv: 1, urlPoule: '', urlCoupe: '' },
+      { code: 'Équipe 3', motCle: 'MON CLUB', labelSondage: 'Équipe 3', delaiRdv: 1, urlPoule: '', urlCoupe: '' }
     ].slice(0, nbDef),
     nbEquipes: nbDef,
     entrainements: [],
@@ -530,22 +531,42 @@ function genererSondageHebdo() {
   const lignesDetectees = [];
 
   cfg.equipes.forEach(function(eq, index) {
-    if (!eq.urlPoule) {
+    const urlsAAnalyser = [];
+    if (eq.urlPoule) {
+      const partsP = String(eq.urlPoule).split(/[\n,;|\s]+/).map(function(u) { return u.trim(); }).filter(function(u) { return u.startsWith('http'); });
+      if (partsP.length > 0) {
+        partsP.forEach(function(u) { if (!urlsAAnalyser.includes(u)) urlsAAnalyser.push(u); });
+      } else {
+        urlsAAnalyser.push(eq.urlPoule);
+      }
+    }
+    if (eq.urlCoupe) {
+      const partsC = String(eq.urlCoupe).split(/[\n,;|\s]+/).map(function(u) { return u.trim(); }).filter(function(u) { return u.startsWith('http'); });
+      if (partsC.length > 0) {
+        partsC.forEach(function(u) { if (!urlsAAnalyser.includes(u)) urlsAAnalyser.push(u); });
+      } else if (!urlsAAnalyser.includes(eq.urlCoupe)) {
+        urlsAAnalyser.push(eq.urlCoupe);
+      }
+    }
+
+    if (urlsAAnalyser.length === 0) {
       lignesDetectees.push(['', dateLundiComplet, eq.labelSondage, 'URL de poule FFHB non renseignée', '-', '-', '-', '-', '-', '-', 'Configuration manquante']);
       return;
     }
 
     const motCle = eq.motCle || cfg.nomClub.toUpperCase();
-    const resultat = extraireMatchFFHB(eq.urlPoule, motCle, lundiEnCours, dimancheSemaine);
+    const resultat = extraireMatchFFHB(urlsAAnalyser, motCle, lundiEnCours, dimancheSemaine);
 
     if (resultat && resultat.found) {
       const heureRdv = calculerHeureRdv(resultat.heure, eq.delaiRdv);
       const texteRdv = resultat.estDomicile ? '(rdv ' + heureRdv + ')' : '(rdv ' + heureRdv + ' sur place)';
       const lieuTexte = resultat.estDomicile ? 'à domicile' : 'à l’extérieur';
       const salle = resultat.salle || (resultat.estDomicile ? (cfg.salleDefaut || 'Gymnase Domicile') : ('Gymnase ' + (resultat.adversaireCourt || 'Extérieur')));
-      const optionTexte = 'Dispo match ' + eq.labelSondage + ' ' + resultat.jourCourt + ' ' + lieuTexte + ' ' + resultat.heure + ' vs ' + resultat.adversaireCourt + ' ' + texteRdv;
+      const badgeCoupe = resultat.isCoupe ? ' [Coupe]' : '';
+      const optionTexte = 'Dispo match ' + eq.labelSondage + badgeCoupe + ' ' + resultat.jourCourt + ' ' + lieuTexte + ' ' + resultat.heure + ' vs ' + resultat.adversaireCourt + ' ' + texteRdv;
       optionsMatchs.push(optionTexte);
-      lignesDetectees.push(['', dateLundiComplet, eq.labelSondage, resultat.dateTexte, resultat.heure, heureRdv, lieuTexte, resultat.adversaire, salle, optionTexte, resultat.statut]);
+      const labelAffiche = eq.labelSondage + (resultat.isCoupe ? ' (Coupe de France)' : '');
+      lignesDetectees.push(['', dateLundiComplet, labelAffiche, resultat.dateTexte, resultat.heure, heureRdv, lieuTexte, resultat.adversaire, salle, optionTexte, resultat.statut]);
     } else {
       lignesDetectees.push(['', dateLundiComplet, eq.labelSondage, 'Pas de match trouvé', '-', '-', '-', '-', '-', '-', resultat ? resultat.statut : 'Exempt / Horaire non publié']);
     }
@@ -612,6 +633,16 @@ function initialiserOngletsWebApp(nbEquipesForce) {
         ]);
       }
     }
+  }
+
+  const shCfgHeader = ss.getSheetByName('Configuration');
+  if (shCfgHeader) {
+    try {
+      const g3Val = shCfgHeader.getRange('G3').getValue();
+      if (!g3Val) {
+        shCfgHeader.getRange('G3').setValue('URL Coupe de France FFHB (optionnel)').setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+      }
+    } catch (e) {}
   }
 
   let shEff = ss.getSheetByName('Effectif');
@@ -1012,11 +1043,11 @@ function initialiserClasseurComplet() {
   }
 
   shCfg.getRange('A1').setValue("Paramètres d'Automatisation - Handball Bot").setFontWeight('bold').setFontSize(13);
-  shCfg.getRange('B3:F3').setValues([['Code Équipe', 'Nom recherché (Mot-clé FFHB)', 'Libellé dans le sondage', 'Délai RDV avant match (heures)', 'URL de la poule FFHB']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  shCfg.getRange('B4:F6').setValues([
-    ['Équipe 1', 'MON CLUB', 'Équipe 1', 1.0, 'https://www.ffhandball.fr/competitions/...'],
-    ['Équipe 2', 'MON CLUB', 'Équipe 2', 1.0, 'https://www.ffhandball.fr/competitions/...'],
-    ['Équipe 3', 'MON CLUB', 'Équipe 3', 1.0, 'https://www.ffhandball.fr/competitions/...']
+  shCfg.getRange('B3:G3').setValues([['Code Équipe', 'Nom recherché (Mot-clé FFHB)', 'Libellé dans le sondage', 'Délai RDV avant match (heures)', 'URL de la poule FFHB', 'URL Coupe de France FFHB (optionnel)']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
+  shCfg.getRange('B4:G6').setValues([
+    ['Équipe 1', 'MON CLUB', 'Équipe 1', 1.0, 'https://www.ffhandball.fr/competitions/...', ''],
+    ['Équipe 2', 'MON CLUB', 'Équipe 2', 1.0, 'https://www.ffhandball.fr/competitions/...', ''],
+    ['Équipe 3', 'MON CLUB', 'Équipe 3', 1.0, 'https://www.ffhandball.fr/competitions/...', '']
   ]);
 
   shCfg.getRange('B8:D8').setValues([['Ordre', "Intitulé de l'option dans le sondage", 'Actif (OUI/NON)']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
@@ -1122,6 +1153,7 @@ function enregistrerCouleursClub(telCoach, pinCoach, nouvellesCouleurs) {
         if (eq.labelSondage !== undefined) shCfg.getRange('D' + rowNum).setValue(eq.labelSondage);
         if (eq.delaiRdv !== undefined) shCfg.getRange('E' + rowNum).setValue(Number(eq.delaiRdv) || 1);
         if (eq.urlPoule !== undefined) shCfg.getRange('F' + rowNum).setValue(eq.urlPoule);
+        if (eq.urlCoupe !== undefined) shCfg.getRange('G' + rowNum).setValue(eq.urlCoupe);
       }
     }
   }
@@ -3461,6 +3493,7 @@ function enregistrerConfigEquipes(telCoach, pinCoach, configEquipes) {
         if (eq.labelSondage !== undefined) shCfg.getRange('D' + rowNum).setValue(eq.labelSondage);
         if (eq.delaiRdv !== undefined) shCfg.getRange('E' + rowNum).setValue(Number(eq.delaiRdv) || 1);
         if (eq.urlPoule !== undefined) shCfg.getRange('F' + rowNum).setValue(eq.urlPoule);
+        if (eq.urlCoupe !== undefined) shCfg.getRange('G' + rowNum).setValue(eq.urlCoupe);
       }
     }
   }
@@ -4956,7 +4989,10 @@ function construireHtmlWebApp() {
                 '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Mot-clé FFHB :[[/label]][[input type="text" id="cfgEqMotCle1" class="inp-field" placeholder="MON CLUB" style="font-size:0.75rem;padding:5px;"]][[/div]]',
                 '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Délai RDV (h) :[[/label]][[input type="number" id="cfgEqDelai1" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"]][[/div]]',
               '[[/div]]',
-              '[[div style="margin-top:4px;"]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Poule FFHB :[[/label]][[input type="url" id="cfgEqUrl1" class="inp-field" placeholder="https://www.ffhandball.fr/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+              '[[div style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Championnat :[[/label]][[input type="url" id="cfgEqUrl1" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Coupe (opt.) :[[/label]][[input type="url" id="cfgEqUrlCoupe1" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
             '[[/div]]',
             '[[div id="boxCfgEq2" style="background:#090d16;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,0.15);"]]',
               '[[div style="font-weight:700;font-size:0.8rem;color:var(--color-team2);margin-bottom:6px;"]]Équipe 2[[/div]]',
@@ -4968,7 +5004,10 @@ function construireHtmlWebApp() {
                 '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Mot-clé FFHB :[[/label]][[input type="text" id="cfgEqMotCle2" class="inp-field" placeholder="MON CLUB 2" style="font-size:0.75rem;padding:5px;"]][[/div]]',
                 '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Délai RDV (h) :[[/label]][[input type="number" id="cfgEqDelai2" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"]][[/div]]',
               '[[/div]]',
-              '[[div style="margin-top:4px;"]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Poule FFHB :[[/label]][[input type="url" id="cfgEqUrl2" class="inp-field" placeholder="https://www.ffhandball.fr/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+              '[[div style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Championnat :[[/label]][[input type="url" id="cfgEqUrl2" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Coupe (opt.) :[[/label]][[input type="url" id="cfgEqUrlCoupe2" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
             '[[/div]]',
             '[[div id="boxCfgEq3" style="background:#090d16;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,0.15);"]]',
               '[[div style="font-weight:700;font-size:0.8rem;color:var(--color-team3);margin-bottom:6px;"]]Équipe 3[[/div]]',
@@ -4980,7 +5019,10 @@ function construireHtmlWebApp() {
                 '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Mot-clé FFHB :[[/label]][[input type="text" id="cfgEqMotCle3" class="inp-field" placeholder="MON CLUB 3" style="font-size:0.75rem;padding:5px;"]][[/div]]',
                 '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]Délai RDV (h) :[[/label]][[input type="number" id="cfgEqDelai3" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"]][[/div]]',
               '[[/div]]',
-              '[[div style="margin-top:4px;"]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Poule FFHB :[[/label]][[input type="url" id="cfgEqUrl3" class="inp-field" placeholder="https://www.ffhandball.fr/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+              '[[div style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:6px;"]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Championnat :[[/label]][[input type="url" id="cfgEqUrl3" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+                '[[div]][[label style="font-size:0.7rem;color:#94a3b8;display:block;"]]URL Coupe (opt.) :[[/label]][[input type="url" id="cfgEqUrlCoupe3" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"]][[/div]]',
+              '[[/div]]',
             '[[/div]]',
           '[[/div]]',
         '[[/div]]',
@@ -5985,6 +6027,7 @@ function construireHtmlWebApp() {
         'if(document.getElementById("cfgEqMotCle" + i)) document.getElementById("cfgEqMotCle" + i).value = eq.motCleFfhb || defM;',
         'if(document.getElementById("cfgEqDelai" + i)) document.getElementById("cfgEqDelai" + i).value = (eq.delaiRdvHeures !== undefined ? eq.delaiRdvHeures : 1);',
         'if(document.getElementById("cfgEqUrl" + i)) document.getElementById("cfgEqUrl" + i).value = eq.urlPoule || "";',
+        'if(document.getElementById("cfgEqUrlCoupe" + i)) document.getElementById("cfgEqUrlCoupe" + i).value = eq.urlCoupe || "";',
       '});',
       'choisirNbEquipesModal(curNb);',
       'majApercuModalCouleurs(cp, cs, c1, c2, c3);',
@@ -6043,7 +6086,8 @@ function construireHtmlWebApp() {
         'var cMotCle = (document.getElementById("cfgEqMotCle" + i) ? document.getElementById("cfgEqMotCle" + i).value.trim() : "") || cLabel;',
         'var cDelai = parseFloat(document.getElementById("cfgEqDelai" + i) ? document.getElementById("cfgEqDelai" + i).value : "1") || 1;',
         'var cUrl = (document.getElementById("cfgEqUrl" + i) ? document.getElementById("cfgEqUrl" + i).value.trim() : "");',
-        'eqList.push({ num: i, code: cCode, nomSondage: cLabel, motCleFfhb: cMotCle, motCle: cMotCle, labelSondage: cLabel, delaiRdvHeures: cDelai, delaiRdv: cDelai, urlPoule: cUrl });',
+        'var cUrlCoupe = (document.getElementById("cfgEqUrlCoupe" + i) ? document.getElementById("cfgEqUrlCoupe" + i).value.trim() : "");',
+        'eqList.push({ num: i, code: cCode, nomSondage: cLabel, motCleFfhb: cMotCle, motCle: cMotCle, labelSondage: cLabel, delaiRdvHeures: cDelai, delaiRdv: cDelai, urlPoule: cUrl, urlCoupe: cUrlCoupe });',
       '}',
       'var urlFfhb = (document.getElementById("inpFfhbClubUrl") ? document.getElementById("inpFfhbClubUrl").value.trim() : "") || (CLUB_CONFIG.urlFfhbClub || "");',
       'var logoAEnregistrer = (document.getElementById("inpClubLogoUrl") ? document.getElementById("inpClubLogoUrl").value.trim() : "") || (NOUVEAU_LOGO_IMPORTE || "");',
@@ -9958,56 +10002,35 @@ function interpreterDateHeure(dateStr, heureStr) {
   };
 }
 
-function extraireMatchFFHB(urlPoule, motCleClub, dateDebutSemaine, dateFinSemaine) {
+function extraireMatchFFHB(urlPouleOuListe, motCleClub, dateDebutSemaine, dateFinSemaine) {
   try {
-    let urlPropre = String(urlPoule || '').trim();
-    if (!urlPropre.startsWith('http://') && !urlPropre.startsWith('https://')) {
-      if (urlPropre.startsWith('/competitions/')) {
-        urlPropre = 'https://www.ffhandball.fr' + urlPropre;
-      } else if (urlPropre.startsWith('competitions/')) {
-        urlPropre = 'https://www.ffhandball.fr/' + urlPropre;
-      } else {
-        urlPropre = 'https://www.ffhandball.fr/competitions/' + urlPropre;
-      }
-    }
     const motCle = String(motCleClub || '').toUpperCase().trim();
-    const urlBase = urlPropre.replace(/\/journee-\d+\/?\(/i, '/').replace(/\/?\)/, '/');
-
-    function scannerUrl(urlCible) {
-      const resp = UrlFetchApp.fetch(urlCible, {
-        muteHttpExceptions: true,
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36', 'Accept-Language': 'fr-FR,fr;q=0.9' }
-      });
-      const htmlBrut = resp.getContentText('UTF-8');
-      const matchsTrouves = [];
-      let mAttr;
-      const regexAttrDouble = /attributes="([^"]+)"/gi;
-      while ((mAttr = regexAttrDouble.exec(htmlBrut)) !== null) chercherMatchsDansJson(decoderEntites(mAttr[1]), motCle, matchsTrouves, null);
-      const regexAttrSingle = /attributes='([^']+)'/gi;
-      while ((mAttr = regexAttrSingle.exec(htmlBrut)) !== null) chercherMatchsDansJson(decoderEntites(mAttr[1]), motCle, matchsTrouves, null);
-
-      const htmlDecode = decoderEntites(htmlBrut).replace(/\\"/g, '"').replace(/\\\//g, '/');
-      if (matchsTrouves.length === 0) {
-        const regexObjJson = /\{[^{}]{15,1500}\}/g;
-        let mObj;
-        while ((mObj = regexObjJson.exec(htmlDecode)) !== null) {
-          if (mObj[0].toUpperCase().indexOf(motCle) !== -1) chercherMatchsDansJson(mObj[0], motCle, matchsTrouves, null);
-        }
-      }
-      return { matchs: matchsTrouves };
+    let urlsBrutes = [];
+    if (Array.isArray(urlPouleOuListe)) {
+      urlsBrutes = urlPouleOuListe;
+    } else if (typeof urlPouleOuListe === 'string') {
+      urlsBrutes = urlPouleOuListe.split(/[\n,;|\s]+/).map(function(u) { return u.trim(); }).filter(Boolean);
+    }
+    if (urlsBrutes.length === 0) {
+      return { found: false, statut: 'Aucune URL renseignée' };
     }
 
-    const scanInitial = scannerUrl(urlBase);
-    const tousLesMatchs = scanInitial.matchs;
-
-    function chercherDansSemaine(liste) {
-      for (let i = 0; i < liste.length; i++) {
-        const m = liste[i];
-        if (m.dateObj >= dateDebutSemaine && m.dateObj <= dateFinSemaine) {
-          m.found = true; m.statut = 'Détecté (Semaine en cours)'; return m;
+    function normaliserUrlFFHB(u) {
+      let url = String(u || '').trim();
+      if (!url) return '';
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        if (url.startsWith('/competitions/')) {
+          url = 'https://www.ffhandball.fr' + url;
+        } else if (url.startsWith('competitions/')) {
+          url = 'https://www.ffhandball.fr/' + url;
+        } else {
+          url = 'https://www.ffhandball.fr/competitions/' + url;
         }
       }
-      return null;
+      if (url.startsWith('http://')) {
+        url = 'https://' + url.substring(7);
+      }
+      return url;
     }
 
     function enrichirSalleMatch(m) {
@@ -10035,23 +10058,121 @@ function extraireMatchFFHB(urlPoule, motCleClub, dateDebutSemaine, dateFinSemain
       return m;
     }
 
-    let matchSemaine = chercherDansSemaine(tousLesMatchs);
-    if (matchSemaine) return enrichirSalleMatch(matchSemaine);
-
-    for (let numJ = 1; numJ <= 22; numJ++) {
-      const scanJ = scannerUrl(urlBase + 'journee-' + numJ + '/');
-      if (scanJ.matchs.length === 0) continue;
-      for (let k = 0; k < scanJ.matchs.length; k++) tousLesMatchs.push(scanJ.matchs[k]);
-      matchSemaine = chercherDansSemaine(scanJ.matchs);
-      if (matchSemaine) { matchSemaine.statut = 'Détecté (Journée ' + numJ + ')'; return enrichirSalleMatch(matchSemaine); }
-      if (scanJ.matchs[0].dateObj > dateFinSemaine) break;
+    function chercherDansSemaine(liste) {
+      for (let i = 0; i < liste.length; i++) {
+        const m = liste[i];
+        if (m.dateObj >= dateDebutSemaine && m.dateObj <= dateFinSemaine) {
+          m.found = true;
+          if (!m.statut) m.statut = m.isCoupe ? 'Détecté (Coupe de France)' : 'Détecté (Semaine en cours)';
+          return m;
+        }
+      }
+      return null;
     }
 
-    if (tousLesMatchs.length > 0) {
-      tousLesMatchs.sort(function(a, b) { return a.dateObj.getTime() - b.dateObj.getTime(); });
-      const prochain = tousLesMatchs.find(function(m) { return m.dateObj > dateFinSemaine; }) || tousLesMatchs[tousLesMatchs.length - 1];
-      return { found: false, statut: 'Exempt / Repos cette semaine (prochain match : ' + prochain.dateTexte + ')' };
+    const tousLesMatchsGlobaux = [];
+    const urlsVisitees = {};
+
+    function scannerUrl(urlCible, estCoupe) {
+      if (urlsVisitees[urlCible]) return { matchs: [], poulesAnnexes: [] };
+      urlsVisitees[urlCible] = true;
+      let resp;
+      try {
+        resp = UrlFetchApp.fetch(urlCible, {
+          muteHttpExceptions: true,
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36', 'Accept-Language': 'fr-FR,fr;q=0.9' }
+        });
+      } catch (errFetch) {
+        return { matchs: [], poulesAnnexes: [] };
+      }
+      const htmlBrut = resp.getContentText('UTF-8');
+      const matchsTrouves = [];
+      const poulesAnnexes = [];
+      let mAttr;
+
+      const traiterJsonStr = function(jsonStr) {
+        try {
+          const obj = JSON.parse(jsonStr);
+          chercherMatchsDansJson(obj, motCle, matchsTrouves, null);
+          if (obj && Array.isArray(obj.poules)) {
+            obj.poules.forEach(function(po) {
+              if (po && po.ext_pouleId) poulesAnnexes.push(String(po.ext_pouleId));
+            });
+          }
+        } catch (e) {
+          chercherMatchsDansJson(jsonStr, motCle, matchsTrouves, null);
+        }
+      };
+
+      const regexAttrDouble = /attributes="([^"]+)"/gi;
+      while ((mAttr = regexAttrDouble.exec(htmlBrut)) !== null) traiterJsonStr(decoderEntites(mAttr[1]));
+      const regexAttrSingle = /attributes='([^']+)'/gi;
+      while ((mAttr = regexAttrSingle.exec(htmlBrut)) !== null) traiterJsonStr(decoderEntites(mAttr[1]));
+
+      const htmlDecode = decoderEntites(htmlBrut).replace(/\\"/g, '"').replace(/\\\//g, '/');
+      if (matchsTrouves.length === 0) {
+        const regexObjJson = /\{[^{}]{15,1500}\}/g;
+        let mObj;
+        while ((mObj = regexObjJson.exec(htmlDecode)) !== null) {
+          if (mObj[0].toUpperCase().indexOf(motCle) !== -1) chercherMatchsDansJson(mObj[0], motCle, matchsTrouves, null);
+        }
+      }
+
+      matchsTrouves.forEach(function(m) {
+        if (estCoupe) {
+          m.isCoupe = true;
+          m.statut = 'Détecté (Coupe de France)';
+        }
+      });
+
+      return { matchs: matchsTrouves, poulesAnnexes: poulesAnnexes };
     }
+
+    for (let uIdx = 0; uIdx < urlsBrutes.length; uIdx++) {
+      const uNorm = normaliserUrlFFHB(urlsBrutes[uIdx]);
+      if (!uNorm) continue;
+      const estCoupe = /coupe-de-france|coupe/i.test(uNorm);
+      let urlBase = uNorm.replace(/\/journee-\d+.*$/i, '').replace(/\/+$/, '') + '/';
+
+      const scanInit = scannerUrl(urlBase, estCoupe);
+      scanInit.matchs.forEach(function(m) { tousLesMatchsGlobaux.push(m); });
+
+      let matchSemaine = chercherDansSemaine(scanInit.matchs);
+      if (matchSemaine) return enrichirSalleMatch(matchSemaine);
+
+      if (estCoupe && scanInit.poulesAnnexes && scanInit.poulesAnnexes.length > 0) {
+        for (let pIdx = 0; pIdx < scanInit.poulesAnnexes.length; pIdx++) {
+          const pId = scanInit.poulesAnnexes[pIdx];
+          const urlSubPoule = urlBase + 'poule-' + pId + '/';
+          const scanSub = scannerUrl(urlSubPoule, true);
+          scanSub.matchs.forEach(function(m) { tousLesMatchsGlobaux.push(m); });
+          matchSemaine = chercherDansSemaine(scanSub.matchs);
+          if (matchSemaine) return enrichirSalleMatch(matchSemaine);
+        }
+      }
+
+      if (!estCoupe) {
+        for (let numJ = 1; numJ <= 22; numJ++) {
+          const scanJ = scannerUrl(urlBase + 'journee-' + numJ + '/', false);
+          if (scanJ.matchs.length === 0) continue;
+          scanJ.matchs.forEach(function(m) { tousLesMatchsGlobaux.push(m); });
+          matchSemaine = chercherDansSemaine(scanJ.matchs);
+          if (matchSemaine) {
+            matchSemaine.statut = 'Détecté (Journée ' + numJ + ')';
+            return enrichirSalleMatch(matchSemaine);
+          }
+          if (scanJ.matchs[0].dateObj > dateFinSemaine) break;
+        }
+      }
+    }
+
+    if (tousLesMatchsGlobaux.length > 0) {
+      tousLesMatchsGlobaux.sort(function(a, b) { return a.dateObj.getTime() - b.dateObj.getTime(); });
+      const prochain = tousLesMatchsGlobaux.find(function(m) { return m.dateObj > dateFinSemaine; }) || tousLesMatchsGlobaux[tousLesMatchsGlobaux.length - 1];
+      const detailProchain = (prochain.isCoupe ? ' [Coupe] ' : ' ') + prochain.dateTexte;
+      return { found: false, statut: 'Exempt / Repos cette semaine (prochain match :' + detailProchain + ')' };
+    }
+
     return { found: false, statut: 'Aucun match trouvé sur FFHB' };
   } catch (e) {
     return { found: false, statut: 'Erreur script : ' + e.message };

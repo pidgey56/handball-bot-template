@@ -1,8 +1,12 @@
 {
-  "version": "1.13.2",
+  "version": "1.14.0",
   "releaseDate": "2026-10-12",
-  "title": "Nouvel onglet Google Sheet 'Absences' et correction de la suppression d'absence",
+  "title": "Détection intelligente des matchs de Coupe de France FFHB & support multi-compétitions",
   "changelog": [
+    "Détection automatique des matchs de Coupe de France FFHB : support complet des tours (1er tour, 2e tour...), poules nationales/régionales et phases éliminatoires",
+    "Support multi-compétitions par équipe : configuration simultanée de la poule de Championnat et de la Coupe de France dans l'onglet Configuration (colonne G) et dans la WebApp Coach",
+    "Badge et statut dédiés '[Coupe]' / 'Détecté (Coupe de France)' dans le sondage hebdomadaire, l'onglet 'Matchs FFHB Détectés' et les messages de convocation WhatsApp",
+    "Moteur de scraping FFHB renforcé : résolution automatique des URLs de coupe racine sans identifiant de poule et exploration récursive des sous-poules du tournoi",
     "Correction du bug de suppression d'absence ('Identifiant d'absence introuvable') : auto-migration des absences sans identifiant et suppression robuste multi-critères",
     "Nouvel onglet Google Sheet '📅 Absences' synchronisé en direct : tableau complet des indisponibilités (Statut en cours/à venir, dates, motifs, joueur)",
     "Nouveau menu Google Sheets '📅 14. Actualiser l'onglet Absences'",
