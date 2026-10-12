@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.14.0';
+const APP_VERSION = '1.15.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -1647,8 +1647,7 @@ function verifierDroitsCoachOuTresorier(ss, tel, pin) {
   return false;
 }
 
-function authentifierUtilisateur(telephoneSaisi, pinSaisi) {
-  initialiserOngletsWebApp();
+function authentifierUtilisateur(telephoneSaisi, pinSaisi, inclureDonnees) {
   const tel = normaliserNumero(telephoneSaisi);
   const pin = String(pinSaisi || '').trim();
 
@@ -1658,6 +1657,7 @@ function authentifierUtilisateur(telephoneSaisi, pinSaisi) {
   const ss = getSpreadsheet();
   const cfg = getClubConfig(ss);
   const shEff = ss.getSheetByName('Effectif');
+  if (!shEff) throw new Error('Onglet Effectif introuvable dans le classeur.');
   const rows = shEff.getDataRange().getValues();
 
   let joueurIndex = -1;
@@ -1693,6 +1693,15 @@ function authentifierUtilisateur(telephoneSaisi, pinSaisi) {
   const estTresorier = Boolean(valTresorier === true || /oui|true|tr[eé]sorier/i.test(String(valTresorier || '').trim()));
   const estCoach = estAdmin || /coach|entraineur|entraîneur|responsable/i.test(posteJoueur);
 
+  let donneesInitiales = null;
+  if (inclureDonnees) {
+    try {
+      donneesInitiales = lireDonneesCoach(ss, cfg);
+    } catch (errData) {
+      Logger.log('Erreur préchargement données dans authentifierUtilisateur : ' + errData.message);
+    }
+  }
+
   return {
     ok: true,
     telephone: tel,
@@ -1701,7 +1710,8 @@ function authentifierUtilisateur(telephoneSaisi, pinSaisi) {
     poste: posteJoueur,
     photo: photoJoueur,
     estCoach: estCoach,
-    estTresorier: estTresorier
+    estTresorier: estTresorier,
+    donnees: donneesInitiales
   };
 }
 
@@ -2803,22 +2813,20 @@ function supprimerAbsenceJoueur(tel, pin, idAbsence, fallbackNom, fallbackDebut,
  * Récupère les absences des joueurs avec purge automatique des absences terminées
  */
 function getAbsencesJoueurs() {
+  const props = PropertiesService.getScriptProperties();
   try {
-    return purgerAbsencesTerminees();
-  } catch (e) {
-    const props = PropertiesService.getScriptProperties();
-    try {
-      const raw = props.getProperty('ABSENCES_JOUEURS');
-      if (raw) {
-        const parsed = JSON.parse(raw);
+    const raw = props.getProperty('ABSENCES_JOUEURS');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
         parsed.forEach(function(a, idx) {
           if (!a.id) a.id = 'abs_' + (a.nom ? String(a.nom).replace(/[^a-zA-Z0-9]/g, '_') : 'j') + '_' + (a.dateDebut || '').replace(/[^0-9]/g, '') + '_' + idx;
         });
         return parsed;
       }
-    } catch (err) {}
-    return [];
-  }
+    }
+  } catch (err) {}
+  return [];
 }
 
 /**
@@ -3679,22 +3687,38 @@ function synchroniserDepuisGitHub() {
   }
 }
 
-function getDonneesCoach() {
-  synchroniserDepuisGitHub();
+function getDonneesCoach(forceSync) {
+  if (forceSync) {
+    synchroniserDepuisGitHub();
+  } else {
+    try {
+      const cache = CacheService.getScriptCache();
+      if (!cache.get('DERNIERE_SYNC_GH')) {
+        synchroniserDepuisGitHub();
+        cache.put('DERNIERE_SYNC_GH', '1', 300);
+      }
+    } catch (e) {
+      synchroniserDepuisGitHub();
+    }
+  }
   return lireDonneesCoach();
 }
 
 /**
  * Prépare les données pour la WebApp coach
  */
-function lireDonneesCoach() {
-  const ss = getSpreadsheet();
+function lireDonneesCoach(ssOpt, cfgOpt) {
+  const ss = ssOpt || getSpreadsheet();
   try {
-    purgerAbsencesTerminees(ss);
+    const cache = CacheService.getScriptCache();
+    if (!cache.get('DERNIERE_PURGE_ABS')) {
+      purgerAbsencesTerminees(ss);
+      cache.put('DERNIERE_PURGE_ABS', '1', 3600);
+    }
   } catch (e) {
     Logger.log('Purge automatique absences au chargement coach : ' + e.message);
   }
-  const cfg = getClubConfig(ss);
+  const cfg = cfgOpt || getClubConfig(ss);
   const shVotes = ss.getSheetByName('Votes_Semaine');
   const shEff = ss.getSheetByName('Effectif');
   const shMatchs = ss.getSheetByName('Matchs FFHB Détectés');
@@ -4424,8 +4448,9 @@ function construireHtmlWebApp() {
     '@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(0.96);}to{opacity:1;transform:translateY(0) scale(1);}}',
     '.badge-renfort{background:rgba(234,179,8,0.2);color:#facc15;border:1px solid rgba(234,179,8,0.35);font-size:0.68rem;padding:2px 6px;border-radius:6px;font-weight:800;}',
     '[[/style]]',
-    '[[script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"]][[/script]]',
-    '[[script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"]][[/script]]',
+    '[[link rel="dns-prefetch" href="https://cdn.jsdelivr.net"]]',
+    '[[script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"]][[/script]]',
+    '[[script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"]][[/script]]',
     '[[/head]][[body]]',
     '[[div id="globalLoadingScreen" style="position:fixed;inset:0;background:rgba(5,7,13,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.3s ease,visibility 0.3s ease;"]]',
       '[[div style="position:relative;width:80px;height:80px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;"]]',
@@ -6257,6 +6282,7 @@ function construireHtmlWebApp() {
     'function appliquerDonneesRecues(data, conserverSelection){',
     '  try {',
     '    if(!data) return;',
+    '    try { localStorage.setItem("hb_cache_data", JSON.stringify(data)); } catch(e){}',
     '    if(data.clubConfig){',
         'CLUB_CONFIG = data.clubConfig;',
         'var nbEq = Math.min(3, Math.max(1, CLUB_CONFIG.nbEquipes || 2));',
@@ -7294,7 +7320,7 @@ function construireHtmlWebApp() {
       '}).withFailureHandler(function(err){',
         'if(btn) btn.textContent = "Vérifier les mises à jour";',
         'afficherToast("Impossible de vérifier les mises à jour : " + err.message, "erreur");',
-      '}).verifierMiseAJour();',
+      '}).verifierMiseAJour(true);',
     '}',
     'function ouvrirModalMiseAJour(){',
       'if(!UPDATE_INFO) return;',
@@ -7328,13 +7354,15 @@ function construireHtmlWebApp() {
       'var url = (repo && repo.indexOf("/") !== -1) ? ("https://github.com/" + repo + "/actions") : ((UPDATE_INFO && UPDATE_INFO.repoUrl) ? UPDATE_INFO.repoUrl : "https://github.com");',
       'window.open(url, "_blank");',
     '}',
-    'function seConnecter(){',
+    'function seConnecter(silencieux){',
       'var tel = document.getElementById("inpTel").value, pin = document.getElementById("inpPin").value;',
-      'document.getElementById("loginError").textContent = "Connexion...";',
-      'document.getElementById("btnLogin").disabled = true;',
-      'afficherLoading("Connexion en cours...", "Vérification de vos identifiants...");',
+      'if(!silencieux){',
+        'document.getElementById("loginError").textContent = "Connexion...";',
+        'document.getElementById("btnLogin").disabled = true;',
+        'afficherLoading("Connexion en cours...", "Vérification de vos identifiants...");',
+      '}',
       'google.script.run.withSuccessHandler(function(res){',
-        'document.getElementById("btnLogin").disabled = false;',
+        'if(!silencieux) document.getElementById("btnLogin").disabled = false;',
         'SESSION_TEL = res.telephone; SESSION_PIN = res.pin; SESSION_NOM = res.nom; EST_COACH = !!res.estCoach; EST_TRESORIER = !!res.estTresorier;',
         'document.body.classList.add("user-logged-in");',
         'document.getElementById("loginBox").style.display = "none";',
@@ -7350,16 +7378,25 @@ function construireHtmlWebApp() {
           'verifierMiseAJourAutomatique();',
           'majAffichageModesParDefaut();',
         '}',
-        'try { localStorage.setItem("hb_tel", tel); localStorage.setItem("hb_pin", pin); } catch(e){}',
-        'google.script.run.withSuccessHandler(function(data){ appliquerDonneesRecues(data, false); }).withFailureHandler(function(err){ masquerLoading(); afficherToast("Erreur de synchronisation : " + err.message, "erreur"); }).getDonneesCoach();',
+        'try {',
+          'localStorage.setItem("hb_tel", tel);',
+          'localStorage.setItem("hb_pin", pin);',
+          'localStorage.setItem("hb_session", JSON.stringify({ telephone: res.telephone, pin: res.pin, nom: res.nom, estCoach: !!res.estCoach, estTresorier: !!res.estTresorier }));',
+        '} catch(e){}',
+        'if(res.donnees){',
+          'appliquerDonneesRecues(res.donnees, false);',
+          'masquerLoading();',
+        '} else {',
+          'google.script.run.withSuccessHandler(function(data){ appliquerDonneesRecues(data, false); }).withFailureHandler(function(err){ masquerLoading(); afficherToast("Erreur de synchronisation : " + err.message, "erreur"); }).getDonneesCoach();',
+        '}',
       '}).withFailureHandler(function(err){',
         'masquerLoading();',
         'document.getElementById("btnLogin").disabled = false;',
         'document.getElementById("loginError").textContent = err.message;',
-      '}).authentifierUtilisateur(tel, pin);',
+      '}).authentifierUtilisateur(tel, pin, true);',
     '}',
     'function seDeconnecter(){',
-      'try { localStorage.removeItem("hb_pin"); } catch(e){}',
+      'try { localStorage.removeItem("hb_pin"); localStorage.removeItem("hb_session"); localStorage.removeItem("hb_cache_data"); } catch(e){}',
       'SESSION_TEL = ""; SESSION_PIN = ""; SESSION_NOM = ""; EST_COACH = false; EST_TRESORIER = false;',
       'document.body.classList.remove("user-logged-in");',
       'var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "none";',
@@ -9837,17 +9874,44 @@ function construireHtmlWebApp() {
     '  try { rendreOngletsTrain(); } catch(e){}',
     '  try { majAffichageModesParDefaut(); } catch(e){}',
     '  window.addEventListener("resize", majAffichageModesParDefaut);',
+    '  var aChargeDepuisCache = false;',
+    '  try {',
+    '    var rawCache = localStorage.getItem("hb_cache_data");',
+    '    var rawSess = localStorage.getItem("hb_session");',
+    '    if(rawSess){',
+    '      var sess = JSON.parse(rawSess);',
+    '      SESSION_TEL = sess.telephone || ""; SESSION_PIN = sess.pin || ""; SESSION_NOM = sess.nom || ""; EST_COACH = !!sess.estCoach; EST_TRESORIER = !!sess.estTresorier;',
+    '      document.body.classList.add("user-logged-in");',
+    '      document.getElementById("loginBox").style.display = "none";',
+    '      document.getElementById("playerBox").style.display = "flex";',
+    '      majEspaceJoueur(SESSION_NOM);',
+    '      if(EST_COACH || EST_TRESORIER){',
+    '        document.getElementById("coachMenuBox").style.display = "block";',
+    '      } else {',
+    '        document.getElementById("coachMenuBox").style.display = "none";',
+    '      }',
+    '      if(EST_COACH){',
+    '        var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "flex";',
+    '      }',
+    '    }',
+    '    if(rawCache){',
+    '      var parsedCache = JSON.parse(rawCache);',
+    '      appliquerDonneesRecues(parsedCache, false);',
+    '      aChargeDepuisCache = true;',
+    '      masquerLoading();',
+    '    }',
+    '  } catch(eCache){}',
     '  try {',
     '    var t = localStorage.getItem("hb_tel"), p = localStorage.getItem("hb_pin");',
     '    if(t) document.getElementById("inpTel").value = t;',
     '    if(t && p){',
     '      document.getElementById("inpPin").value = p;',
-    '      seConnecter();',
+    '      seConnecter(aChargeDepuisCache);',
     '    } else {',
     '      masquerLoading();',
     '    }',
     '  } catch(e){ masquerLoading(); }',
-    '  setTimeout(function(){ masquerLoading(); }, 3500);',
+    '  setTimeout(function(){ masquerLoading(); }, 2500);',
     '}',
     'if(document.readyState === "complete" || document.readyState === "interactive"){',
     '  demarrerApp();',
@@ -10327,14 +10391,21 @@ function comparerVersionsSemver(v1, v2) {
 /**
  * Vérifie si une nouvelle version de Handball Bot est disponible sur GitHub
  */
-function verifierMiseAJour() {
+function verifierMiseAJour(force) {
   try {
+    const cache = CacheService.getScriptCache();
+    if (!force) {
+      const cached = cache.get('CACHE_VERIF_MAJ');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    }
     const url = 'https://raw.githubusercontent.com/' + UPSTREAM_TEMPLATE_REPO + '/main/version.json?t=' + new Date().getTime();
     const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
     if (res.getResponseCode() === 200) {
       const data = JSON.parse(res.getContentText('UTF-8'));
       const estPlusRecent = comparerVersionsSemver(data.version, APP_VERSION) > 0;
-      return {
+      const majResult = {
         disponible: estPlusRecent,
         versionActuelle: APP_VERSION,
         versionDistante: String(data.version || ''),
@@ -10344,6 +10415,10 @@ function verifierMiseAJour() {
         repoUrl: data.repoUrl || ('https://github.com/' + UPSTREAM_TEMPLATE_REPO),
         codeGsUrl: data.codeGsRawUrl || ('https://raw.githubusercontent.com/' + UPSTREAM_TEMPLATE_REPO + '/main/code.gs')
       };
+      try {
+        cache.put('CACHE_VERIF_MAJ', JSON.stringify(majResult), 1800);
+      } catch (eC) {}
+      return majResult;
     }
   } catch (e) {}
   return { disponible: false, versionActuelle: APP_VERSION };

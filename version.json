@@ -1,8 +1,13 @@
 {
-  "version": "1.14.0",
+  "version": "1.15.0",
   "releaseDate": "2026-10-12",
-  "title": "Détection intelligente des matchs de Coupe de France FFHB & support multi-compétitions",
+  "title": "Optimisations majeures des performances de chargement & architecture instantanée SWR",
   "changelog": [
+    "Architecture de chargement instantané Stale-While-Revalidate (SWR) : affichage immédiat de l'interface et des données (< 50 ms) depuis le cache local, puis synchronisation silencieuse en arrière-plan sans bloquer l'utilisateur",
+    "Suppression du double aller-retour réseau à la connexion : fusion de l'authentification et du chargement des données en un seul appel RPC, divisant par deux le temps de connexion",
+    "Élimination des écritures et réinitialisations de feuilles Google Sheets superflues lors de chaque connexion PIN et consultation des absences",
+    "Mise en cache intelligente Apps Script (CacheService) pour la synchronisation GitHub, les purges d'absences et la détection des mises à jour logicielles",
+    "Accélération du chargement initial : préchargement DNS (dns-prefetch) et exécution différée (defer) des scripts CDN lourds (SortableJS, Confetti)",
     "Détection automatique des matchs de Coupe de France FFHB : support complet des tours (1er tour, 2e tour...), poules nationales/régionales et phases éliminatoires",
     "Support multi-compétitions par équipe : configuration simultanée de la poule de Championnat et de la Coupe de France dans l'onglet Configuration (colonne G) et dans la WebApp Coach",
     "Badge et statut dédiés '[Coupe]' / 'Détecté (Coupe de France)' dans le sondage hebdomadaire, l'onglet 'Matchs FFHB Détectés' et les messages de convocation WhatsApp",
