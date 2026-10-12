@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.20.0';
+const APP_VERSION = '1.20.1';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -6345,9 +6345,11 @@ function construireHtmlWebApp() {
     '@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}',
     '.spinner-inline{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.25);border-top-color:currentColor;border-radius:50%;animation:spin 0.75s linear infinite;vertical-align:middle;margin-right:6px;}',
     '.spinner-badge{display:inline-block;width:11px;height:11px;border:2px solid rgba(255,255,255,0.25);border-top-color:var(--color-primary);border-radius:50%;animation:spin 0.75s linear infinite;vertical-align:middle;margin-right:5px;}',
+    'body:not(.user-logged-in) #playerBox{display:none!important;}',
+    'body.user-logged-in #loginBox{display:none!important;}',
     '@media(min-width:1024px){',
       'body.user-logged-in .home-card{max-width:1120px!important;padding:36px 44px;}',
-      '#playerBox{display:grid!important;grid-template-columns:360px 1fr;gap:24px;align-items:start;}',
+      'body.user-logged-in #playerBox{display:grid!important;grid-template-columns:360px 1fr;gap:24px;align-items:start;}',
       '.player-box-left{display:flex;flex-direction:column;gap:12px;width:100%;}',
       '.player-box-right{display:flex;flex-direction:column;gap:14px;width:100%;}',
       '#coachMenuBox, #btnDeconnexion, .btn-deconnexion{grid-column:1/-1;width:100%;}',

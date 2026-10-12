@@ -1,8 +1,10 @@
 {
-  "version": "1.20.0",
+  "version": "1.20.1",
   "releaseDate": "2026-10-12",
-  "title": "Cycle hebdomadaire automatique : purge des entraînements, réinitialisation des disponibilités et conservation unique de la composition précédente",
+  "title": "Correction de l'affichage WebApp : isolation stricte de l'Espace Joueur avant la connexion sur grand écran",
   "changelog": [
+    "Correction du bug d'affichage sur desktop / écrans larges (>= 1024px) : l'Espace Joueur (playerBox) était affiché prématurément sous le formulaire de connexion à cause d'une règle CSS !important non scopée",
+    "Isolation stricte du cycle de vie d'authentification : masquage garanti de playerBox tant que l'utilisateur n'est pas connecté (body:not(.user-logged-in)), et masquage garanti du loginBox dès la connexion réussie",
     "Réinitialisation automatique des disponibilités (Votes_Semaine) à l'envoi de chaque nouveau sondage WhatsApp : tous les joueurs de l'Effectif sont réinitialisés à 0 entraînement et 'NON' sur les créneaux de la nouvelle semaine",
     "Purge automatique des présences d'entraînement (Entrainements) à chaque nouveau sondage hebdomadaire pour repartir d'un tableau vierge",
     "Conservation unique de la composition précédente (Compositions) : purge de l'historique antérieur obsolète et maintien exclusif de la dernière feuille de match validée",
