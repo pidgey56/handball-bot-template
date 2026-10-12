@@ -1,8 +1,11 @@
 {
-  "version": "1.13.0",
-  "releaseDate": "2026-10-11",
-  "title": "Animations festives MVP & Chèvre, synchronisation Google Sheets & stabilité WebApp",
+  "version": "1.13.1",
+  "releaseDate": "2026-10-12",
+  "title": "Nouvel onglet Google Sheet 'Trophées & Bêtisier' (Palmarès MVP & Chèvre en direct)",
   "changelog": [
+    "Nouvel onglet Google Sheet '🏆 Trophées & Bêtisier' synchronisé en temps réel : palmarès complet de l'élection du MVP et bêtisier d'équipe de la Chèvre",
+    "Mise à jour automatique du tableur lors de chaque vote ou proposition dans la WebApp, avec menu dédié '🏆 13. Actualiser l'onglet Trophées & Bêtisier'",
+    "Bouton Déconnexion adapté en pleine largeur pour un confort visuel optimal sur desktop et mobile",
     "Affichage automatique des emojis MVP (🏆) et Chèvre (🐐) à côté du nom des joueurs dans les messages WhatsApp de convocation et d'entraînement",
     "Animations festives plein écran lors de l'élection du MVP (trophées dorés, étoiles, confettis) et de la Chèvre du match (bêlements, chèvres bondissantes, confettis)",
     "Sélection et distinction directe du MVP et de la Chèvre du match depuis la composition tactique et les fiches joueurs",

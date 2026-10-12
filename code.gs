@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.13.0';
+const APP_VERSION = '1.13.1';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -684,6 +684,11 @@ function initialiserOngletsWebApp(nbEquipesForce) {
     shApercu.getRange('A1').setValue('Aperçu du prochain sondage WhatsApp').setFontWeight('bold');
     shApercu.getRange('B3').setValue('Titre du sondage : Disponibilités');
     shApercu.getRange('B4').setValue('Choix multiples : OUI (selectableCount = 0)');
+  }
+
+  let shTrophees = ss.getSheetByName('Trophées & Bêtisier');
+  if (!shTrophees) {
+    try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
   }
 
   // Vérifier et ajouter les paramètres de couleurs dans Configuration si absents
@@ -1850,6 +1855,7 @@ function enregistrerMvpDesignation(telCoach, pinCoach, nomJoueur) {
   }
   const cleanNom = String(nomJoueur || '').trim();
   PropertiesService.getScriptProperties().setProperty('MVP_NOM', cleanNom);
+  try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
   return { succes: true, mvp: cleanNom };
 }
 
@@ -1863,6 +1869,7 @@ function enregistrerChevreDesignation(telCoach, pinCoach, nomJoueur) {
   }
   const cleanNom = String(nomJoueur || '').trim();
   PropertiesService.getScriptProperties().setProperty('CHEVRE_NOM', cleanNom);
+  try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
   return { succes: true, chevre: cleanNom };
 }
 
@@ -1962,6 +1969,7 @@ function voterMvp(tel, pin, nomMvp) {
   };
 
   props.setProperty('VOTES_MVP_DATA', JSON.stringify(votes));
+  try { synchroniserOngletTropheesSheet(); } catch (e) {}
   const res = calculerResultatsVotesMvp(votes, auth.telephone);
   return { ok: true, votesMvp: res, ...res };
 }
@@ -2031,6 +2039,7 @@ function reinitialiserVotesMvp(telCoach, pinCoach) {
   }
   const clean = { liste: {} };
   PropertiesService.getScriptProperties().setProperty('VOTES_MVP_DATA', JSON.stringify(clean));
+  try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
   return calculerResultatsVotesMvp(clean);
 }
 
@@ -2134,6 +2143,7 @@ function proposerActionChevre(tel, pin, description, joueurConcerne) {
   });
 
   props.setProperty('ACTIONS_CHEVRE_DATA', JSON.stringify(rawData));
+  try { synchroniserOngletTropheesSheet(); } catch (e) {}
   const res = calculerResultatsChevre(rawData, auth.telephone);
   return { ok: true, chevreData: res, ...res };
 }
@@ -2171,6 +2181,7 @@ function supprimerActionChevre(tel, pin, idAction) {
   });
 
   props.setProperty('ACTIONS_CHEVRE_DATA', JSON.stringify(rawData));
+  try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
   const res = calculerResultatsChevre(rawData, auth.telephone);
   return { ok: true, chevreData: res, ...res };
 }
@@ -2205,6 +2216,7 @@ function voterActionChevre(tel, pin, idAction) {
   }
 
   props.setProperty('ACTIONS_CHEVRE_DATA', JSON.stringify(rawData));
+  try { synchroniserOngletTropheesSheet(); } catch (e) {}
   const res = calculerResultatsChevre(rawData, auth.telephone);
   return { ok: true, chevreData: res, ...res };
 }
@@ -2219,7 +2231,209 @@ function reinitialiserVotesChevre(telCoach, pinCoach) {
   }
   const clean = { actions: [], votes: {} };
   PropertiesService.getScriptProperties().setProperty('ACTIONS_CHEVRE_DATA', JSON.stringify(clean));
+  try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
   return calculerResultatsChevre(clean);
+}
+
+/**
+ * Synchronise et met en forme l'onglet "Trophées & Bêtisier" dans Google Sheets
+ * Présente le classement de l'élection du MVP et le bêtisier de la Chèvre du match
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - Le classeur Google Sheets (optionnel)
+ * @return {Object} Résumé de la synchronisation
+ */
+function synchroniserOngletTropheesSheet(ss) {
+  if (!ss) ss = getSpreadsheet();
+  if (!ss) return { ok: false, error: 'Classeur introuvable' };
+
+  let sh = ss.getSheetByName('Trophées & Bêtisier');
+  if (!sh) {
+    sh = ss.insertSheet('Trophées & Bêtisier');
+  }
+  try {
+    sh.setTabColor('#f59e0b');
+  } catch (e) {}
+
+  sh.clear();
+
+  const props = PropertiesService.getScriptProperties();
+  const mvpDesignation = props.getProperty('MVP_NOM') || '';
+  const chevreDesignation = props.getProperty('CHEVRE_NOM') || '';
+  const resMvp = getVotesMvpData();
+  const resChevre = getChevreData();
+
+  const totalVotesMvp = resMvp.totalVotes || 0;
+  const podiumMvp = resMvp.podiumMvp || [];
+
+  const totalActionsChevre = resChevre.totalActions || 0;
+  const totalVotesChevre = resChevre.totalVotes || 0;
+  const actionsChevre = resChevre.actions || [];
+
+  const horodatage = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+
+  // Lignes 1-2 : Bannière Titre
+  sh.getRange('A1:F1').merge()
+    .setValue('🏆 PALMARÈS DU MATCH : ÉLECTION MVP & 🐐 TROPHÉE CHÈVRE')
+    .setBackground('#0f172a')
+    .setFontColor('#f8fafc')
+    .setFontWeight('bold')
+    .setFontSize(13)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(1, 38);
+
+  sh.getRange('A2:F2').merge()
+    .setValue('Dernière synchronisation : ' + horodatage + ' • Synchronisé automatiquement depuis la WebApp')
+    .setBackground('#1e293b')
+    .setFontColor('#94a3b8')
+    .setFontStyle('italic')
+    .setFontSize(9)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(2, 22);
+
+  let curRow = 4;
+
+  // ==========================================
+  // BLOC 1 : ÉLECTION MVP DU MATCH
+  // ==========================================
+  sh.getRange(curRow, 1, 1, 5).merge()
+    .setValue('🏆 1. ÉLECTION DU JOUEUR DU MATCH (MVP)')
+    .setBackground('#f59e0b')
+    .setFontColor('#111827')
+    .setFontWeight('bold')
+    .setFontSize(11)
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(curRow, 28);
+  curRow++;
+
+  const entetesMvp = ['Rang', 'Joueur', 'Nombre de votes', '% des voix', 'Statut / Élection'];
+  sh.getRange(curRow, 1, 1, 5).setValues([entetesMvp])
+    .setBackground('#1e293b')
+    .setFontColor('#f1f5f9')
+    .setFontWeight('bold')
+    .setFontSize(10);
+  sh.setRowHeight(curRow, 24);
+  curRow++;
+
+  if (podiumMvp.length === 0 && !mvpDesignation) {
+    sh.getRange(curRow, 1, 1, 5).merge()
+      .setValue('Aucun vote MVP enregistré pour le moment. (Vote ouvert dans la WebApp)')
+      .setFontColor('#64748b')
+      .setFontStyle('italic')
+      .setHorizontalAlignment('center');
+    curRow++;
+  } else {
+    const listeAffichee = podiumMvp.slice();
+    if (mvpDesignation && !listeAffichee.some(function(x) { return String(x.nom || '').toLowerCase() === mvpDesignation.toLowerCase(); })) {
+      listeAffichee.unshift({ nom: mvpDesignation, voix: 0, votes: 0, estCoachMvp: true });
+    }
+
+    listeAffichee.forEach(function(item, idx) {
+      let medaille = '•';
+      if (idx === 0) medaille = '🥇 1er';
+      else if (idx === 1) medaille = '🥈 2e';
+      else if (idx === 2) medaille = '🥉 3e';
+      else medaille = (idx + 1) + 'e';
+
+      const pct = totalVotesMvp > 0 ? Math.round((item.voix / totalVotesMvp) * 100) + '%' : (item.estCoachMvp ? '-' : '0%');
+      let statut = '';
+      if (idx === 0 && item.voix > 0) statut = '🏆 Élu MVP du match';
+      if (mvpDesignation && String(item.nom || '').toLowerCase() === mvpDesignation.toLowerCase()) {
+        statut = (statut ? statut + ' • ' : '') + '⭐ Choix Coach';
+      }
+
+      sh.getRange(curRow, 1, 1, 5).setValues([[medaille, item.nom, item.voix, pct, statut]]);
+      if (idx === 0 && (item.voix > 0 || item.estCoachMvp)) {
+        sh.getRange(curRow, 1, 1, 5).setBackground('#fef3c7').setFontWeight('bold');
+      }
+      curRow++;
+    });
+
+    sh.getRange(curRow, 1, 1, 5).merge()
+      .setValue('Total des votes exprimés : ' + totalVotesMvp + ' vote(s)')
+      .setFontSize(9)
+      .setFontColor('#64748b')
+      .setFontStyle('italic');
+    curRow++;
+  }
+
+  curRow += 2; // Espace entre blocs
+
+  // ==========================================
+  // BLOC 2 : TROPHÉE CHÈVRE & BÊTISIER
+  // ==========================================
+  sh.getRange(curRow, 1, 1, 6).merge()
+    .setValue('🐐 2. TROPHÉE CHÈVRE & BÊTISIER D\'ÉQUIPE')
+    .setBackground('#ea580c')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(11)
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(curRow, 28);
+  curRow++;
+
+  const entetesChevre = ['Rang', 'Joueur concerné', 'Casserole / Action proposée', 'Proposé par', 'Votes', 'Statut'];
+  sh.getRange(curRow, 1, 1, 6).setValues([entetesChevre])
+    .setBackground('#1e293b')
+    .setFontColor('#f1f5f9')
+    .setFontWeight('bold')
+    .setFontSize(10);
+  sh.setRowHeight(curRow, 24);
+  curRow++;
+
+  if (actionsChevre.length === 0 && !chevreDesignation) {
+    sh.getRange(curRow, 1, 1, 6).merge()
+      .setValue('Aucune casserole proposée pour le moment. (Propositions & votes ouverts dans la WebApp)')
+      .setFontColor('#64748b')
+      .setFontStyle('italic')
+      .setHorizontalAlignment('center');
+    curRow++;
+  } else {
+    actionsChevre.forEach(function(act, idx) {
+      let rang = (idx + 1) + 'e';
+      let statut = '';
+      if (idx === 0 && act.voix > 0) {
+        rang = '👑 #1';
+        statut = '🐐 Élu Chèvre du match';
+      }
+      if (chevreDesignation && act.joueur && act.joueur.toLowerCase() === chevreDesignation.toLowerCase()) {
+        statut = (statut ? statut + ' • ' : '') + '🎯 Cible Coach';
+      }
+
+      sh.getRange(curRow, 1, 1, 6).setValues([[
+        rang,
+        act.joueur || 'Collectif',
+        '« ' + act.description + ' »',
+        act.auteur || 'Un coéquipier',
+        act.voix,
+        statut
+      ]]);
+
+      if (idx === 0 && act.voix > 0) {
+        sh.getRange(curRow, 1, 1, 6).setBackground('#ffedd5').setFontWeight('bold');
+      }
+      curRow++;
+    });
+
+    sh.getRange(curRow, 1, 1, 6).merge()
+      .setValue('Total du bêtisier : ' + totalActionsChevre + ' proposition(s) • ' + totalVotesChevre + ' vote(s)')
+      .setFontSize(9)
+      .setFontColor('#64748b')
+      .setFontStyle('italic');
+    curRow++;
+  }
+
+  // Ajustement des largeurs de colonnes
+  try {
+    sh.setColumnWidth(1, 80);   // Rang
+    sh.setColumnWidth(2, 160);  // Joueur
+    sh.setColumnWidth(3, 340);  // Description / Casserole
+    sh.setColumnWidth(4, 150);  // Proposé par
+    sh.setColumnWidth(5, 110);  // Votes
+    sh.setColumnWidth(6, 170);  // Statut
+  } catch (e) {}
+
+  return { ok: true, maj: horodatage };
 }
 
 /**
@@ -9891,10 +10105,23 @@ function onOpen() {
       .addItem('🔓 10. Déchiffrer tous les numéros de l\'effectif', 'menuDechiffrerNumerosEffectif')
       .addItem('🧹 11. Purger les absences terminées (Notes & WebApp)', 'menuPurgerAbsencesTerminees')
       .addItem('📋 12. Lister Trésoriers & Chouchoux', 'menuListerTresoriersEtChouchoux')
+      .addItem('🏆 13. Actualiser l\'onglet Trophées & Bêtisier', 'menuActualiserTropheesSheet')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
   } catch (e) {}
+}
+
+function menuActualiserTropheesSheet() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const res = synchroniserOngletTropheesSheet(ss);
+    if (res && res.ok) {
+      ss.toast('Onglet "Trophées & Bêtisier" synchronisé avec succès !', '🏆 Handball Bot', 5);
+    }
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur lors de la synchronisation : ' + e.message);
+  }
 }
 
 function menuPurgerAbsencesTerminees() {
