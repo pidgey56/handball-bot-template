@@ -1,8 +1,16 @@
 {
-  "version": "1.15.0",
+  "version": "1.16.0",
   "releaseDate": "2026-10-12",
-  "title": "Optimisations majeures des performances de chargement & architecture instantanée SWR",
+  "title": "Gestion du statut et fermeture de la Caisse Noire (Ouverte, Fermée, Désactivée pour équipes jeunes)",
   "changelog": [
+    "Contrôle d'accès et cycle de vie de la Caisse Noire : 3 statuts configurables (🟢 Ouverte, 🔒 Fermée, ⚪ Désactivée pour équipes jeunes)",
+    "Mode Désactivée (Recommandé équipes jeunes) : la Caisse Noire et les amendes sont entièrement masquées pour les joueurs (tuiles, en-têtes et accès bloqués), tout en restant administrables par le coach",
+    "Mode Fermée (Fin de saison ou trêve) : nouveaux signalements d'amendes bloqués, consultation des soldes et règlement des dettes conservés",
+    "Mode Ouverte : fonctionnement standard complet avec barème, signalement d'amendes entre pairs, contestations et gestion des soldes",
+    "Gestion directe en 1 clic depuis la WebApp Coach (sélecteur de statut Ouverte / Fermée / Désactivée dans le panneau de gestion de la Caisse Noire)",
+    "Nouveau menu Google Sheets '💰 15. Statut Caisse Noire (Ouvrir / Fermer / Désactiver)' avec dialogue interactif",
+    "Synchronisation automatique bidirectionnelle du statut dans l'onglet 'Configuration' (ligne 35) et détection instantanée via onEdit",
+    "Sécurisation côté serveur (RPC) : blocage strict des signalements d'amendes non autorisés si la caisse est fermée ou désactivée",
     "Architecture de chargement instantané Stale-While-Revalidate (SWR) : affichage immédiat de l'interface et des données (< 50 ms) depuis le cache local, puis synchronisation silencieuse en arrière-plan sans bloquer l'utilisateur",
     "Suppression du double aller-retour réseau à la connexion : fusion de l'authentification et du chargement des données en un seul appel RPC, divisant par deux le temps de connexion",
     "Élimination des écritures et réinitialisations de feuilles Google Sheets superflues lors de chaque connexion PIN et consultation des absences",

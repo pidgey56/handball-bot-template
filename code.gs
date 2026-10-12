@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.15.0';
+const APP_VERSION = '1.16.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -90,6 +90,64 @@ function getSpreadsheet() {
     return SpreadsheetApp.openById(propId);
   }
   throw new Error('Classeur Google Sheets introuvable. Veuillez exécuter le script depuis votre classeur via Extensions > Apps Script.');
+}
+
+/**
+ * Lit le statut configuré pour la Caisse Noire (ouverte, fermee, desactivee) depuis l'onglet Configuration
+ */
+function lireStatutCaisseDepuisSheet(ss) {
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (!classeur) return null;
+    const shCfg = classeur.getSheetByName('Configuration');
+    if (!shCfg) return null;
+    const rows = shCfg.getRange('B18:D36').getValues();
+    for (let i = 0; i < rows.length; i++) {
+      const lbl = String(rows[i][0] || '').toLowerCase();
+      if (lbl.indexOf('caisse') !== -1 && (lbl.indexOf('statut') !== -1 || lbl.indexOf('active') !== -1 || lbl.indexOf('amende') !== -1)) {
+        const val = String(rows[i][1] || '').trim().toLowerCase();
+        if (/non|d[eé]sactiv[eé]e?|off|false|0/i.test(val)) return 'desactivee';
+        if (/ferm[eé]e?|cl[oô]tur[eé]e?|close|bloqu[eé]e?/i.test(val)) return 'fermee';
+        if (/oui|ouverte?|active?|open|true|1/i.test(val)) return 'ouverte';
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+/**
+ * Enregistre le statut de la Caisse Noire dans l'onglet Configuration
+ */
+function synchroniserStatutCaisseSheet(ss, statut) {
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (!classeur) return;
+    const shCfg = classeur.getSheetByName('Configuration');
+    if (!shCfg) return;
+    const valSheet = statut === 'desactivee' ? 'DÉSACTIVÉE' : (statut === 'fermee' ? 'FERMÉE' : 'OUVERTE');
+    const rows = shCfg.getRange('B18:B36').getValues();
+    let rowIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      const lbl = String(rows[i][0] || '').toLowerCase();
+      if (lbl.indexOf('caisse') !== -1 && (lbl.indexOf('statut') !== -1 || lbl.indexOf('active') !== -1 || lbl.indexOf('amende') !== -1)) {
+        rowIdx = 18 + i;
+        break;
+      }
+    }
+    if (rowIdx !== -1) {
+      shCfg.getRange('C' + rowIdx).setValue(valSheet);
+    } else {
+      for (let r = 33; r <= 37; r++) {
+        const vB = String(shCfg.getRange('B' + r).getValue() || '').trim();
+        if (!vB || vB.toLowerCase().indexOf('caisse') !== -1) {
+          shCfg.getRange('B' + r + ':D' + r).setValues([
+            ['Caisse Noire & Amendes (Statut)', valSheet, 'Statut de la caisse : OUVERTE, FERMÉE ou DÉSACTIVÉE (ex: équipe jeune)']
+          ]);
+          break;
+        }
+      }
+    }
+  } catch (e) {}
 }
 
 /**
@@ -440,6 +498,19 @@ function getClubConfig(ss) {
   let chevreConfig = '';
   try { chevreConfig = PropertiesService.getScriptProperties().getProperty('CHEVRE_NOM') || ''; } catch (e) {}
 
+  let caisseStatut = 'ouverte';
+  const statutSheet = lireStatutCaisseDepuisSheet(classeur);
+  if (statutSheet) {
+    caisseStatut = statutSheet;
+  } else {
+    try {
+      const propSt = PropertiesService.getScriptProperties().getProperty('CAISSE_NOIRE_STATUT');
+      if (propSt && ['ouverte', 'fermee', 'desactivee'].includes(propSt.toLowerCase())) {
+        caisseStatut = propSt.toLowerCase();
+      }
+    } catch (e) {}
+  }
+
   return {
     nomClub: nomClub,
     logoUrl: logoFinal,
@@ -464,6 +535,7 @@ function getClubConfig(ss) {
     urlFfhbClub: urlFfhbClub,
     tresoriers: tresoriersConfig,
     tresorierPhones: tresorierPhones,
+    caisseStatut: caisseStatut,
     chouchou: chouchouConfig,
     mvp: mvpConfig,
     chevre: chevreConfig
@@ -502,6 +574,7 @@ function getDefaultConfig() {
     nomEquipe3: 'Équipe 3',
     tresoriers: '',
     tresorierPhones: [],
+    caisseStatut: (function(){ try { return PropertiesService.getScriptProperties().getProperty('CAISSE_NOIRE_STATUT') || 'ouverte'; } catch(e){ return 'ouverte'; } })(),
     chouchou: (function(){ try { return PropertiesService.getScriptProperties().getProperty('CHOUCHOU_NOM') || ''; } catch(e){ return ''; } })(),
     mvp: (function(){ try { return PropertiesService.getScriptProperties().getProperty('MVP_NOM') || ''; } catch(e){ return ''; } })(),
     chevre: (function(){ try { return PropertiesService.getScriptProperties().getProperty('CHEVRE_NOM') || ''; } catch(e){ return ''; } })()
@@ -769,6 +842,10 @@ function initialiserOngletsWebApp(nbEquipesForce) {
       const valB34 = String(shCfg.getRange('B34').getValue() || '').trim();
       if (!valB34) {
         shCfg.getRange('B34:D34').setValues([['Chouchou(x) du Coach', '', 'Nom(s) du ou des chouchoux du coach (synchronisé avec l\'onglet Effectif)']]);
+      }
+      const valB35 = String(shCfg.getRange('B35').getValue() || '').trim();
+      if (!valB35) {
+        shCfg.getRange('B35:D35').setValues([['Caisse Noire & Amendes (Statut)', 'OUVERTE', 'Statut de la caisse : OUVERTE, FERMÉE ou DÉSACTIVÉE (ex: équipe jeune)']]);
       }
     }
 
@@ -3018,6 +3095,24 @@ function getCaisseNoireData() {
   if (!Array.isArray(rawData.config.bareme) || rawData.config.bareme.length === 0) {
     rawData.config.bareme = getBaremeDefautCaisseNoire();
   }
+
+  let statutActuel = 'ouverte';
+  try {
+    const propSt = props.getProperty('CAISSE_NOIRE_STATUT');
+    if (propSt && ['ouverte', 'fermee', 'desactivee'].includes(propSt.toLowerCase())) {
+      statutActuel = propSt.toLowerCase();
+    } else {
+      const stSheet = lireStatutCaisseDepuisSheet();
+      if (stSheet) statutActuel = stSheet;
+    }
+  } catch (e) {}
+
+  if (!rawData.config.statut) {
+    rawData.config.statut = statutActuel;
+  }
+  rawData.config.active = (rawData.config.statut !== 'desactivee');
+  rawData.config.fermee = (rawData.config.statut === 'fermee');
+
   if (!Array.isArray(rawData.amendes)) rawData.amendes = [];
   if (!Array.isArray(rawData.depenses)) rawData.depenses = [];
 
@@ -3084,6 +3179,15 @@ function getCaisseNoireData() {
  */
 function signalerAmendeJoueur(tel, pin, nomCoupable, motif, montant, commentaire) {
   const auth = authentifierUtilisateur(tel, pin);
+  const dataCaisse = getCaisseNoireData();
+  const cfgCaisse = (dataCaisse && dataCaisse.config) || {};
+  const statutCaisse = cfgCaisse.statut || (cfgCaisse.active === false ? 'desactivee' : (cfgCaisse.fermee ? 'fermee' : 'ouverte'));
+  if (statutCaisse === 'desactivee') {
+    throw new Error('La Caisse Noire n\'est pas activée pour cette équipe.');
+  }
+  if (statutCaisse === 'fermee' && !auth.estCoach && !auth.estTresorier) {
+    throw new Error('La Caisse Noire est actuellement fermée par le coach. Les nouveaux signalements sont suspendus.');
+  }
   const cleanCoupable = String(nomCoupable || '').trim();
   const cleanMotif = String(motif || 'Non renseigné').trim();
   const valMontant = Math.max(0.5, Number(montant) || 1);
@@ -3307,10 +3411,62 @@ function enregistrerConfigCaisseNoire(telCoach, pinCoach, nouvelleConfig) {
   } catch (e) {}
 
   if (!currentData || typeof currentData !== 'object') currentData = {};
+
+  if (nouvelleConfig && nouvelleConfig.statut) {
+    const stValide = ['ouverte', 'fermee', 'desactivee'].includes(nouvelleConfig.statut) ? nouvelleConfig.statut : 'ouverte';
+    props.setProperty('CAISSE_NOIRE_STATUT', stValide);
+    nouvelleConfig.statut = stValide;
+    nouvelleConfig.active = (stValide !== 'desactivee');
+    nouvelleConfig.fermee = (stValide === 'fermee');
+    try {
+      synchroniserStatutCaisseSheet(ss, stValide);
+    } catch (e) {}
+  }
+
   currentData.config = nouvelleConfig;
 
   props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
   return { ok: true, data: getCaisseNoireData() };
+}
+
+/**
+ * Modifie directement le statut de la Caisse Noire ('ouverte', 'fermee', 'desactivee')
+ */
+function changerStatutCaisseNoire(telCoach, pinCoach, nouveauStatut) {
+  const ss = getSpreadsheet();
+  if (!verifierDroitsCoachOuTresorier(ss, normaliserNumero(telCoach), String(pinCoach || '').trim())) {
+    throw new Error('Action réservée aux coachs / trésoriers autorisés.');
+  }
+  const statutValide = ['ouverte', 'fermee', 'desactivee'].includes(nouveauStatut) ? nouveauStatut : 'ouverte';
+
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('CAISSE_NOIRE_STATUT', statutValide);
+
+  let currentData = {};
+  try {
+    const raw = props.getProperty('CAISSE_NOIRE_DATA');
+    if (raw) currentData = JSON.parse(raw);
+  } catch (e) {}
+  if (!currentData || typeof currentData !== 'object') currentData = {};
+  if (!currentData.config) {
+    currentData.config = {
+      devise: '€',
+      objectifCagnotte: 300,
+      objectifDescription: 'Resto & Tournée de fin d\'année',
+      moyenPaiement: 'Lydia / Espèces au vestiaire',
+      bareme: getBaremeDefautCaisseNoire()
+    };
+  }
+  currentData.config.statut = statutValide;
+  currentData.config.active = (statutValide !== 'desactivee');
+  currentData.config.fermee = (statutValide === 'fermee');
+  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+
+  try {
+    synchroniserStatutCaisseSheet(ss, statutValide);
+  } catch (e) {}
+
+  return { ok: true, statut: statutValide, data: getCaisseNoireData() };
 }
 
 /**
@@ -4563,7 +4719,7 @@ function construireHtmlWebApp() {
                 '[[div class="player-tile-top"]][[span class="player-tile-icon"]]📅[[/span]][[span id="tileBadgeAbsence" class="player-tile-badge badge-absence"]]Prévenir[[/span]][[/div]]',
                 '[[div]][[div class="player-tile-title"]]Déclarer Absence[[/div]][[div id="tileSubAbsence" class="player-tile-sub"]]Indiquer vos indispos[[/div]][[/div]]',
               '[[/div]]',
-              '[[div class="player-tile tile-caisse" style="grid-column:1/-1;" onclick="ouvrirModalCaisseNoire()"]]',
+              '[[div class="player-tile tile-caisse" id="playerTileCaisse" style="grid-column:1/-1;" onclick="ouvrirModalCaisseNoire()"]]',
                 '[[div class="player-tile-top"]][[span class="player-tile-icon"]]💰[[/span]][[span id="tileBadgeCaisse" class="player-tile-badge" style="background:rgba(234,179,8,0.2);color:#fef08a;border-color:rgba(234,179,8,0.35);"]]Cagnotte[[/span]][[/div]]',
                 '[[div]][[div class="player-tile-title"]]Caisse Noire & Amendes[[/div]][[div id="tileSubCaisse" class="player-tile-sub"]]Ardoise, cagnotte & barème[[/div]][[/div]]',
               '[[/div]]',
@@ -4619,12 +4775,12 @@ function construireHtmlWebApp() {
                 '[[div class="dash-tile-desc"]]Photo de blason, couleurs & thèmes[[/div]]',
                 '[[button type="button" class="btn-enter btn-enter-alt" style="margin:6px 0 0 0;padding:8px;font-size:0.8rem;width:100%;" onclick="ouvrirModalCouleurs()"]]Personnaliser[[/button]]',
               '[[/div]]',
-              '[[div class="dash-tile" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95));border:1px solid rgba(234,179,8,0.3);"]]',
+              '[[div class="dash-tile" id="dashTileCaisseNoireCoach" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95));border:1px solid rgba(234,179,8,0.3);"]]',
                 '[[div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"]]',
                   '[[div class="dash-tile-title" style="color:#fde047;"]]💰 Caisse Noire & Amendes[[/div]]',
                   '[[span id="badgeCoachCaisseStats" style="font-size:0.75rem;padding:2px 8px;border-radius:99px;background:rgba(234,179,8,0.2);color:#fef08a;font-weight:800;"]]0 € en caisse[[/span]]',
                 '[[/div]]',
-                '[[div class="dash-tile-desc"]]Gérer les amendes, encaissements, dépenses d\'équipe et barème[[/div]]',
+                '[[div id="dashDescCaisseNoire" class="dash-tile-desc"]]Gérer les amendes, encaissements, dépenses d\'équipe et barème[[/div]]',
                 '[[div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;"]]',
                   '[[button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;background:rgba(234,179,8,0.25);border:1px solid #eab308;color:#fef08a;font-weight:700;" onclick="ouvrirModalAdminCaisseNoire()"]]⚙️ Administrer[[/button]]',
                   '[[button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalCaisseNoire()"]]👀 Vue Joueurs[[/button]]',
@@ -4651,7 +4807,7 @@ function construireHtmlWebApp() {
         '[[button class="btn-reset" id="btnCollectifsAppHeader" onclick="ouvrirModalCollectifs()"]]Collectifs ▾[[/button]]',
         '[[button class="btn-reset" onclick="entrerEffectif()"]]Effectif & Notes[[/button]]',
         '[[button class="btn-reset" onclick="ouvrirModalCouleurs()"]]Couleurs & Équipes[[/button]]',
-        '[[button class="btn-reset" onclick="ouvrirModalAdminCaisseNoire()" title="Caisse Noire & Amendes"]]💰 Caisse Noire[[/button]]',
+        '[[button class="btn-reset" id="btnHeaderCaisseNoire" onclick="ouvrirModalAdminCaisseNoire()" title="Caisse Noire & Amendes"]]💰 Caisse Noire[[/button]]',
         '[[button class="btn-reset" onclick="ouvrirModalGuideCoach()" title="Guide des fonctionnalités coach"]]📖 Guide[[/button]]',
         '[[button class="btn-sync js-sync-wa" onclick="forcerActualisationWhatsApp()"]]Actualiser WhatsApp[[/button]]',
         '[[button class="btn-tinder" id="btnSwitchMode" onclick="basculerMode()"]]Mode Tinder[[/button]]',
@@ -5459,6 +5615,7 @@ function construireHtmlWebApp() {
           '[[div style="font-weight:900;font-size:1.18rem;color:#fef08a;display:flex;align-items:center;gap:8px;"]]💰 Caisse Noire & Amendes[[/div]]',
           '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalCaisseNoire()"]]✕[[/button]]',
         '[[/div]]',
+        '[[div id="banniereCaisseFermee" style="display:none;background:rgba(245,158,11,0.2);border:1px solid #f59e0b;color:#fde68a;border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:0.78rem;font-weight:700;align-items:center;gap:8px;text-align:left;"]]🔒 La Caisse Noire est actuellement fermée par le coach. Les nouveaux signalements d\'amendes sont suspendus.[[/div]]',
         '[[div style="display:flex;gap:4px;background:#090d16;padding:4px;border-radius:12px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.08);"]]',
           '[[button type="button" id="tabCaisseCagnotte" class="train-type-pill active" style="flex:1;" onclick="basculerTabCaisse(\'cagnotte\')"]]📊 Cagnotte[[/button]]',
           '[[button type="button" id="tabCaisseArdoise" class="train-type-pill" style="flex:1;" onclick="basculerTabCaisse(\'ardoise\')"]]🧾 Mon Ardoise[[/button]]',
@@ -5496,7 +5653,7 @@ function construireHtmlWebApp() {
             '[[div id="caisseMonStatutDette" style="font-size:0.85rem;font-weight:800;color:#94a3b8;"]]Mon ardoise personnelle[[/div]]',
             '[[div id="caisseMonMontantDu" style="font-size:2rem;font-weight:900;color:#f87171;margin:4px 0;"]]0 €[[/div]]',
             '[[div id="caisseMonMessageArdoise" style="font-size:0.75rem;color:#cbd5e1;margin-bottom:10px;"]]Vous êtes à jour de vos amendes ! Bravo 🟢[[/div]]',
-            '[[button type="button" class="btn-enter" style="margin:0;font-size:0.78rem;padding:7px 12px;background:#eab308;color:#000;font-weight:800;" onclick="ouvrirFormulaireBalance()"]]🚨 Signaler une amende (La Balance)[[/button]]',
+            '[[button type="button" id="btnOuvrirFormulaireBalance" class="btn-enter" style="margin:0;font-size:0.78rem;padding:7px 12px;background:#eab308;color:#000;font-weight:800;" onclick="ouvrirFormulaireBalance()"]]🚨 Signaler une amende (La Balance)[[/button]]',
           '[[/div]]',
           '[[div id="boxFormulaireBalance" style="display:none;background:rgba(15,23,42,0.95);border:1px solid #eab308;border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;"]]',
             '[[div style="font-weight:800;font-size:0.82rem;color:#fde047;margin-bottom:8px;"]]🕵️‍♂️ Dénoncer un coéquipier (ou s\'auto-déclarer) :[[/div]]',
@@ -5543,6 +5700,18 @@ function construireHtmlWebApp() {
             '[[span class="badge-mode" style="background:rgba(234,179,8,0.2);color:#fef08a;border:1px solid rgba(234,179,8,0.35);font-size:0.72rem;"]]Trésorier[[/span]]',
           '[[/div]]',
           '[[button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalAdminCaisseNoire()"]]✕[[/button]]',
+        '[[/div]]',
+        '[[div style="background:#090d16;border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:10px 12px;margin-bottom:12px;text-align:left;"]]',
+          '[[div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"]]',
+            '[[span style="font-size:0.75rem;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;color:#cbd5e1;display:flex;align-items:center;gap:6px;"]]Statut de la Caisse :[[/span]]',
+            '[[span id="badgeAdminStatutCaisseCourant" style="font-size:0.72rem;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,0.2);color:#86efac;border:1px solid rgba(34,197,94,0.35);"]]🟢 Ouverte & Active[[/span]]',
+          '[[/div]]',
+          '[[div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;"]]',
+            '[[button type="button" id="btnStatutCaisseOuverte" class="train-type-pill active" style="font-size:0.72rem;padding:7px 2px;margin:0;" onclick="basculerStatutCaisseDirect(\'ouverte\')"]]🟢 Ouverte[[/button]]',
+            '[[button type="button" id="btnStatutCaisseFermee" class="train-type-pill" style="font-size:0.72rem;padding:7px 2px;margin:0;" onclick="basculerStatutCaisseDirect(\'fermee\')"]]🔒 Fermée[[/button]]',
+            '[[button type="button" id="btnStatutCaisseDesactivee" class="train-type-pill" style="font-size:0.72rem;padding:7px 2px;margin:0;" onclick="basculerStatutCaisseDirect(\'desactivee\')"]]⚪ Désactivée[[/button]]',
+          '[[/div]]',
+          '[[div id="descAdminStatutCaisse" style="font-size:0.7rem;color:#94a3b8;margin-top:6px;line-height:1.3;"]]Caisse opérationnelle : les joueurs peuvent déclarer des amendes et consulter la cagnotte.[[/div]]',
         '[[/div]]',
         '[[div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;text-align:center;"]]',
           '[[div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"]][[div style="font-size:0.65rem;color:#94a3b8;font-weight:700;"]]EN CAISSE[[/div]][[div id="admStatEnCaisse" style="font-size:1.05rem;font-weight:900;color:#fef08a;"]]0 €[[/div]][[/div]]',
@@ -5621,6 +5790,14 @@ function construireHtmlWebApp() {
             '[[div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-bottom:8px;"]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Cagnotte cible (€) :[[/label]][[input type="number" id="inpAdmCagnotteCible" class="inp-field" style="padding:7px 10px;font-size:0.8rem;"]][[/div]]',
               '[[div]][[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Description objectif :[[/label]][[input type="text" id="inpAdmObjectifDesc" class="inp-field" style="padding:7px 10px;font-size:0.8rem;"]][[/div]]',
+            '[[/div]]',
+            '[[div style="margin-bottom:8px;"]]',
+              '[[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Statut de la Caisse Noire :[[/label]]',
+              '[[select id="selAdmStatutCaisse" class="inp-field" style="padding:7px 10px;font-size:0.8rem;"]]',
+                '[[option value="ouverte"]]🟢 Ouverte & Active (Amendes & Cagnotte)[[/option]]',
+                '[[option value="fermee"]]🔒 Fermée / Clôturée (Consultation seule)[[/option]]',
+                '[[option value="desactivee"]]⚪ Désactivée / Non mise en place (ex: Équipe jeune)[[/option]]',
+              '[[/select]]',
             '[[/div]]',
             '[[div style="margin-bottom:8px;"]]',
               '[[label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;"]]Instructions / Lien Lydia :[[/label]]',
@@ -7716,31 +7893,91 @@ function construireHtmlWebApp() {
       '});',
       'if(tBadgeAbs) tBadgeAbs.textContent = mesAbs.length > 0 ? (mesAbs.length + " déclarée(s)") : "Prévenir";',
       'if(tSubAbs) tSubAbs.textContent = mesAbs.length > 0 ? "Absence enregistrée" : "Indiquer vos indispos";',
+      'var tileCaisse = document.getElementById("playerTileCaisse");',
       'var tBadgeCaisse = document.getElementById("tileBadgeCaisse");',
       'var tSubCaisse = document.getElementById("tileSubCaisse");',
-      'var mesAmendesImpayees = (CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.amendes) ? CAISSE_NOIRE_DATA.amendes.filter(function(a){ return String(a.nomJoueur || "").toLowerCase() === nom.toLowerCase() && a.statut === "impaye"; }) : [];',
-      'var monTotalDu = 0;',
-      'mesAmendesImpayees.forEach(function(a){ monTotalDu += (Number(a.montant) || 0); });',
-      'if(tBadgeCaisse){',
-        'if(monTotalDu > 0){',
-          'tBadgeCaisse.textContent = "Dû : " + monTotalDu + " €";',
-          'tBadgeCaisse.style.background = "rgba(239,68,68,0.25)";',
-          'tBadgeCaisse.style.color = "#fca5a5";',
-          'tBadgeCaisse.style.borderColor = "rgba(239,68,68,0.35)";',
-        '} else {',
-          'tBadgeCaisse.textContent = "À jour 🟢";',
-          'tBadgeCaisse.style.background = "rgba(34,197,94,0.2)";',
-          'tBadgeCaisse.style.color = "#86efac";',
-          'tBadgeCaisse.style.borderColor = "rgba(34,197,94,0.35)";',
+      'var cfgCaisse = (CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.config) || {};',
+      'var stCaisse = cfgCaisse.statut || (cfgCaisse.active === false ? "desactivee" : (cfgCaisse.fermee ? "fermee" : "ouverte"));',
+      'var btnHeadC = document.getElementById("btnHeaderCaisseNoire");',
+      'if(btnHeadC){',
+        'btnHeadC.style.display = (stCaisse === "desactivee" && !EST_COACH && !EST_TRESORIER) ? "none" : "inline-flex";',
+      '}',
+      'if(stCaisse === "desactivee"){',
+        'if(tileCaisse) tileCaisse.style.display = (EST_COACH || EST_TRESORIER) ? "flex" : "none";',
+        'if(tBadgeCaisse){',
+          'tBadgeCaisse.textContent = "⚪ Désactivée (Jeunes)";',
+          'tBadgeCaisse.style.background = "rgba(148,163,184,0.18)";',
+          'tBadgeCaisse.style.color = "#cbd5e1";',
+          'tBadgeCaisse.style.borderColor = "rgba(148,163,184,0.35)";',
+        '}',
+        'if(tSubCaisse) tSubCaisse.textContent = "Non mise en place pour cette équipe";',
+      '} else if(stCaisse === "fermee"){',
+        'if(tileCaisse) tileCaisse.style.display = "flex";',
+        'var mesAmendesImpayeesF = (CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.amendes) ? CAISSE_NOIRE_DATA.amendes.filter(function(a){ return String(a.nomJoueur || "").toLowerCase() === nom.toLowerCase() && a.statut === "impaye"; }) : [];',
+        'var monTotalDuF = 0;',
+        'mesAmendesImpayeesF.forEach(function(a){ monTotalDuF += (Number(a.montant) || 0); });',
+        'if(tBadgeCaisse){',
+          'if(monTotalDuF > 0){',
+            'tBadgeCaisse.textContent = "🔒 Fermée (Dû : " + monTotalDuF + " €)";',
+            'tBadgeCaisse.style.background = "rgba(239,68,68,0.25)";',
+            'tBadgeCaisse.style.color = "#fca5a5";',
+            'tBadgeCaisse.style.borderColor = "rgba(239,68,68,0.35)";',
+          '} else {',
+            'tBadgeCaisse.textContent = "🔒 Caisse Fermée";',
+            'tBadgeCaisse.style.background = "rgba(245,158,11,0.25)";',
+            'tBadgeCaisse.style.color = "#fde68a";',
+            'tBadgeCaisse.style.borderColor = "rgba(245,158,11,0.4)";',
+          '}',
+        '}',
+        'if(tSubCaisse){',
+          'var soldeCF = (CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.stats) ? CAISSE_NOIRE_DATA.stats.soldeCaisse : 0;',
+          'tSubCaisse.textContent = "Caisse clôturée par le coach • Solde : " + soldeCF + " €";',
+        '}',
+      '} else {',
+        'if(tileCaisse) tileCaisse.style.display = "flex";',
+        'var mesAmendesImpayees = (CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.amendes) ? CAISSE_NOIRE_DATA.amendes.filter(function(a){ return String(a.nomJoueur || "").toLowerCase() === nom.toLowerCase() && a.statut === "impaye"; }) : [];',
+        'var monTotalDu = 0;',
+        'mesAmendesImpayees.forEach(function(a){ monTotalDu += (Number(a.montant) || 0); });',
+        'if(tBadgeCaisse){',
+          'if(monTotalDu > 0){',
+            'tBadgeCaisse.textContent = "Dû : " + monTotalDu + " €";',
+            'tBadgeCaisse.style.background = "rgba(239,68,68,0.25)";',
+            'tBadgeCaisse.style.color = "#fca5a5";',
+            'tBadgeCaisse.style.borderColor = "rgba(239,68,68,0.35)";',
+          '} else {',
+            'tBadgeCaisse.textContent = "À jour 🟢";',
+            'tBadgeCaisse.style.background = "rgba(34,197,94,0.2)";',
+            'tBadgeCaisse.style.color = "#86efac";',
+            'tBadgeCaisse.style.borderColor = "rgba(34,197,94,0.35)";',
+          '}',
+        '}',
+        'if(tSubCaisse){',
+          'var soldeC = (CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.stats) ? CAISSE_NOIRE_DATA.stats.soldeCaisse : 0;',
+          'tSubCaisse.textContent = "Cagnotte : " + soldeC + " € • Barème & Palmarès";',
         '}',
       '}',
-      'if(tSubCaisse){',
-        'var soldeC = (CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.stats) ? CAISSE_NOIRE_DATA.stats.soldeCaisse : 0;',
-        'tSubCaisse.textContent = "Cagnotte : " + soldeC + " € • Barème & Palmarès";',
-      '}',
       'var badgeCoachCaisse = document.getElementById("badgeCoachCaisseStats");',
+      'var descCoachCaisse = document.getElementById("dashDescCaisseNoire");',
       'if(badgeCoachCaisse && CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.stats){',
-        'badgeCoachCaisse.textContent = (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " € en caisse • " + (CAISSE_NOIRE_DATA.stats.totalDu || 0) + " € impayés";',
+        'if(stCaisse === "desactivee"){',
+          'badgeCoachCaisse.textContent = "⚪ Non mise en place (Désactivée)";',
+          'badgeCoachCaisse.style.background = "rgba(148,163,184,0.18)";',
+          'badgeCoachCaisse.style.color = "#cbd5e1";',
+          'badgeCoachCaisse.style.borderColor = "rgba(148,163,184,0.35)";',
+          'if(descCoachCaisse) descCoachCaisse.textContent = "Désactivée (ex: équipe jeune) • Cliquez sur Administrer pour l\'activer";',
+        '} else if(stCaisse === "fermee"){',
+          'badgeCoachCaisse.textContent = "🔒 Clôturée / Fermée (" + (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " €)";',
+          'badgeCoachCaisse.style.background = "rgba(245,158,11,0.25)";',
+          'badgeCoachCaisse.style.color = "#fde68a";',
+          'badgeCoachCaisse.style.borderColor = "rgba(245,158,11,0.4)";',
+          'if(descCoachCaisse) descCoachCaisse.textContent = "Caisse clôturée • Nouveaux signalements suspendus";',
+        '} else {',
+          'badgeCoachCaisse.textContent = (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " € en caisse • " + (CAISSE_NOIRE_DATA.stats.totalDu || 0) + " € impayés";',
+          'badgeCoachCaisse.style.background = "rgba(234,179,8,0.2)";',
+          'badgeCoachCaisse.style.color = "#fef08a";',
+          'badgeCoachCaisse.style.borderColor = "rgba(234,179,8,0.35)";',
+          'if(descCoachCaisse) descCoachCaisse.textContent = "Gérer les amendes, encaissements, dépenses d\'équipe et barème";',
+        '}',
       '}',
     '}',
     'function ouvrirModalMvp(){',
@@ -10475,10 +10712,89 @@ function onOpen() {
       .addItem('📋 12. Lister Trésoriers & Chouchoux', 'menuListerTresoriersEtChouchoux')
       .addItem('🏆 13. Actualiser l\'onglet Trophées & Bêtisier', 'menuActualiserTropheesSheet')
       .addItem('📅 14. Actualiser l\'onglet Absences', 'menuActualiserAbsencesSheet')
+      .addItem('💰 15. Statut Caisse Noire (Ouvrir / Fermer / Désactiver)', 'menuChangerStatutCaisseNoire')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
   } catch (e) {}
+}
+
+/**
+ * Permet au coach de changer le statut de la Caisse Noire depuis Google Sheets :
+ * 1 = OUVERTE (Opérationnelle avec amendes)
+ * 2 = FERMÉE (Consultation & soldes uniquement, nouveaux signalements suspendus)
+ * 3 = DÉSACTIVÉE (Complètement masquée pour les équipes jeunes)
+ */
+function menuChangerStatutCaisseNoire() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ui = SpreadsheetApp.getUi();
+    const props = PropertiesService.getScriptProperties();
+
+    let statutActuel = props.getProperty('CAISSE_NOIRE_STATUT') || '';
+    if (!statutActuel) {
+      statutActuel = lireStatutCaisseDepuisSheet(ss) || 'ouverte';
+    }
+
+    const labels = {
+      ouverte: '🟢 OUVERTE (Amendes actives & signalements autorisés)',
+      fermee: '🔒 FERMÉE (Consultation & soldes autorisés, nouveaux signalements suspendus)',
+      desactivee: '⚪ DÉSACTIVÉE (Entièrement masquée aux joueurs - Recommandé équipes jeunes)'
+    };
+
+    const promptText = 
+      'Statut actuel de la Caisse Noire : ' + (labels[statutActuel] || statutActuel) + '\n\n' +
+      'Entrez le chiffre de votre choix pour modifier le statut :\n' +
+      '  1 = 🟢 OUVERTE (Amendes et signalements actifs)\n' +
+      '  2 = 🔒 FERMÉE (Soldes et règlements visibles, nouveaux signalements bloqués)\n' +
+      '  3 = ⚪ DÉSACTIVÉE (Invisible pour les joueurs / Idéal équipes jeunes)\n\n' +
+      'Votre choix (1, 2 ou 3) :';
+
+    const resp = ui.prompt('💰 Gestion du Statut de la Caisse Noire', promptText, ui.ButtonSet.OK_CANCEL);
+    if (resp.getSelectedButton() !== ui.Button.OK) return;
+
+    const saisie = String(resp.getResponseText() || '').trim().toLowerCase();
+    let nouveauStatut = null;
+
+    if (saisie === '1' || saisie === 'ouverte' || saisie === 'ouvert' || saisie === 'open') {
+      nouveauStatut = 'ouverte';
+    } else if (saisie === '2' || saisie === 'fermee' || saisie === 'fermé' || saisie === 'fermee' || saisie === 'fermer' || saisie === 'close') {
+      nouveauStatut = 'fermee';
+    } else if (saisie === '3' || saisie === 'desactivee' || saisie === 'desactiver' || saisie === 'désactivée' || saisie === 'off') {
+      nouveauStatut = 'desactivee';
+    } else {
+      ui.alert('⚠️ Choix non reconnu. Veuillez saisir 1, 2 ou 3.');
+      return;
+    }
+
+    // Mise à jour ScriptProperties
+    props.setProperty('CAISSE_NOIRE_STATUT', nouveauStatut);
+
+    // Mise à jour de l'objet de config JSON si présent
+    try {
+      const rawCaisse = props.getProperty('CAISSE_NOIRE_DATA');
+      if (rawCaisse) {
+        const cData = JSON.parse(rawCaisse);
+        if (cData && cData.config) {
+          cData.config.statut = nouveauStatut;
+          cData.config.active = (nouveauStatut !== 'desactivee');
+          cData.config.fermee = (nouveauStatut === 'fermee');
+          props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(cData));
+        }
+      }
+    } catch (e) {}
+
+    // Mise à jour de la feuille Configuration
+    synchroniserStatutCaisseSheet(ss, nouveauStatut);
+
+    ui.alert(
+      '✅ Statut de la Caisse Noire mis à jour !',
+      'Le nouveau statut est : ' + labels[nouveauStatut] + '\n\nCe réglage est immédiatement pris en compte dans la WebApp et l\'onglet Configuration.',
+      ui.ButtonSet.OK
+    );
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur : ' + e.message);
+  }
 }
 
 function menuActualiserTropheesSheet() {
@@ -10585,6 +10901,30 @@ function onEdit(e) {
         try {
           ss.toast('Effectif synchronisé avec la Configuration !', '⚡ Handball Bot', 3);
         } catch (err) {}
+      } else if (label.indexOf('caisse') !== -1) {
+        const valStr = String(sheet.getRange(row, 3).getValue() || '').trim().toLowerCase();
+        let st = 'ouverte';
+        if (/non|d[eé]sactiv[eé]e?|off|false|0/i.test(valStr)) st = 'desactivee';
+        else if (/ferm[eé]e?|cl[oô]tur[eé]e?|close|bloqu[eé]e?/i.test(valStr)) st = 'fermee';
+        
+        const props = PropertiesService.getScriptProperties();
+        props.setProperty('CAISSE_NOIRE_STATUT', st);
+        try {
+          const rawCaisse = props.getProperty('CAISSE_NOIRE_DATA');
+          if (rawCaisse) {
+            const cData = JSON.parse(rawCaisse);
+            if (cData && cData.config) {
+              cData.config.statut = st;
+              cData.config.active = (st !== 'desactivee');
+              cData.config.fermee = (st === 'fermee');
+              props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(cData));
+            }
+          }
+        } catch (errJson) {}
+        try {
+          const ss = e.source || sheet.getParent();
+          ss.toast('Statut Caisse Noire synchronisé : ' + st.toUpperCase() + ' !', '⚡ Handball Bot', 3);
+        } catch (errToast) {}
       }
     }
   } catch (err) {}
