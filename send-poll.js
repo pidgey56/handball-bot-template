@@ -297,18 +297,21 @@ function traiterMessageVote(m, sock) {
   }
 }
 
+let pairingCodeRequested = false;
+
+// En mode setup avec un numéro, on purge une seule fois au tout début pour repartir proprement
+if (MODE === 'setup' && PHONE_NUMBER) {
+  console.log('Mode setup avec numéro : réinitialisation de auth_info pour demander un nouveau code de jumelage...');
+  if (fs.existsSync('./auth_info')) {
+    try {
+      fs.rmSync('./auth_info', { recursive: true, force: true });
+    } catch (e) {}
+  }
+}
+
 async function startBot() {
   if (isConnecting) return;
   isConnecting = true;
-
-  if (MODE === 'setup' && PHONE_NUMBER) {
-    console.log('Mode setup avec numéro : réinitialisation de auth_info pour demander un nouveau code de jumelage...');
-    if (fs.existsSync('./auth_info')) {
-      try {
-        fs.rmSync('./auth_info', { recursive: true, force: true });
-      } catch (e) {}
-    }
-  }
 
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
 
@@ -367,16 +370,37 @@ async function startBot() {
   });
 
   if (!sock.authState.creds.registered) {
+    if (MODE !== 'setup') {
+      console.log('====================================================');
+      console.log('❌ BOT WHATSAPP NON CONNECTÉ');
+      console.log('Aucune session active n\'a été trouvée pour exécuter cette action.');
+      console.log('👉 VEUILLEZ CONNECTER LE BOT :');
+      console.log('1. Allez sur votre dépôt GitHub > onglet "Actions"');
+      console.log('2. Cliquez sur "WhatsApp Poll Bot" à gauche');
+      console.log('3. Cliquez sur "Run workflow" :');
+      console.log('   - Mode : setup');
+      console.log('   - Numéro : votre numéro de téléphone (ex: 33612345678)');
+      console.log('4. Entrez le code à 8 caractères dans WhatsApp sur votre smartphone');
+      console.log('====================================================');
+      process.exit(1);
+    }
     if (!PHONE_NUMBER) {
       origError('Erreur : Numéro de téléphone manquant pour la configuration.');
       process.exit(1);
     }
-    await delay(4000);
-    const code = await sock.requestPairingCode(PHONE_NUMBER);
-    console.log('====================================================');
-    console.log('CODE DE CONNEXION WHATSAPP : ' + code);
-    console.log('Saisissez ce code dans WhatsApp > Appareils connectés > Associer avec numéro');
-    console.log('====================================================');
+    if (!pairingCodeRequested) {
+      pairingCodeRequested = true;
+      await delay(4000);
+      try {
+        const code = await sock.requestPairingCode(PHONE_NUMBER);
+        console.log('====================================================');
+        console.log('CODE DE CONNEXION WHATSAPP : ' + code);
+        console.log('Saisissez ce code dans WhatsApp > Appareils connectés > Associer avec numéro');
+        console.log('====================================================');
+      } catch (errCode) {
+        console.log('Erreur demande code de jumelage : ' + errCode.message);
+      }
+    }
   }
 
   sock.ev.on('connection.update', async (update) => {
@@ -480,7 +504,8 @@ async function startBot() {
         console.log('====================================================');
         process.exit(1);
       } else if (!actionDejaLancee) {
-        await delay(5000);
+        const delai = (statusCode === 515 || statusCode === DisconnectReason.restartRequired) ? 1500 : 5000;
+        await delay(delai);
         startBot();
       }
     }
@@ -642,12 +667,19 @@ function sauvegarderFichierVotesLocal(botJid, botLid, afficherBilan) {
 
 startBot();
 
+const TIMEOUT_SCRIPT = (MODE === 'setup') ? 120000 : (LISTEN_MS + 15000);
+
 setTimeout(() => {
   if (MODE === 'sync_votes' && savedPoll) {
     sauvegarderFichierVotesLocal(null, null, true);
   }
   nettoyerAuthInfo();
-  console.log('Fin du temps imparti, fermeture propre du script.');
+  if (MODE === 'setup' && !actionDejaLancee) {
+    console.log('⏱️ Fin du délai imparti (2 minutes) pour saisir le code de jumelage sur votre smartphone.');
+    console.log('Si vous n\'avez pas eu le temps, relancez simplement le workflow en mode setup.');
+  } else {
+    console.log('Fin du temps imparti, fermeture propre du script.');
+  }
   process.exit(0);
-}, LISTEN_MS + 15000);
+}, TIMEOUT_SCRIPT);
 
