@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.17.0';
+const APP_VERSION = '1.18.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -492,11 +492,15 @@ function getClubConfig(ss) {
     try { chouchouConfig = PropertiesService.getScriptProperties().getProperty('CHOUCHOU_NOM') || ''; } catch (e) {}
   }
 
-  let mvpConfig = '';
-  try { mvpConfig = PropertiesService.getScriptProperties().getProperty('MVP_NOM') || ''; } catch (e) {}
+  let mvpConfig = getVal('C37', '');
+  if (!mvpConfig) {
+    try { mvpConfig = PropertiesService.getScriptProperties().getProperty('MVP_NOM') || ''; } catch (e) {}
+  }
 
-  let chevreConfig = '';
-  try { chevreConfig = PropertiesService.getScriptProperties().getProperty('CHEVRE_NOM') || ''; } catch (e) {}
+  let chevreConfig = getVal('C38', '');
+  if (!chevreConfig) {
+    try { chevreConfig = PropertiesService.getScriptProperties().getProperty('CHEVRE_NOM') || ''; } catch (e) {}
+  }
 
   let caisseStatut = 'ouverte';
   const statutSheet = lireStatutCaisseDepuisSheet(classeur);
@@ -838,6 +842,21 @@ function initialiserOngletsWebApp(nbEquipesForce) {
     try { synchroniserOngletVacancesSheet(ss); } catch (e) {}
   }
 
+  let shCaisse = ss.getSheetByName('Caisse Noire');
+  if (!shCaisse) {
+    try { synchroniserOngletCaisseNoireSheet(ss); } catch (e) {}
+  }
+
+  let shCovoit = ss.getSheetByName('Covoiturage');
+  if (!shCovoit) {
+    try { synchroniserOngletCovoiturageSheet(ss); } catch (e) {}
+  }
+
+  let shBrouillon = ss.getSheetByName('Brouillon_Compo');
+  if (!shBrouillon) {
+    try { initialiserOngletBrouillonCompoSheet(ss); } catch (e) {}
+  }
+
   // Vérifier et ajouter les paramètres de couleurs dans Configuration si absents
   const shCfg = ss.getSheetByName('Configuration');
   if (shCfg) {
@@ -888,6 +907,14 @@ function initialiserOngletsWebApp(nbEquipesForce) {
       const valB36 = String(shCfg.getRange('B36').getValue() || '').trim();
       if (!valB36) {
         shCfg.getRange('B36:D36').setValues([['Périodes de Vacances & Trêves', 'Voir onglet Vacances', 'Périodes sans entraînements, sans matchs et sans sondages WhatsApp']]);
+      }
+      const valB37 = String(shCfg.getRange('B37').getValue() || '').trim();
+      if (!valB37) {
+        shCfg.getRange('B37:D37').setValues([['MVP Actuel (Dernier match)', '', 'Joueur désigné MVP du dernier match (synchronisé avec l\'onglet Trophées)']]);
+      }
+      const valB38 = String(shCfg.getRange('B38').getValue() || '').trim();
+      if (!valB38) {
+        shCfg.getRange('B38:D38').setValues([['Chèvre Actuelle (Dernier match)', '', 'Joueur désigné Chèvre du dernier match (synchronisé avec l\'onglet Trophées)']]);
       }
     }
 
@@ -1520,6 +1547,20 @@ function actualiserCouleursClasseur() {
       if (shVotes) shVotes.setTabColor(cfg.couleurSecondaire);
       const shComp = ss.getSheetByName('Compositions');
       if (shComp) shComp.setTabColor(cfg.couleurEquipe1);
+      const shEnt = ss.getSheetByName('Entrainements');
+      if (shEnt) shEnt.setTabColor(cfg.couleurEquipe2 || cfg.couleurPrimaire);
+      const shTrop = ss.getSheetByName('Trophées & Bêtisier');
+      if (shTrop) shTrop.setTabColor('#f59e0b');
+      const shAbs = ss.getSheetByName('Absences');
+      if (shAbs) shAbs.setTabColor('#38bdf8');
+      const shVac = ss.getSheetByName('Vacances');
+      if (shVac) shVac.setTabColor('#0ea5e9');
+      const shCaisse = ss.getSheetByName('Caisse Noire');
+      if (shCaisse) shCaisse.setTabColor('#10b981');
+      const shCovoit = ss.getSheetByName('Covoiturage');
+      if (shCovoit) shCovoit.setTabColor('#6366f1');
+      const shBrouillon = ss.getSheetByName('Brouillon_Compo');
+      if (shBrouillon) shBrouillon.setTabColor('#64748b');
     } catch (e) {}
   }
   ss.toast('Couleurs appliquées avec succès (' + cfg.couleurPrimaire + ', ' + cfg.couleurSecondaire + ') !', 'Handball Bot');
@@ -2021,6 +2062,10 @@ function enregistrerMvpDesignation(telCoach, pinCoach, nomJoueur) {
   }
   const cleanNom = String(nomJoueur || '').trim();
   PropertiesService.getScriptProperties().setProperty('MVP_NOM', cleanNom);
+  try {
+    const shCfg = ss.getSheetByName('Configuration');
+    if (shCfg) shCfg.getRange('C37').setValue(cleanNom);
+  } catch (e) {}
   try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
   return { succes: true, mvp: cleanNom };
 }
@@ -2035,6 +2080,10 @@ function enregistrerChevreDesignation(telCoach, pinCoach, nomJoueur) {
   }
   const cleanNom = String(nomJoueur || '').trim();
   PropertiesService.getScriptProperties().setProperty('CHEVRE_NOM', cleanNom);
+  try {
+    const shCfg = ss.getSheetByName('Configuration');
+    if (shCfg) shCfg.getRange('C38').setValue(cleanNom);
+  } catch (e) {}
   try { synchroniserOngletTropheesSheet(ss); } catch (e) {}
   return { succes: true, chevre: cleanNom };
 }
@@ -2050,13 +2099,10 @@ function enregistrerChevreDesignation(telCoach, pinCoach, nomJoueur) {
  */
 function enregistrerCovoiturage(tel, pin, actionType, nbPlaces, conducteurNom) {
   const auth = authentifierUtilisateur(tel, pin);
-  const props = PropertiesService.getScriptProperties();
-  let covoit = {};
-  try {
-    const raw = props.getProperty('COVOITURAGE_DATA');
-    if (raw) covoit = JSON.parse(raw);
-  } catch (e) { covoit = {}; }
+  const ss = getSpreadsheet();
+  let covoit = getCovoiturageData();
 
+  if (!covoit || typeof covoit !== 'object') covoit = {};
   if (!covoit.conducteurs) covoit.conducteurs = [];
   if (!covoit.passagers) covoit.passagers = [];
 
@@ -2082,19 +2128,46 @@ function enregistrerCovoiturage(tel, pin, actionType, nbPlaces, conducteurNom) {
     }
   }
 
-  props.setProperty('COVOITURAGE_DATA', JSON.stringify(covoit));
+  try {
+    PropertiesService.getScriptProperties().setProperty('COVOITURAGE_DATA', JSON.stringify(covoit));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCovoiturageSheet(ss, covoit); } catch (e) {}
+  }
+
   return { ok: true, covoiturage: covoit };
 }
 
 /**
- * Récupère les données de covoiturage
+ * Récupère les données de covoiturage (Priorité : feuille Google Sheets "Covoiturage")
  */
 function getCovoiturageData() {
+  const ss = getSpreadsheet();
+  if (ss) {
+    const fromSheet = lireCovoiturageDepuisSheet(ss);
+    if (fromSheet && (fromSheet.conducteurs.length > 0 || fromSheet.passagers.length > 0)) {
+      try {
+        PropertiesService.getScriptProperties().setProperty('COVOITURAGE_DATA', JSON.stringify(fromSheet));
+      } catch (e) {}
+      return fromSheet;
+    }
+  }
+
   const props = PropertiesService.getScriptProperties();
   try {
     const raw = props.getProperty('COVOITURAGE_DATA');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && (Array.isArray(parsed.conducteurs) || Array.isArray(parsed.passagers))) {
+        if (ss) {
+          try { synchroniserOngletCovoiturageSheet(ss, parsed); } catch (e) {}
+        }
+        return parsed;
+      }
+    }
   } catch (e) {}
+
   return { conducteurs: [], passagers: [] };
 }
 
@@ -2107,8 +2180,193 @@ function reinitialiserCovoiturage(telCoach, pinCoach) {
     throw new Error('Action réservée aux coachs autorisés.');
   }
   const clean = { conducteurs: [], passagers: [] };
-  PropertiesService.getScriptProperties().setProperty('COVOITURAGE_DATA', JSON.stringify(clean));
+  try {
+    PropertiesService.getScriptProperties().setProperty('COVOITURAGE_DATA', JSON.stringify(clean));
+  } catch (e) {}
+  if (ss) {
+    try { synchroniserOngletCovoiturageSheet(ss, clean); } catch (e) {}
+  }
   return { ok: true, covoiturage: clean };
+}
+
+/**
+ * Synchronise et met en forme l'onglet "Covoiturage" dans Google Sheets
+ */
+function synchroniserOngletCovoiturageSheet(ss, covoitOpt) {
+  if (!ss) ss = getSpreadsheet();
+  if (!ss) return { ok: false, error: 'Classeur introuvable' };
+
+  let sh = ss.getSheetByName('Covoiturage');
+  if (!sh) {
+    sh = ss.insertSheet('Covoiturage');
+  }
+  try {
+    sh.setTabColor('#6366f1');
+  } catch (e) {}
+
+  sh.clear();
+
+  let covoit = covoitOpt;
+  if (!covoit) {
+    covoit = getCovoiturageData();
+  }
+  if (!covoit || typeof covoit !== 'object') covoit = { conducteurs: [], passagers: [] };
+  const conds = Array.isArray(covoit.conducteurs) ? covoit.conducteurs : [];
+  const pass = Array.isArray(covoit.passagers) ? covoit.passagers : [];
+
+  let totalPlacesProposees = 0;
+  conds.forEach(function(c) {
+    totalPlacesProposees += (parseInt(c.nbPlaces || c.places, 10) || 0);
+  });
+
+  const horodatage = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+
+  // Lignes 1-2 : Bannière Titre
+  sh.getRange('A1:F1').merge()
+    .setValue('🚗 COVOITURAGE & DÉPLACEMENTS MATCH')
+    .setBackground('#0f172a')
+    .setFontColor('#f8fafc')
+    .setFontWeight('bold')
+    .setFontSize(13)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(1, 38);
+
+  sh.getRange('A2:F2').merge()
+    .setValue('Dernière synchronisation : ' + horodatage + ' • Conducteurs : ' + conds.length + ' • Places proposées : ' + totalPlacesProposees + ' • Passagers inscrits : ' + pass.length)
+    .setBackground('#1e293b')
+    .setFontColor('#94a3b8')
+    .setFontStyle('italic')
+    .setFontSize(9)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(2, 22);
+
+  const entetes = ['Rôle', 'Joueur', 'Téléphone', 'Places (Offertes / Demandées)', 'Passagers Assignés / Conducteur Choisi', 'Statut / Note'];
+  sh.getRange(4, 1, 1, 6).setValues([entetes])
+    .setBackground('#4f46e5')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(10);
+  sh.setRowHeight(4, 26);
+
+  let curRow = 5;
+
+  if (conds.length === 0 && pass.length === 0) {
+    sh.getRange(curRow, 1, 1, 6).merge()
+      .setValue('Aucun covoiturage enregistré pour le moment. (Inscriptions disponibles dans le Hub Joueur WebApp)')
+      .setFontColor('#64748b')
+      .setFontStyle('italic')
+      .setHorizontalAlignment('center');
+    sh.setRowHeight(curRow, 24);
+    curRow++;
+  } else {
+    // 1. Conducteurs
+    conds.forEach(function(c) {
+      const pl = parseInt(c.nbPlaces || c.places, 10) || 3;
+      const listePass = (Array.isArray(c.passagers) && c.passagers.length > 0) ? c.passagers.join(', ') : 'Aucun passager pour l\'instant';
+      const plRestantes = Math.max(0, pl - ((c.passagers && c.passagers.length) || 0));
+      const note = plRestantes > 0 ? (plRestantes + ' place(s) libre(s)') : 'Complet';
+
+      sh.getRange(curRow, 1, 1, 6).setValues([[
+        '🚗 Conducteur',
+        c.nom || '',
+        c.tel || '',
+        pl + ' places',
+        listePass,
+        note
+      ]]);
+      sh.getRange(curRow, 1, 1, 6).setBackground('#e0e7ff');
+      sh.setRowHeight(curRow, 22);
+      curRow++;
+    });
+
+    // 2. Passagers
+    pass.forEach(function(p) {
+      const avec = p.avec ? ('Avec ' + p.avec) : 'Cherche un conducteur';
+      sh.getRange(curRow, 1, 1, 6).setValues([[
+        '🚶 Passager',
+        p.nom || '',
+        p.tel || '',
+        '1 place',
+        avec,
+        p.avec ? 'Attribué' : 'En recherche'
+      ]]);
+      sh.getRange(curRow, 1, 1, 6).setBackground('#f8fafc');
+      sh.setRowHeight(curRow, 22);
+      curRow++;
+    });
+
+    sh.getRange(curRow, 1, 1, 6).merge()
+      .setValue('Total : ' + conds.length + ' véhicule(s) • ' + totalPlacesProposees + ' places offertes • ' + pass.length + ' passager(s)')
+      .setFontSize(9)
+      .setFontColor('#64748b')
+      .setFontStyle('italic');
+    curRow++;
+  }
+
+  try {
+    sh.setColumnWidth(1, 120);
+    sh.setColumnWidth(2, 160);
+    sh.setColumnWidth(3, 130);
+    sh.setColumnWidth(4, 150);
+    sh.setColumnWidth(5, 250);
+    sh.setColumnWidth(6, 140);
+  } catch (e) {}
+
+  return { ok: true, maj: horodatage, total: conds.length + pass.length };
+}
+
+/**
+ * Lit les données de covoiturage depuis l'onglet Covoiturage
+ */
+function lireCovoiturageDepuisSheet(ss) {
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (!classeur) return null;
+    const sh = classeur.getSheetByName('Covoiturage');
+    if (!sh || sh.getLastRow() < 5) return null;
+
+    const rows = sh.getRange(5, 1, sh.getLastRow() - 4, 6).getValues();
+    const conducteurs = [];
+    const passagers = [];
+
+    rows.forEach(function(r) {
+      const role = String(r[0] || '').toLowerCase();
+      const nom = String(r[1] || '').trim();
+      const tel = String(r[2] || '').trim();
+      if (!nom || role.indexOf('total') !== -1 || role.indexOf('aucun') !== -1) return;
+
+      if (role.indexOf('conducteur') !== -1) {
+        const rawPl = parseInt(String(r[3] || '').replace(/[^0-9]/g, ''), 10) || 3;
+        const rawPass = String(r[4] || '').trim();
+        const passList = (rawPass && rawPass.toLowerCase().indexOf('aucun') === -1)
+          ? rawPass.split(',').map(function(s) { return s.trim(); }).filter(Boolean)
+          : [];
+        conducteurs.push({
+          nom: nom,
+          tel: tel,
+          places: rawPl,
+          nbPlaces: rawPl,
+          passagers: passList
+        });
+      } else if (role.indexOf('passager') !== -1) {
+        let avec = String(r[4] || '').trim();
+        if (avec.toLowerCase().indexOf('avec ') === 0) avec = avec.substring(5).trim();
+        if (avec.toLowerCase().indexOf('cherche') !== -1) avec = '';
+        passagers.push({
+          nom: nom,
+          tel: tel,
+          avec: avec
+        });
+      }
+    });
+
+    return { conducteurs: conducteurs, passagers: passagers };
+  } catch (e) {
+    Logger.log('Erreur lireCovoiturageDepuisSheet: ' + e.message);
+    return null;
+  }
 }
 
 /**
@@ -2183,16 +2441,25 @@ function calculerResultatsVotesMvp(votesData, telUtilisateur) {
 }
 
 /**
- * Récupère les votes MVP et le podium actuel
+ * Récupère les votes MVP et le podium actuel (Priorité : feuille Trophées & Bêtisier)
  */
-function getVotesMvpData(telUtilisateur) {
-  const props = PropertiesService.getScriptProperties();
-  let votes = {};
-  try {
-    const raw = props.getProperty('VOTES_MVP_DATA');
-    if (raw) votes = JSON.parse(raw);
-  } catch (e) {}
-  return calculerResultatsVotesMvp(votes, telUtilisateur);
+function getVotesMvpData(telUtilisateur, ssOpt) {
+  const ss = ssOpt || getSpreadsheet();
+  let votes = null;
+  if (ss) {
+    try { votes = lireVotesMvpDepuisSheet(ss); } catch (e) {}
+  }
+  if (!votes) {
+    const props = PropertiesService.getScriptProperties();
+    try {
+      const raw = props.getProperty('VOTES_MVP_DATA');
+      if (raw) votes = JSON.parse(raw);
+    } catch (e) {}
+  }
+  if (!votes || typeof votes !== 'object') votes = { liste: {} };
+  const res = calculerResultatsVotesMvp(votes, telUtilisateur);
+  res.rawVotes = votes;
+  return res;
 }
 
 /**
@@ -2216,16 +2483,25 @@ function reinitialiserVotesMvp(telCoach, pinCoach) {
  */
 
 /**
- * Récupère les actions du bêtisier et les résultats de votes Chèvre
+ * Récupère les actions du bêtisier et les résultats de votes Chèvre (Priorité : feuille Trophées & Bêtisier)
  */
-function getChevreData(telUtilisateur) {
-  const props = PropertiesService.getScriptProperties();
-  let rawData = {};
-  try {
-    const raw = props.getProperty('ACTIONS_CHEVRE_DATA');
-    if (raw) rawData = JSON.parse(raw);
-  } catch (e) {}
-  return calculerResultatsChevre(rawData, telUtilisateur);
+function getChevreData(telUtilisateur, ssOpt) {
+  const ss = ssOpt || getSpreadsheet();
+  let rawData = null;
+  if (ss) {
+    try { rawData = lireChevreDepuisSheet(ss); } catch (e) {}
+  }
+  if (!rawData) {
+    const props = PropertiesService.getScriptProperties();
+    try {
+      const raw = props.getProperty('ACTIONS_CHEVRE_DATA');
+      if (raw) rawData = JSON.parse(raw);
+    } catch (e) {}
+  }
+  if (!rawData || typeof rawData !== 'object') rawData = { actions: [], votes: {} };
+  const res = calculerResultatsChevre(rawData, telUtilisateur);
+  res.rawChevre = rawData;
+  return res;
 }
 
 /**
@@ -2589,6 +2865,55 @@ function synchroniserOngletTropheesSheet(ss) {
     curRow++;
   }
 
+  // ==========================================
+  // BLOC 3 : DONNÉES ENREGISTRÉES (VOTES & BÊTISIER)
+  // ==========================================
+  sh.getRange(4, 8, 1, 7).merge()
+    .setValue('💾 DONNÉES ENREGISTRÉES (VOTES & BÊTISIER)')
+    .setBackground('#334155')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(10)
+    .setVerticalAlignment('middle');
+
+  const entetesBruts = ['Type Donnée', 'ID / Réf', 'Joueur Concerné / Choisi', 'Votant / Auteur', 'Téléphone', 'Description', 'Horodatage'];
+  sh.getRange(5, 8, 1, 7).setValues([entetesBruts])
+    .setBackground('#1e293b')
+    .setFontColor('#94a3b8')
+    .setFontWeight('bold')
+    .setFontSize(9);
+
+  let rawRow = 6;
+  const rawVotesMvpObj = (resMvp && resMvp.rawVotes && resMvp.rawVotes.liste) ? resMvp.rawVotes.liste : (function(){
+    try { const raw = props.getProperty('VOTES_MVP_DATA'); return raw ? (JSON.parse(raw).liste || {}) : {}; } catch(e){ return {}; }
+  })();
+  Object.keys(rawVotesMvpObj).forEach(function(t) {
+    const v = rawVotesMvpObj[t];
+    if (v && v.mvp) {
+      sh.getRange(rawRow, 8, 1, 7).setValues([['MVP_VOTE', '', v.mvp, v.votant || '', t, '', v.date || '']]);
+      rawRow++;
+    }
+  });
+
+  const rawChevreActions = (resChevre && resChevre.rawChevre && Array.isArray(resChevre.rawChevre.actions)) ? resChevre.rawChevre.actions : (function(){
+    try { const raw = props.getProperty('ACTIONS_CHEVRE_DATA'); return raw ? (JSON.parse(raw).actions || []) : []; } catch(e){ return []; }
+  })();
+  rawChevreActions.forEach(function(act) {
+    sh.getRange(rawRow, 8, 1, 7).setValues([['CHEVRE_ACTION', act.id || '', act.joueur || '', act.auteur || '', act.auteurTel || '', act.description || '', act.date || '']]);
+    rawRow++;
+  });
+
+  const rawChevreVotes = (resChevre && resChevre.rawChevre && resChevre.rawChevre.votes) ? resChevre.rawChevre.votes : (function(){
+    try { const raw = props.getProperty('ACTIONS_CHEVRE_DATA'); return raw ? (JSON.parse(raw).votes || {}) : {}; } catch(e){ return {}; }
+  })();
+  Object.keys(rawChevreVotes).forEach(function(t) {
+    const v = rawChevreVotes[t];
+    if (v && v.actionId) {
+      sh.getRange(rawRow, 8, 1, 7).setValues([['CHEVRE_VOTE', v.actionId || '', '', v.votant || '', t, '', v.date || '']]);
+      rawRow++;
+    }
+  });
+
   // Ajustement des largeurs de colonnes
   try {
     sh.setColumnWidth(1, 80);   // Rang
@@ -2597,9 +2922,98 @@ function synchroniserOngletTropheesSheet(ss) {
     sh.setColumnWidth(4, 150);  // Proposé par
     sh.setColumnWidth(5, 110);  // Votes
     sh.setColumnWidth(6, 170);  // Statut
+    sh.setColumnWidth(7, 20);   // Séparateur
+    sh.setColumnWidth(8, 110);  // Type
+    sh.setColumnWidth(9, 120);  // ID
+    sh.setColumnWidth(10, 150); // Joueur
+    sh.setColumnWidth(11, 140); // Votant
+    sh.setColumnWidth(12, 120); // Tel
+    sh.setColumnWidth(13, 200); // Desc
+    sh.setColumnWidth(14, 140); // Date
   } catch (e) {}
 
   return { ok: true, maj: horodatage };
+}
+
+/**
+ * Lit les votes MVP depuis l'onglet Trophées & Bêtisier
+ */
+function lireVotesMvpDepuisSheet(ss) {
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (!classeur) return null;
+    const sh = classeur.getSheetByName('Trophées & Bêtisier');
+    if (!sh || sh.getLastRow() < 6) return null;
+
+    const lastRow = sh.getLastRow();
+    const rows = sh.getRange(6, 8, lastRow - 5, 7).getValues();
+    const votes = { liste: {} };
+    let hasData = false;
+
+    rows.forEach(function(r) {
+      if (String(r[0] || '').trim() === 'MVP_VOTE') {
+        const mvp = String(r[2] || '').trim();
+        const votant = String(r[3] || '').trim();
+        const tel = String(r[4] || '').trim();
+        const date = String(r[6] || '').trim();
+        if (tel && mvp) {
+          votes.liste[tel] = { votant: votant, mvp: mvp, date: date };
+          hasData = true;
+        }
+      }
+    });
+
+    return hasData ? votes : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Lit les actions et votes Chèvre depuis l'onglet Trophées & Bêtisier
+ */
+function lireChevreDepuisSheet(ss) {
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (!classeur) return null;
+    const sh = classeur.getSheetByName('Trophées & Bêtisier');
+    if (!sh || sh.getLastRow() < 6) return null;
+
+    const lastRow = sh.getLastRow();
+    const rows = sh.getRange(6, 8, lastRow - 5, 7).getValues();
+    const actions = [];
+    const votes = {};
+    let hasData = false;
+
+    rows.forEach(function(r) {
+      const type = String(r[0] || '').trim();
+      if (type === 'CHEVRE_ACTION') {
+        const id = String(r[1] || '').trim();
+        const joueur = String(r[2] || '').trim();
+        const auteur = String(r[3] || '').trim();
+        const auteurTel = String(r[4] || '').trim();
+        const desc = String(r[5] || '').trim();
+        const date = String(r[6] || '').trim();
+        if (id && desc) {
+          actions.push({ id: id, joueur: joueur, auteur: auteur, auteurTel: auteurTel, description: desc, date: date });
+          hasData = true;
+        }
+      } else if (type === 'CHEVRE_VOTE') {
+        const actionId = String(r[1] || '').trim();
+        const votant = String(r[3] || '').trim();
+        const tel = String(r[4] || '').trim();
+        const date = String(r[6] || '').trim();
+        if (tel && actionId) {
+          votes[tel] = { votant: votant, actionId: actionId, date: date };
+          hasData = true;
+        }
+      }
+    });
+
+    return hasData ? { actions: actions, votes: votes } : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
@@ -2930,8 +3344,39 @@ function supprimerAbsenceJoueur(tel, pin, idAbsence, fallbackNom, fallbackDebut,
 
 /**
  * Récupère les absences des joueurs avec purge automatique des absences terminées
+ * (Priorité : feuille Google Sheets "Absences")
  */
-function getAbsencesJoueurs() {
+function getAbsencesJoueurs(ssOpt) {
+  const ss = ssOpt || getSpreadsheet();
+  if (ss) {
+    try {
+      const aSheet = lireAbsencesDepuisSheet(ss);
+      if (aSheet && aSheet.length > 0) {
+        // Associer les téléphones depuis Effectif si nécessaire
+        try {
+          const shEff = ss.getSheetByName('Effectif');
+          if (shEff && shEff.getLastRow() >= 2) {
+            const effRows = shEff.getRange(2, 1, shEff.getLastRow() - 1, 2).getValues();
+            const mapTel = {};
+            effRows.forEach(function(r) {
+              const n = String(r[0] || '').toLowerCase().trim();
+              const t = normaliserNumero(dechiffrerNumero(r[1]));
+              if (n && t) mapTel[n] = t;
+            });
+            aSheet.forEach(function(a) {
+              const nLow = String(a.nom || '').toLowerCase().trim();
+              if (!a.tel && mapTel[nLow]) a.tel = mapTel[nLow];
+            });
+          }
+        } catch (errEff) {}
+        try {
+          PropertiesService.getScriptProperties().setProperty('ABSENCES_JOUEURS', JSON.stringify(aSheet));
+        } catch (e) {}
+        return aSheet;
+      }
+    } catch (e) {}
+  }
+
   const props = PropertiesService.getScriptProperties();
   try {
     const raw = props.getProperty('ABSENCES_JOUEURS');
@@ -2941,6 +3386,9 @@ function getAbsencesJoueurs() {
         parsed.forEach(function(a, idx) {
           if (!a.id) a.id = 'abs_' + (a.nom ? String(a.nom).replace(/[^a-zA-Z0-9]/g, '_') : 'j') + '_' + (a.dateDebut || '').replace(/[^0-9]/g, '') + '_' + idx;
         });
+        if (ss) {
+          try { synchroniserOngletAbsencesSheet(ss, parsed); } catch (e) {}
+        }
         return parsed;
       }
     }
@@ -2949,12 +3397,56 @@ function getAbsencesJoueurs() {
 }
 
 /**
+ * Lit l'intégralité des absences directement depuis la feuille Google Sheets "Absences"
+ */
+function lireAbsencesDepuisSheet(ss) {
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (!classeur) return null;
+    const sh = classeur.getSheetByName('Absences');
+    if (!sh || sh.getLastRow() < 5) return null;
+
+    const lastRow = sh.getLastRow();
+    const rows = sh.getRange(5, 1, lastRow - 4, 8).getValues();
+    const absences = [];
+
+    rows.forEach(function(r) {
+      const statut = String(r[0] || '').trim();
+      const nom = String(r[1] || '').trim();
+      const dDeb = normaliserDateIsoAbsence(r[2]);
+      const dFin = normaliserDateIsoAbsence(r[3]) || dDeb;
+      const motif = String(r[5] || '').trim();
+      const creeLe = String(r[6] || '').trim();
+      const id = String(r[7] || '').trim() || ('abs_' + (nom ? nom.replace(/[^a-zA-Z0-9]/g, '_') : 'j') + '_' + (dDeb || '').replace(/[^0-9]/g, ''));
+
+      if (nom && dDeb && nom.toLowerCase().indexOf('aucune absence') === -1 && nom.toLowerCase().indexOf('total') === -1) {
+        absences.push({
+          id: id,
+          nom: nom,
+          tel: '',
+          dateDebut: dDeb,
+          dateFin: dFin,
+          motif: motif || 'Non renseigné',
+          creeLe: creeLe
+        });
+      }
+    });
+
+    return absences.length > 0 ? absences : null;
+  } catch (e) {
+    Logger.log('Erreur lireAbsencesDepuisSheet: ' + e.message);
+    return null;
+  }
+}
+
+/**
  * Synchronise et met en forme l'onglet "Absences" dans Google Sheets
  * Présente le tableau de toutes les indisponibilités déclarées par les joueurs
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - Le classeur Google Sheets (optionnel)
+ * @param {Array} absencesOpt - Liste d'absences optionnelle à injecter
  * @return {Object} Résumé de la synchronisation
  */
-function synchroniserOngletAbsencesSheet(ss) {
+function synchroniserOngletAbsencesSheet(ss, absencesOpt) {
   if (!ss) ss = getSpreadsheet();
   if (!ss) return { ok: false, error: 'Classeur introuvable' };
 
@@ -2968,12 +3460,15 @@ function synchroniserOngletAbsencesSheet(ss) {
 
   sh.clear();
 
-  const absences = getAbsencesJoueurs();
+  let absences = absencesOpt;
+  if (!absences) {
+    absences = getAbsencesJoueurs(ss);
+  }
   const horodatage = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
   const aujourdhuiIso = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'yyyy-MM-dd');
 
   // Lignes 1-2 : Bannière Titre
-  sh.getRange('A1:G1').merge()
+  sh.getRange('A1:H1').merge()
     .setValue('📅 GESTION DES ABSENCES & INDISPONIBILITÉS DU CLUB')
     .setBackground('#0f172a')
     .setFontColor('#f8fafc')
@@ -2983,7 +3478,7 @@ function synchroniserOngletAbsencesSheet(ss) {
     .setVerticalAlignment('middle');
   sh.setRowHeight(1, 38);
 
-  sh.getRange('A2:G2').merge()
+  sh.getRange('A2:H2').merge()
     .setValue('Dernière synchronisation : ' + horodatage + ' • Synchronisé automatiquement depuis le Hub Joueur WebApp')
     .setBackground('#1e293b')
     .setFontColor('#94a3b8')
@@ -2993,8 +3488,8 @@ function synchroniserOngletAbsencesSheet(ss) {
     .setVerticalAlignment('middle');
   sh.setRowHeight(2, 22);
 
-  const entetes = ['Statut', 'Joueur', 'Date Début', 'Date Fin', 'Période / Durée', 'Motif', 'Déclaré le'];
-  sh.getRange(4, 1, 1, 7).setValues([entetes])
+  const entetes = ['Statut', 'Joueur', 'Date Début', 'Date Fin', 'Période / Durée', 'Motif', 'Déclaré le', 'ID'];
+  sh.getRange(4, 1, 1, 8).setValues([entetes])
     .setBackground('#0284c7')
     .setFontColor('#ffffff')
     .setFontWeight('bold')
@@ -3004,7 +3499,7 @@ function synchroniserOngletAbsencesSheet(ss) {
   let curRow = 5;
 
   if (!absences || absences.length === 0) {
-    sh.getRange(curRow, 1, 1, 7).merge()
+    sh.getRange(curRow, 1, 1, 8).merge()
       .setValue('Aucune absence déclarée pour le moment. (Déclaration disponible depuis le Hub Joueur de la WebApp)')
       .setFontColor('#64748b')
       .setFontStyle('italic')
@@ -3039,24 +3534,25 @@ function synchroniserOngletAbsencesSheet(ss) {
         }
       }
 
-      sh.getRange(curRow, 1, 1, 7).setValues([[
+      sh.getRange(curRow, 1, 1, 8).setValues([[
         statut,
         nom,
         dDeb,
         dFin,
         periode,
         motif,
-        dateCreation
+        dateCreation,
+        a.id || ''
       ]]);
 
       if (statut.indexOf('En cours') !== -1) {
-        sh.getRange(curRow, 1, 1, 7).setBackground('#fef2f2');
+        sh.getRange(curRow, 1, 1, 8).setBackground('#fef2f2');
       }
       sh.setRowHeight(curRow, 22);
       curRow++;
     });
 
-    sh.getRange(curRow, 1, 1, 7).merge()
+    sh.getRange(curRow, 1, 1, 8).merge()
       .setValue('Total : ' + triees.length + ' absence(s) enregistrée(s)')
       .setFontSize(9)
       .setFontColor('#64748b')
@@ -3072,6 +3568,7 @@ function synchroniserOngletAbsencesSheet(ss) {
     sh.setColumnWidth(5, 180);
     sh.setColumnWidth(6, 200);
     sh.setColumnWidth(7, 140);
+    sh.setColumnWidth(8, 120);
   } catch (e) {}
 
   return { ok: true, maj: horodatage, total: absences.length };
@@ -3142,9 +3639,22 @@ function formaterDateFr(val) {
 }
 
 /**
- * Récupère la liste des périodes de vacances (ScriptProperties ou feuille Vacances ou défaut)
+ * Récupère la liste des périodes de vacances (Priorité : feuille Google Sheets "Vacances")
  */
 function getVacancesClub(ss) {
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (classeur) {
+      const vFromSheet = lireVacancesDepuisSheet(classeur);
+      if (vFromSheet && vFromSheet.length > 0) {
+        try {
+          PropertiesService.getScriptProperties().setProperty('VACANCES_CONFIG_JSON', JSON.stringify(vFromSheet));
+        } catch (e) {}
+        return vFromSheet;
+      }
+    }
+  } catch (e) {}
+
   const props = PropertiesService.getScriptProperties();
   try {
     const raw = props.getProperty('VACANCES_CONFIG_JSON');
@@ -3152,17 +3662,6 @@ function getVacancesClub(ss) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
-      }
-    }
-  } catch (e) {}
-
-  try {
-    const classeur = ss || getSpreadsheet();
-    if (classeur) {
-      const vFromSheet = lireVacancesDepuisSheet(classeur);
-      if (vFromSheet && vFromSheet.length > 0) {
-        props.setProperty('VACANCES_CONFIG_JSON', JSON.stringify(vFromSheet));
-        return vFromSheet;
       }
     }
   } catch (e) {}
@@ -3514,15 +4013,24 @@ function getBaremeDefautCaisseNoire() {
 }
 
 /**
- * Récupère les données complètes de la Caisse Noire (amendes, cagnotte, dépenses, statistiques)
+ * Récupère les données complètes de la Caisse Noire (Priorité : feuille Google Sheets "Caisse Noire")
  */
 function getCaisseNoireData() {
-  const props = PropertiesService.getScriptProperties();
+  const ss = getSpreadsheet();
   let rawData = null;
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) rawData = JSON.parse(raw);
-  } catch (e) {}
+  if (ss) {
+    try {
+      rawData = lireCaisseNoireDepuisSheet(ss);
+    } catch (e) {}
+  }
+
+  if (!rawData) {
+    const props = PropertiesService.getScriptProperties();
+    try {
+      const raw = props.getProperty('CAISSE_NOIRE_DATA');
+      if (raw) rawData = JSON.parse(raw);
+    } catch (e) {}
+  }
 
   if (!rawData || typeof rawData !== 'object') {
     rawData = {
@@ -3553,11 +4061,11 @@ function getCaisseNoireData() {
 
   let statutActuel = 'ouverte';
   try {
-    const propSt = props.getProperty('CAISSE_NOIRE_STATUT');
+    const propSt = PropertiesService.getScriptProperties().getProperty('CAISSE_NOIRE_STATUT');
     if (propSt && ['ouverte', 'fermee', 'desactivee'].includes(propSt.toLowerCase())) {
       statutActuel = propSt.toLowerCase();
     } else {
-      const stSheet = lireStatutCaisseDepuisSheet();
+      const stSheet = lireStatutCaisseDepuisSheet(ss);
       if (stSheet) statutActuel = stSheet;
     }
   } catch (e) {}
@@ -3570,6 +4078,16 @@ function getCaisseNoireData() {
 
   if (!Array.isArray(rawData.amendes)) rawData.amendes = [];
   if (!Array.isArray(rawData.depenses)) rawData.depenses = [];
+
+  // Mettre à jour la feuille Caisse Noire si elle n'existe pas encore
+  if (ss) {
+    try {
+      const sh = ss.getSheetByName('Caisse Noire');
+      if (!sh || sh.getLastRow() < 5) {
+        synchroniserOngletCaisseNoireSheet(ss, rawData);
+      }
+    } catch (e) {}
+  }
 
   // Calcul des statistiques en temps réel
   let totalCollecte = 0;
@@ -3634,6 +4152,7 @@ function getCaisseNoireData() {
  */
 function signalerAmendeJoueur(tel, pin, nomCoupable, motif, montant, commentaire) {
   const auth = authentifierUtilisateur(tel, pin);
+  const ss = getSpreadsheet();
   const dataCaisse = getCaisseNoireData();
   const cfgCaisse = (dataCaisse && dataCaisse.config) || {};
   const statutCaisse = cfgCaisse.statut || (cfgCaisse.active === false ? 'desactivee' : (cfgCaisse.fermee ? 'fermee' : 'ouverte'));
@@ -3650,14 +4169,7 @@ function signalerAmendeJoueur(tel, pin, nomCoupable, motif, montant, commentaire
 
   if (!cleanCoupable) throw new Error('Veuillez indiquer le joueur concerné.');
 
-  const props = PropertiesService.getScriptProperties();
-  let currentData = {};
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
-  } catch (e) {}
-
-  if (!currentData || typeof currentData !== 'object') currentData = {};
+  let currentData = dataCaisse || {};
   if (!Array.isArray(currentData.amendes)) currentData.amendes = [];
 
   const nouvelleAmende = {
@@ -3674,7 +4186,14 @@ function signalerAmendeJoueur(tel, pin, nomCoupable, motif, montant, commentaire
   };
 
   currentData.amendes.unshift(nouvelleAmende);
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, currentData); } catch (e) {}
+  }
 
   return { ok: true, amende: nouvelleAmende, data: getCaisseNoireData() };
 }
@@ -3698,14 +4217,7 @@ function infligerAmendeAdmin(telCoach, pinCoach, nomsJoueurs, motif, montant, es
   const mode = paye ? String(modePaiement || 'Espèces').trim() : null;
   const dateStr = new Date().toISOString().split('T')[0];
 
-  const props = PropertiesService.getScriptProperties();
-  let currentData = {};
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
-  } catch (e) {}
-
-  if (!currentData || typeof currentData !== 'object') currentData = {};
+  let currentData = getCaisseNoireData() || {};
   if (!Array.isArray(currentData.amendes)) currentData.amendes = [];
 
   cleanNoms.forEach(function(nom) {
@@ -3723,7 +4235,14 @@ function infligerAmendeAdmin(telCoach, pinCoach, nomsJoueurs, motif, montant, es
     });
   });
 
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, currentData); } catch (e) {}
+  }
+
   return { ok: true, data: getCaisseNoireData() };
 }
 
@@ -3736,13 +4255,7 @@ function validerAmendeSignalee(telCoach, pinCoach, amendeId, action) {
     throw new Error('Action réservée aux coachs / trésoriers autorisés.');
   }
 
-  const props = PropertiesService.getScriptProperties();
-  let currentData = {};
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
-  } catch (e) {}
-
+  let currentData = getCaisseNoireData() || {};
   if (!currentData || !Array.isArray(currentData.amendes)) throw new Error('Aucune donnée trouvée.');
 
   const idx = currentData.amendes.findIndex(function(a) { return a.id === amendeId; });
@@ -3754,7 +4267,14 @@ function validerAmendeSignalee(telCoach, pinCoach, amendeId, action) {
     currentData.amendes.splice(idx, 1);
   }
 
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, currentData); } catch (e) {}
+  }
+
   return { ok: true, data: getCaisseNoireData() };
 }
 
@@ -3771,13 +4291,7 @@ function encaisserAmendesAdmin(telCoach, pinCoach, amendeIds, modePaiement) {
   const mode = String(modePaiement || 'Espèces').trim();
   const dateStr = new Date().toISOString().split('T')[0];
 
-  const props = PropertiesService.getScriptProperties();
-  let currentData = {};
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
-  } catch (e) {}
-
+  let currentData = getCaisseNoireData() || {};
   if (!currentData || !Array.isArray(currentData.amendes)) throw new Error('Aucune donnée trouvée.');
 
   currentData.amendes.forEach(function(a) {
@@ -3788,7 +4302,14 @@ function encaisserAmendesAdmin(telCoach, pinCoach, amendeIds, modePaiement) {
     }
   });
 
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, currentData); } catch (e) {}
+  }
+
   return { ok: true, data: getCaisseNoireData() };
 }
 
@@ -3804,14 +4325,7 @@ function enregistrerDepenseCaisse(telCoach, pinCoach, motif, montant) {
   const cleanMotif = String(motif || 'Dépense équipe').trim();
   const valMontant = Math.max(0.5, Number(montant) || 0);
 
-  const props = PropertiesService.getScriptProperties();
-  let currentData = {};
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
-  } catch (e) {}
-
-  if (!currentData || typeof currentData !== 'object') currentData = {};
+  let currentData = getCaisseNoireData() || {};
   if (!Array.isArray(currentData.depenses)) currentData.depenses = [];
 
   currentData.depenses.unshift({
@@ -3822,7 +4336,14 @@ function enregistrerDepenseCaisse(telCoach, pinCoach, motif, montant) {
     enregistrePar: 'Coach / Trésorier'
   });
 
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, currentData); } catch (e) {}
+  }
+
   return { ok: true, data: getCaisseNoireData() };
 }
 
@@ -3835,17 +4356,19 @@ function supprimerAmendeAdmin(telCoach, pinCoach, amendeId) {
     throw new Error('Action réservée aux coachs / trésoriers autorisés.');
   }
 
-  const props = PropertiesService.getScriptProperties();
-  let currentData = {};
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
-  } catch (e) {}
-
+  let currentData = getCaisseNoireData() || {};
   if (!currentData || !Array.isArray(currentData.amendes)) throw new Error('Aucune donnée trouvée.');
 
   currentData.amendes = currentData.amendes.filter(function(a) { return a.id !== amendeId; });
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, currentData); } catch (e) {}
+  }
+
   return { ok: true, data: getCaisseNoireData() };
 }
 
@@ -3858,18 +4381,13 @@ function enregistrerConfigCaisseNoire(telCoach, pinCoach, nouvelleConfig) {
     throw new Error('Action réservée aux coachs / trésoriers autorisés.');
   }
 
-  const props = PropertiesService.getScriptProperties();
-  let currentData = {};
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
-  } catch (e) {}
-
-  if (!currentData || typeof currentData !== 'object') currentData = {};
+  let currentData = getCaisseNoireData() || {};
 
   if (nouvelleConfig && nouvelleConfig.statut) {
     const stValide = ['ouverte', 'fermee', 'desactivee'].includes(nouvelleConfig.statut) ? nouvelleConfig.statut : 'ouverte';
-    props.setProperty('CAISSE_NOIRE_STATUT', stValide);
+    try {
+      PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_STATUT', stValide);
+    } catch (e) {}
     nouvelleConfig.statut = stValide;
     nouvelleConfig.active = (stValide !== 'desactivee');
     nouvelleConfig.fermee = (stValide === 'fermee');
@@ -3880,7 +4398,14 @@ function enregistrerConfigCaisseNoire(telCoach, pinCoach, nouvelleConfig) {
 
   currentData.config = nouvelleConfig;
 
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, currentData); } catch (e) {}
+  }
+
   return { ok: true, data: getCaisseNoireData() };
 }
 
@@ -3894,15 +4419,11 @@ function changerStatutCaisseNoire(telCoach, pinCoach, nouveauStatut) {
   }
   const statutValide = ['ouverte', 'fermee', 'desactivee'].includes(nouveauStatut) ? nouveauStatut : 'ouverte';
 
-  const props = PropertiesService.getScriptProperties();
-  props.setProperty('CAISSE_NOIRE_STATUT', statutValide);
-
-  let currentData = {};
   try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_STATUT', statutValide);
   } catch (e) {}
-  if (!currentData || typeof currentData !== 'object') currentData = {};
+
+  let currentData = getCaisseNoireData() || {};
   if (!currentData.config) {
     currentData.config = {
       devise: '€',
@@ -3915,11 +4436,18 @@ function changerStatutCaisseNoire(telCoach, pinCoach, nouveauStatut) {
   currentData.config.statut = statutValide;
   currentData.config.active = (statutValide !== 'desactivee');
   currentData.config.fermee = (statutValide === 'fermee');
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(currentData));
+  } catch (e) {}
 
   try {
     synchroniserStatutCaisseSheet(ss, statutValide);
   } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, currentData); } catch (e) {}
+  }
 
   return { ok: true, statut: statutValide, data: getCaisseNoireData() };
 }
@@ -3933,13 +4461,7 @@ function reinitialiserCaisseNoire(telCoach, pinCoach) {
     throw new Error('Action réservée aux coachs / trésoriers autorisés.');
   }
 
-  const props = PropertiesService.getScriptProperties();
-  let currentData = {};
-  try {
-    const raw = props.getProperty('CAISSE_NOIRE_DATA');
-    if (raw) currentData = JSON.parse(raw);
-  } catch (e) {}
-
+  let currentData = getCaisseNoireData() || {};
   const configActuelle = (currentData && currentData.config) ? currentData.config : {
     devise: '€',
     objectifCagnotte: 300,
@@ -3954,8 +4476,321 @@ function reinitialiserCaisseNoire(telCoach, pinCoach) {
     depenses: []
   };
 
-  props.setProperty('CAISSE_NOIRE_DATA', JSON.stringify(clean));
+  try {
+    PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(clean));
+  } catch (e) {}
+
+  if (ss) {
+    try { synchroniserOngletCaisseNoireSheet(ss, clean); } catch (e) {}
+  }
+
   return { ok: true, data: getCaisseNoireData() };
+}
+
+/**
+ * Synchronise et met en forme l'onglet "Caisse Noire" dans Google Sheets
+ */
+function synchroniserOngletCaisseNoireSheet(ss, rawDataOpt) {
+  if (!ss) ss = getSpreadsheet();
+  if (!ss) return { ok: false, error: 'Classeur introuvable' };
+
+  let sh = ss.getSheetByName('Caisse Noire');
+  if (!sh) {
+    sh = ss.insertSheet('Caisse Noire');
+  }
+  try {
+    sh.setTabColor('#10b981');
+  } catch (e) {}
+
+  sh.clear();
+
+  let rawData = rawDataOpt;
+  if (!rawData) {
+    rawData = getCaisseNoireData();
+  }
+  if (!rawData || typeof rawData !== 'object') {
+    rawData = { config: {}, amendes: [], depenses: [] };
+  }
+
+  const amendes = Array.isArray(rawData.amendes) ? rawData.amendes : [];
+  const depenses = Array.isArray(rawData.depenses) ? rawData.depenses : [];
+  const bareme = (rawData.config && Array.isArray(rawData.config.bareme) && rawData.config.bareme.length > 0)
+    ? rawData.config.bareme
+    : getBaremeDefautCaisseNoire();
+
+  const cfg = rawData.config || {};
+  let statut = cfg.statut || (cfg.active === false ? 'desactivee' : (cfg.fermee ? 'fermee' : 'ouverte'));
+
+  let totalCollecte = 0;
+  let totalDu = 0;
+  let totalDepenses = 0;
+  amendes.forEach(function(a) {
+    const m = Number(a.montant) || 0;
+    if (a.statut === 'paye') totalCollecte += m;
+    else if (a.statut === 'impaye') totalDu += m;
+  });
+  depenses.forEach(function(d) {
+    totalDepenses += (Number(d.montant) || 0);
+  });
+  const solde = totalCollecte - totalDepenses;
+  const obj = cfg.objectifCagnotte || 300;
+  const objDesc = cfg.objectifDescription || 'Resto & Tournée de fin d\'année';
+
+  const horodatage = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+
+  // Ligne 1 : Bannière Titre (A1:U1)
+  sh.getRange('A1:U1').merge()
+    .setValue('💰 CAISSE NOIRE & GESTION DES AMENDES DU CLUB')
+    .setBackground('#0f172a')
+    .setFontColor('#f8fafc')
+    .setFontWeight('bold')
+    .setFontSize(13)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(1, 38);
+
+  // Ligne 2 : KPI Bar (A2:U2)
+  const statutLabel = statut === 'desactivee' ? '⚪ DÉSACTIVÉE' : (statut === 'fermee' ? '🔒 FERMÉE' : '🟢 OUVERTE');
+  const kpiText = 'Statut : ' + statutLabel + ' • Total collecté : ' + totalCollecte.toFixed(2) + ' € • Reste dû : ' + totalDu.toFixed(2) + ' € • Dépenses : ' + totalDepenses.toFixed(2) + ' € • Solde caisse : ' + solde.toFixed(2) + ' € • Objectif : ' + obj + ' € (' + objDesc + ') • Maj : ' + horodatage;
+  sh.getRange('A2:U2').merge()
+    .setValue(kpiText)
+    .setBackground('#1e293b')
+    .setFontColor('#94a3b8')
+    .setFontStyle('italic')
+    .setFontSize(9)
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(2, 22);
+
+  // Ligne 4 : En-têtes de sections
+  sh.getRange('A4:J4').merge()
+    .setValue('📋 1. HISTORIQUE DES AMENDES & SIGNALEMENTS')
+    .setBackground('#059669')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(11)
+    .setVerticalAlignment('middle');
+  sh.setRowHeight(4, 28);
+
+  sh.getRange('L4:O4').merge()
+    .setValue('⚖️ 2. BARÈME OFFICIEL DES AMENDES')
+    .setBackground('#0f766e')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(11)
+    .setVerticalAlignment('middle');
+
+  sh.getRange('Q4:U4').merge()
+    .setValue('🧾 3. DÉPENSES DE LA CAGNOTTE')
+    .setBackground('#b45309')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(11)
+    .setVerticalAlignment('middle');
+
+  // Ligne 5 : Colonnes
+  const entetesAm = ['ID Amende', 'Date', 'Joueur', 'Motif', 'Montant (€)', 'Statut', 'Signalé par', 'Mode Paiement', 'Date Paiement', 'Commentaire'];
+  sh.getRange(5, 1, 1, 10).setValues([entetesAm])
+    .setBackground('#047857')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(10);
+
+  const entetesBar = ['ID Barème', 'Titre / Motif', 'Montant (€)', 'Catégorie'];
+  sh.getRange(5, 12, 1, 4).setValues([entetesBar])
+    .setBackground('#115e59')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(10);
+
+  const entetesDep = ['ID Dépense', 'Date', 'Description / Motif', 'Montant (€)', 'Enregistré par'];
+  sh.getRange(5, 17, 1, 5).setValues([entetesDep])
+    .setBackground('#92400e')
+    .setFontColor('#ffffff')
+    .setFontWeight('bold')
+    .setFontSize(10);
+  sh.setRowHeight(5, 24);
+
+  // Écriture des données
+  // 1. Amendes (Lignes 6+)
+  if (amendes.length === 0) {
+    sh.getRange(6, 1, 1, 10).merge()
+      .setValue('Aucune amende enregistrée pour le moment.')
+      .setFontColor('#64748b')
+      .setFontStyle('italic')
+      .setHorizontalAlignment('center');
+  } else {
+    const lignesAm = amendes.map(function(a) {
+      let stBadge = '⏳ En attente';
+      if (a.statut === 'paye') stBadge = '🟢 Payé';
+      else if (a.statut === 'impaye') stBadge = '🔴 Impayé';
+      return [
+        a.id || '',
+        a.date || '',
+        a.nomJoueur || '',
+        a.motif || '',
+        Number(a.montant) || 0,
+        stBadge,
+        a.signalePar || '',
+        a.modePaiement || '',
+        a.payeLe || '',
+        a.commentaire || ''
+      ];
+    });
+    sh.getRange(6, 1, lignesAm.length, 10).setValues(lignesAm);
+    for (let r = 0; r < lignesAm.length; r++) {
+      sh.setRowHeight(6 + r, 22);
+      const st = amendes[r].statut;
+      if (st === 'paye') sh.getRange(6 + r, 1, 1, 10).setBackground('#f0fdf4');
+      else if (st === 'impaye') sh.getRange(6 + r, 1, 1, 10).setBackground('#fef2f2');
+      else sh.getRange(6 + r, 1, 1, 10).setBackground('#fffbeb');
+    }
+  }
+
+  // 2. Barème (Lignes 6+, Cols L à O = 12 à 15)
+  if (bareme.length > 0) {
+    const lignesBar = bareme.map(function(b) {
+      return [b.id || '', b.titre || '', Number(b.montant) || 0, b.categorie || ''];
+    });
+    sh.getRange(6, 12, lignesBar.length, 4).setValues(lignesBar);
+    for (let r = 0; r < lignesBar.length; r++) {
+      sh.getRange(6 + r, 12, 1, 4).setBackground('#f0fdfa');
+    }
+  }
+
+  // 3. Dépenses (Lignes 6+, Cols Q à U = 17 à 21)
+  if (depenses.length > 0) {
+    const lignesDep = depenses.map(function(d) {
+      return [d.id || '', d.date || '', d.motif || '', Number(d.montant) || 0, d.enregistrePar || ''];
+    });
+    sh.getRange(6, 17, lignesDep.length, 5).setValues(lignesDep);
+    for (let r = 0; r < lignesDep.length; r++) {
+      sh.getRange(6 + r, 17, 1, 5).setBackground('#fffbeb');
+    }
+  }
+
+  try {
+    sh.setColumnWidth(1, 110); // ID
+    sh.setColumnWidth(2, 90);  // Date
+    sh.setColumnWidth(3, 140); // Joueur
+    sh.setColumnWidth(4, 200); // Motif
+    sh.setColumnWidth(5, 90);  // Montant
+    sh.setColumnWidth(6, 110); // Statut
+    sh.setColumnWidth(7, 130); // Signalé par
+    sh.setColumnWidth(8, 110); // Mode
+    sh.setColumnWidth(9, 100); // Date payé
+    sh.setColumnWidth(10, 180); // Commentaire
+    sh.setColumnWidth(11, 20); // Séparateur
+    sh.setColumnWidth(12, 110); // ID Barème
+    sh.setColumnWidth(13, 230); // Titre
+    sh.setColumnWidth(14, 90);  // Montant
+    sh.setColumnWidth(15, 120); // Catégorie
+    sh.setColumnWidth(16, 20); // Séparateur
+    sh.setColumnWidth(17, 100); // ID Dépense
+    sh.setColumnWidth(18, 90);  // Date
+    sh.setColumnWidth(19, 200); // Motif
+    sh.setColumnWidth(20, 90);  // Montant
+    sh.setColumnWidth(21, 130); // Enregistré par
+  } catch (e) {}
+
+  return { ok: true, maj: horodatage, nbAmendes: amendes.length };
+}
+
+/**
+ * Lit l'intégralité des données de Caisse Noire depuis l'onglet Caisse Noire
+ */
+function lireCaisseNoireDepuisSheet(ss) {
+  try {
+    const classeur = ss || getSpreadsheet();
+    if (!classeur) return null;
+    const sh = classeur.getSheetByName('Caisse Noire');
+    if (!sh || sh.getLastRow() < 5) return null;
+
+    const maxRow = sh.getLastRow();
+    const nbLignes = maxRow - 5;
+    if (nbLignes <= 0) return null;
+
+    // Statut depuis ligne 2 ou Configuration
+    let statut = lireStatutCaisseDepuisSheet(classeur) || 'ouverte';
+
+    // 1. Amendes (Cols A à J = 1 à 10)
+    const amendes = [];
+    const valsAm = sh.getRange(6, 1, nbLignes, 10).getValues();
+    valsAm.forEach(function(r) {
+      const id = String(r[0] || '').trim();
+      const nom = String(r[2] || '').trim();
+      const motif = String(r[3] || '').trim();
+      if (!nom || id.toLowerCase().indexOf('aucune') !== -1) return;
+
+      const mnt = parseFloat(r[4]) || 1;
+      const stRaw = String(r[5] || '').toLowerCase();
+      let st = 'impaye';
+      if (stRaw.indexOf('🟢') !== -1 || stRaw.indexOf('payé') !== -1 || stRaw.indexOf('paye') !== -1) st = 'paye';
+      else if (stRaw.indexOf('⏳') !== -1 || stRaw.indexOf('attente') !== -1) st = 'en_attente';
+
+      amendes.push({
+        id: id || ('am_' + new Date().getTime() + '_' + Math.floor(Math.random() * 1000)),
+        date: normaliserDateIsoAbsence(r[1]) || new Date().toISOString().split('T')[0],
+        nomJoueur: nom,
+        motif: motif || 'Amende',
+        montant: mnt,
+        statut: st,
+        signalePar: String(r[6] || 'Coach').trim(),
+        modePaiement: String(r[7] || '').trim() || null,
+        payeLe: normaliserDateIsoAbsence(r[8]) || null,
+        commentaire: String(r[9] || '').trim()
+      });
+    });
+
+    // 2. Barème (Cols L à O = 12 à 15)
+    const bareme = [];
+    const valsBar = sh.getRange(6, 12, nbLignes, 4).getValues();
+    valsBar.forEach(function(r) {
+      const id = String(r[0] || '').trim();
+      const tit = String(r[1] || '').trim();
+      if (!tit) return;
+      bareme.push({
+        id: id || ('b_' + tit.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()),
+        titre: tit,
+        montant: parseFloat(r[2]) || 1,
+        categorie: String(r[3] || 'Général').trim()
+      });
+    });
+
+    // 3. Dépenses (Cols Q à U = 17 à 21)
+    const depenses = [];
+    const valsDep = sh.getRange(6, 17, nbLignes, 5).getValues();
+    valsDep.forEach(function(r) {
+      const id = String(r[0] || '').trim();
+      const mot = String(r[2] || '').trim();
+      if (!mot) return;
+      depenses.push({
+        id: id || ('dep_' + new Date().getTime()),
+        date: normaliserDateIsoAbsence(r[1]) || new Date().toISOString().split('T')[0],
+        motif: mot,
+        montant: parseFloat(r[3]) || 0,
+        enregistrePar: String(r[4] || 'Coach').trim()
+      });
+    });
+
+    return {
+      config: {
+        devise: '€',
+        objectifCagnotte: 300,
+        objectifDescription: 'Resto & Tournée de fin d\'année',
+        moyenPaiement: 'Lydia / Espèces au vestiaire',
+        bareme: bareme.length > 0 ? bareme : getBaremeDefautCaisseNoire(),
+        statut: statut,
+        active: (statut !== 'desactivee'),
+        fermee: (statut === 'fermee')
+      },
+      amendes: amendes,
+      depenses: depenses
+    };
+  } catch (e) {
+    Logger.log('Erreur lireCaisseNoireDepuisSheet: ' + e.message);
+    return null;
+  }
 }
 
 /**
@@ -4689,19 +5524,94 @@ function enregistrerConfigEntrainements(telCoach, pinCoach, creneaux, nbSeances)
 }
 
 /**
- * Sauvegarde et récupération de brouillon dans PropertiesService
+ * Initialise l'onglet "Brouillon_Compo" pour sauvegarder les compositions tactiques non publiées
+ */
+function initialiserOngletBrouillonCompoSheet(ss) {
+  if (!ss) ss = getSpreadsheet();
+  if (!ss) return;
+  let sh = ss.getSheetByName('Brouillon_Compo');
+  if (!sh) {
+    sh = ss.insertSheet('Brouillon_Compo');
+  }
+  try {
+    sh.setTabColor('#64748b');
+  } catch (e) {}
+
+  const horodatage = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+  if (sh.getLastRow() < 4) {
+    sh.clear();
+    sh.getRange('A1:D1').merge()
+      .setValue('📋 BROUILLON DE COMPOSITION TACTIQUE (SAUVEGARDE WEBAPP)')
+      .setBackground('#0f172a')
+      .setFontColor('#f8fafc')
+      .setFontWeight('bold')
+      .setFontSize(12)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sh.setRowHeight(1, 34);
+
+    sh.getRange('A2:D2').merge()
+      .setValue('Dernière sauvegarde : ' + horodatage + ' • Brouillon automatique conservé tant que la composition n\'est pas publiée')
+      .setBackground('#1e293b')
+      .setFontColor('#94a3b8')
+      .setFontStyle('italic')
+      .setFontSize(9)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+    sh.setRowHeight(2, 20);
+
+    sh.getRange(4, 1, 1, 2).setValues([['Clé', 'Valeur']])
+      .setBackground('#475569')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold');
+    sh.getRange(5, 1, 1, 2).setValues([['BROUILLON_JSON', '']]);
+    try {
+      sh.setColumnWidth(1, 150);
+      sh.setColumnWidth(2, 500);
+    } catch (e) {}
+  }
+}
+
+/**
+ * Sauvegarde de brouillon (Priorité : feuille Google Sheets "Brouillon_Compo")
  */
 function enregistrerBrouillonCompo(brouillon) {
   try {
-    PropertiesService.getScriptProperties().setProperty('BROUILLON_COMPO', JSON.stringify(brouillon));
+    const ss = getSpreadsheet();
+    if (ss) {
+      let sh = ss.getSheetByName('Brouillon_Compo');
+      if (!sh) {
+        initialiserOngletBrouillonCompoSheet(ss);
+        sh = ss.getSheetByName('Brouillon_Compo');
+      }
+      if (sh) {
+        const horodatage = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+        sh.getRange('A2').setValue('Dernière sauvegarde : ' + horodatage + ' • Brouillon automatique conservé');
+        sh.getRange('B5').setValue(JSON.stringify(brouillon));
+      }
+    }
+    try {
+      PropertiesService.getScriptProperties().setProperty('BROUILLON_COMPO', JSON.stringify(brouillon));
+    } catch (e) {}
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e.message };
   }
 }
 
+/**
+ * Récupération du brouillon tactique (Priorité : feuille Google Sheets "Brouillon_Compo")
+ */
 function recupererBrouillonCompo() {
   try {
+    const ss = getSpreadsheet();
+    if (ss) {
+      const sh = ss.getSheetByName('Brouillon_Compo');
+      if (sh && sh.getLastRow() >= 5) {
+        const val = sh.getRange('B5').getValue();
+        if (val) return JSON.parse(val);
+      }
+    }
     const raw = PropertiesService.getScriptProperties().getProperty('BROUILLON_COMPO');
     return raw ? JSON.parse(raw) : null;
   } catch (e) {
@@ -11473,6 +12383,8 @@ function onOpen() {
       .addItem('📅 14. Actualiser l\'onglet Absences', 'menuActualiserAbsencesSheet')
       .addItem('💰 15. Statut Caisse Noire (Ouvrir / Fermer / Désactiver)', 'menuChangerStatutCaisseNoire')
       .addItem('🏖️ 16. Gérer les Vacances & Trêves', 'menuGererVacances')
+      .addItem('💰 17. Actualiser l\'onglet Caisse Noire', 'menuActualiserCaisseNoireSheet')
+      .addItem('🚗 18. Actualiser l\'onglet Covoiturage', 'menuActualiserCovoiturageSheet')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
@@ -11626,6 +12538,36 @@ function menuActualiserAbsencesSheet() {
   }
 }
 
+/**
+ * Actualise l'onglet "Caisse Noire" depuis le menu Google Sheets
+ */
+function menuActualiserCaisseNoireSheet() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const res = synchroniserOngletCaisseNoireSheet(ss);
+    if (res && res.ok) {
+      ss.toast('Onglet "Caisse Noire" synchronisé avec succès ! (' + (res.nbAmendes || 0) + ' amende(s))', '💰 Handball Bot', 5);
+    }
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur lors de la synchronisation de la Caisse Noire : ' + e.message);
+  }
+}
+
+/**
+ * Actualise l'onglet "Covoiturage" depuis le menu Google Sheets
+ */
+function menuActualiserCovoiturageSheet() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const res = synchroniserOngletCovoiturageSheet(ss);
+    if (res && res.ok) {
+      ss.toast('Onglet "Covoiturage" synchronisé avec succès ! (' + (res.total || 0) + ' participant(s))', '🚗 Handball Bot', 5);
+    }
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur lors de la synchronisation du covoiturage : ' + e.message);
+  }
+}
+
 function menuPurgerAbsencesTerminees() {
   try {
     const actives = purgerAbsencesTerminees();
@@ -11730,6 +12672,24 @@ function onEdit(e) {
           const ss = e.source || sheet.getParent();
           ss.toast('Statut Caisse Noire synchronisé : ' + st.toUpperCase() + ' !', '⚡ Handball Bot', 3);
         } catch (errToast) {}
+      } else if (label.indexOf('mvp') !== -1 || row === 37) {
+        const valStr = String(sheet.getRange(row, 3).getValue() || '').trim();
+        const props = PropertiesService.getScriptProperties();
+        props.setProperty('MVP_NOM', valStr);
+        const ss = e.source || sheet.getParent();
+        try { synchroniserOngletTropheesSheet(ss); } catch (errSync) {}
+        try {
+          ss.toast('MVP du match mis à jour : ' + (valStr || 'Aucun') + ' !', '🏆 Handball Bot', 3);
+        } catch (errToast) {}
+      } else if (label.indexOf('chèvre') !== -1 || label.indexOf('chevre') !== -1 || row === 38) {
+        const valStr = String(sheet.getRange(row, 3).getValue() || '').trim();
+        const props = PropertiesService.getScriptProperties();
+        props.setProperty('CHEVRE_NOM', valStr);
+        const ss = e.source || sheet.getParent();
+        try { synchroniserOngletTropheesSheet(ss); } catch (errSync) {}
+        try {
+          ss.toast('Chèvre du match mise à jour : ' + (valStr || 'Aucune') + ' !', '🐐 Handball Bot', 3);
+        } catch (errToast) {}
       }
     }
 
@@ -11740,6 +12700,57 @@ function onEdit(e) {
       PropertiesService.getScriptProperties().setProperty('VACANCES_CONFIG_JSON', JSON.stringify(vacs));
       try {
         ss.toast('Périodes de vacances synchronisées (' + vacs.length + ' période(s)) !', '🏖️ Handball Bot', 3);
+      } catch (err) {}
+    }
+
+    // 4. Modification dans l'onglet Caisse Noire sur les lignes de données (Row >= 6)
+    if (sheetName === 'Caisse Noire' && row >= 6) {
+      const ss = e.source || sheet.getParent();
+      const caisseObj = lireCaisseNoireDepuisSheet(ss);
+      if (caisseObj) {
+        PropertiesService.getScriptProperties().setProperty('CAISSE_NOIRE_DATA', JSON.stringify(caisseObj));
+        try {
+          ss.toast('Caisse Noire synchronisée (' + (caisseObj.amendes ? caisseObj.amendes.length : 0) + ' amende(s)) !', '💰 Handball Bot', 3);
+        } catch (err) {}
+      }
+    }
+
+    // 5. Modification dans l'onglet Covoiturage sur les lignes de données (Row >= 5)
+    if (sheetName === 'Covoiturage' && row >= 5) {
+      const ss = e.source || sheet.getParent();
+      const covObj = lireCovoiturageDepuisSheet(ss);
+      if (covObj) {
+        PropertiesService.getScriptProperties().setProperty('COVOITURAGE_DATA', JSON.stringify(covObj));
+        const total = (covObj.conducteurs ? covObj.conducteurs.length : 0) + (covObj.passagers ? covObj.passagers.length : 0);
+        try {
+          ss.toast('Covoiturage synchronisé (' + total + ' participant(s)) !', '🚗 Handball Bot', 3);
+        } catch (err) {}
+      }
+    }
+
+    // 6. Modification dans l'onglet Absences sur les lignes de données (Row >= 5)
+    if (sheetName === 'Absences' && row >= 5) {
+      const ss = e.source || sheet.getParent();
+      const absList = lireAbsencesDepuisSheet(ss) || [];
+      PropertiesService.getScriptProperties().setProperty('ABSENCES_JOUEURS', JSON.stringify(absList));
+      try {
+        ss.toast('Absences synchronisées (' + absList.length + ' absence(s)) !', '📅 Handball Bot', 3);
+      } catch (err) {}
+    }
+
+    // 7. Modification dans l'onglet Trophées & Bêtisier sur les colonnes de données brutes (Cols H à N = 8 à 14, Row >= 6)
+    if (sheetName === 'Trophées & Bêtisier' && row >= 6 && col >= 8) {
+      const ss = e.source || sheet.getParent();
+      const mvpVotes = lireVotesMvpDepuisSheet(ss);
+      if (mvpVotes) {
+        PropertiesService.getScriptProperties().setProperty('VOTES_MVP_DATA', JSON.stringify(mvpVotes));
+      }
+      const chData = lireChevreDepuisSheet(ss);
+      if (chData) {
+        PropertiesService.getScriptProperties().setProperty('CHEVRE_DATA', JSON.stringify(chData));
+      }
+      try {
+        ss.toast('Votes & Bêtisier synchronisés depuis le tableau !', '🏆 Handball Bot', 3);
       } catch (err) {}
     }
   } catch (err) {}
