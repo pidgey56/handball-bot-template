@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.18.0';
+const APP_VERSION = '1.19.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -1524,46 +1524,497 @@ function importerInfosClubFFHB(telCoach, pinCoach, urlClub) {
 }
 
 /**
+ * Réorganise et embellit l'intégralité du classeur Google Sheets :
+ * 1. Restructure et esthétise la feuille 'Configuration' (Bannière moderne, badges, alignements, largeur colonnes, corrections décalages)
+ * 2. Réorganise l'ordre des onglets dans un flux logique opérationnel
+ * 3. Harmonise les couleurs d'onglets (Tab Colors) selon la charte du club
+ * 4. Met en forme les onglets clés (Effectif, Compositions, Entrainements, Votes, Matchs FFHB, etc.)
+ */
+function embellirEtReorganiserClasseur(ss) {
+  if (!ss) ss = getSpreadsheet();
+  if (!ss) return { ok: false, error: 'Classeur introuvable' };
+
+  const cfg = getClubConfig(ss);
+
+  // ========================================================
+  // 1. RÉORGANISATION LOGIQUE DE L'ORDRE DES ONGLETS
+  // ========================================================
+  const ordreSouhaite = [
+    'Configuration',
+    'Effectif',
+    'Compositions',
+    'Entrainements',
+    'Votes_Semaine',
+    'Trophées & Bêtisier',
+    'Caisse Noire',
+    'Covoiturage',
+    'Absences',
+    'Vacances',
+    'Brouillon_Compo',
+    'Matchs FFHB Détectés',
+    'Aperçu Sondage WhatsApp'
+  ];
+
+  try {
+    let pos = 1;
+    ordreSouhaite.forEach(function(nom) {
+      const sh = ss.getSheetByName(nom);
+      if (sh) {
+        ss.setActiveSheet(sh);
+        ss.moveActiveSheet(pos);
+        pos++;
+      }
+    });
+  } catch (errOrdre) {}
+
+  // ========================================================
+  // 2. EMBELLISSEMENT ET RESTRUCTURATION DE 'CONFIGURATION'
+  // ========================================================
+  const shCfg = ss.getSheetByName('Configuration');
+  if (shCfg) {
+    try {
+      // 2.a Correction des décalages éventuels
+      // Fix coach numbers : si C25 est vide et que D25 contient des numéros
+      const valC25 = String(shCfg.getRange('C25').getValue() || '').trim();
+      const valD25 = String(shCfg.getRange('D25').getValue() || '').trim();
+      if (!valC25 && valD25 && /\d{9,}/.test(valD25.replace(/[^0-9]/g, ''))) {
+        shCfg.getRange('C25').setValue(valD25);
+        shCfg.getRange('D25').setValue('Numéros des coachs autorisés (séparés par virgules)');
+      }
+
+      // Fix en-tête D17
+      const valD17 = String(shCfg.getRange('D17').getValue() || '').trim().toLowerCase();
+      if (valD17 === 'version prod' || !valD17) {
+        shCfg.getRange('D17').setValue('Aperçu / Description');
+      }
+
+      // 2.b Dimensions des colonnes pour éviter toute troncature
+      shCfg.setColumnWidth(1, 25);   // Marge gauche élégante
+      shCfg.setColumnWidth(2, 260);  // Paramètre / Intitulé
+      shCfg.setColumnWidth(3, 340);  // Valeur
+      shCfg.setColumnWidth(4, 300);  // Aperçu / Description
+      shCfg.setColumnWidth(5, 110);  // Délai / Ordre
+      shCfg.setColumnWidth(6, 320);  // URL Poule
+      shCfg.setColumnWidth(7, 260);  // URL Coupe
+
+      // Nettoyage fond colonne A
+      shCfg.getRange('A1:A45').setBackground('#f8fafc');
+
+      // 2.c Bannière Header (Lignes 1 & 2)
+      shCfg.getRange('B1:G1').merge()
+        .setValue('⚡ HANDBALL BOT — CONFIGURATION & AUTOMATISATION DU CLUB')
+        .setBackground(cfg.couleurPrimaire || '#0f172a')
+        .setFontColor(getContrastColor(cfg.couleurPrimaire || '#0f172a'))
+        .setFontWeight('bold')
+        .setFontSize(13)
+        .setHorizontalAlignment('center')
+        .setVerticalAlignment('middle');
+      shCfg.setRowHeight(1, 42);
+
+      const nomClubAffiche = cfg.nomClub || 'Handball Club';
+      shCfg.getRange('B2:G2').merge()
+        .setValue('🏉 ' + nomClubAffiche + ' • Synchronisation FFHB, Sondage WhatsApp & WebApp Coach • Modèle v' + APP_VERSION)
+        .setBackground('#1e293b')
+        .setFontColor('#cbd5e1')
+        .setFontWeight('normal')
+        .setFontStyle('italic')
+        .setFontSize(9.5)
+        .setHorizontalAlignment('center')
+        .setVerticalAlignment('middle');
+      shCfg.setRowHeight(2, 24);
+
+      // 2.d Bloc 1 : Équipes & Compétitions (Lignes 3 à 6)
+      shCfg.getRange('B3:G3').setValues([[
+        'Code Équipe', 'Nom recherché (Mot-clé FFHB)', 'Libellé dans le sondage', 'Délai RDV (heures)', 'URL de la poule FFHB', 'URL Coupe de France (optionnel)'
+      ]])
+      .setBackground('#0f172a')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold')
+      .setFontSize(10)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle');
+      shCfg.setRowHeight(3, 28);
+
+      for (let r = 4; r <= 6; r++) {
+        shCfg.setRowHeight(r, 26);
+        const bg = (r % 2 === 0) ? '#ffffff' : '#f8fafc';
+        shCfg.getRange(r, 2, 1, 6).setBackground(bg).setVerticalAlignment('middle');
+        shCfg.getRange(r, 2).setFontWeight('bold').setHorizontalAlignment('center'); // Code
+        shCfg.getRange(r, 4).setHorizontalAlignment('center'); // Libellé
+        shCfg.getRange(r, 5).setHorizontalAlignment('center'); // Délai
+      }
+      shCfg.getRange('B3:G6').setBorder(true, true, true, true, true, true, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
+
+      // 2.e Bloc 2 : Créneaux d'Entraînement (Lignes 7 à 14)
+      shCfg.getRange('B7:G7').merge()
+        .setValue('🏋️ CRÉNEAUX D\'ENTRAÎNEMENT HEBDOMADAIRES (Options incluses dans le sondage WhatsApp du lundi matin)')
+        .setBackground('#334155')
+        .setFontColor('#ffffff')
+        .setFontWeight('bold')
+        .setFontSize(10)
+        .setHorizontalAlignment('left')
+        .setVerticalAlignment('middle');
+      shCfg.setRowHeight(7, 28);
+
+      shCfg.getRange('B8:D8').setValues([['Ordre', "Intitulé de l'option dans le sondage", 'Actif (OUI/NON)']])
+        .setBackground('#1e293b')
+        .setFontColor('#ffffff')
+        .setFontWeight('bold')
+        .setFontSize(9)
+        .setHorizontalAlignment('center')
+        .setVerticalAlignment('middle');
+      
+      const rHelpTrain = shCfg.getRange('E8:G8');
+      if (!rHelpTrain.isPartOfMerge()) rHelpTrain.merge();
+      rHelpTrain.setValue('💡 Conseil : Vous pouvez aussi activer/désactiver les créneaux dans la WebApp Coach')
+        .setBackground('#1e293b')
+        .setFontColor('#94a3b8')
+        .setFontSize(9)
+        .setFontStyle('italic')
+        .setHorizontalAlignment('center')
+        .setVerticalAlignment('middle');
+      shCfg.setRowHeight(8, 24);
+
+      const ruleOuiNon = SpreadsheetApp.newDataValidation()
+        .requireValueInList(['OUI', 'NON'], true)
+        .setAllowInvalid(false)
+        .build();
+
+      for (let r = 9; r <= 14; r++) {
+        shCfg.setRowHeight(r, 25);
+        const bg = (r % 2 === 1) ? '#ffffff' : '#f8fafc';
+        shCfg.getRange(r, 2, 1, 6).setBackground(bg).setVerticalAlignment('middle');
+        shCfg.getRange(r, 2).setFontWeight('bold').setHorizontalAlignment('center').setBackground('#f1f5f9');
+        
+        const cellActif = shCfg.getRange(r, 4);
+        cellActif.setDataValidation(ruleOuiNon).setHorizontalAlignment('center').setFontWeight('bold');
+        const valActif = String(cellActif.getValue() || '').trim().toUpperCase();
+        if (valActif === 'OUI') {
+          cellActif.setBackground('#dcfce7').setFontColor('#15803d');
+        } else if (valActif === 'NON') {
+          cellActif.setBackground('#f1f5f9').setFontColor('#64748b');
+        }
+
+        const infoRange = shCfg.getRange(r, 5, 1, 3);
+        if (!infoRange.isPartOfMerge()) infoRange.merge();
+        let descSeance = 'Option du sondage';
+        if (r === 9) descSeance = 'Séance d\'entraînement principale 1';
+        else if (r === 10) descSeance = 'Déclaration d\'absence associée séance 1';
+        else if (r === 11) descSeance = 'Séance d\'entraînement principale 2';
+        else if (r === 12) descSeance = 'Déclaration d\'absence associée séance 2';
+        else if (r === 13) descSeance = 'Séance d\'entraînement optionnelle 3';
+        else if (r === 14) descSeance = 'Déclaration d\'absence associée séance 3';
+        infoRange.setValue(descSeance).setFontColor('#64748b').setFontSize(9).setFontStyle('italic').setVerticalAlignment('middle');
+      }
+      shCfg.getRange('B7:G14').setBorder(true, true, true, true, true, true, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
+
+      // 2.f Bloc 3 : Paramètres Généraux, Charte & Administration (Lignes 16 à 38)
+      shCfg.getRange('B16:G16').merge()
+        .setValue('⚙️ PARAMÈTRES D\'AUTOMATISATION, CHARTE GRAPHIQUE DU CLUB & ADMINISTRATEURS')
+        .setBackground('#0f172a')
+        .setFontColor('#ffffff')
+        .setFontWeight('bold')
+        .setFontSize(10)
+        .setHorizontalAlignment('left')
+        .setVerticalAlignment('middle');
+      shCfg.setRowHeight(16, 28);
+
+      shCfg.getRange('B17:D17').setValues([['Paramètre', 'Valeur', 'Aperçu / Description']])
+        .setBackground('#1e293b')
+        .setFontColor('#ffffff')
+        .setFontWeight('bold')
+        .setFontSize(9)
+        .setHorizontalAlignment('center')
+        .setVerticalAlignment('middle');
+
+      const rHelpParam = shCfg.getRange('E17:G17');
+      if (!rHelpParam.isPartOfMerge()) rHelpParam.merge();
+      rHelpParam.setValue('Guide d\'aide & Synchronisation temps réel')
+        .setBackground('#1e293b')
+        .setFontColor('#94a3b8')
+        .setFontSize(9)
+        .setFontStyle('italic')
+        .setHorizontalAlignment('center')
+        .setVerticalAlignment('middle');
+      shCfg.setRowHeight(17, 24);
+
+      const ruleNbEq = SpreadsheetApp.newDataValidation()
+        .requireValueInList(['1', '2', '3'], true)
+        .setAllowInvalid(false)
+        .build();
+
+      const ruleCaisseStatut = SpreadsheetApp.newDataValidation()
+        .requireValueInList(['OUVERTE', 'FERMÉE', 'DÉSACTIVÉE'], true)
+        .setAllowInvalid(false)
+        .build();
+
+      const guidesMap = {
+        18: 'Identifiant du groupe WhatsApp du club',
+        19: 'Dépôt GitHub hébergeant le bot Baileys',
+        20: 'Token d\'accès GitHub pour déclencher l\'envoi',
+        21: 'Généré automatiquement par le déploiement WebApp',
+        22: 'Nom officiel affiché sur l\'application web',
+        23: 'Blason officiel du club (PNG, SVG ou WebP)',
+        24: 'Nom de votre gymnase pour les matchs à domicile',
+        25: 'Numéros autorisés à administrer et convoquer (séparés par virgules)',
+        26: 'Couleur primaire du club (boutons, en-têtes)',
+        27: 'Couleur d\'accentuation secondaire (badges, reflets)',
+        28: 'Couleur du maillot Équipe 1',
+        29: 'Couleur du maillot Équipe 2',
+        30: 'Couleur du maillot Équipe 3',
+        31: 'Nombre d\'équipes séniors gérées dans ce groupe',
+        32: 'Lien FFHB officiel (logo et couleurs auto)',
+        33: 'Trésoriers autorisés (synchronisé avec l\'onglet Effectif)',
+        34: 'Chouchou(x) du coach (synchronisé avec l\'onglet Effectif)',
+        35: '🟢 OUVERTE / 🔒 FERMÉE / ⚪ DÉSACTIVÉE (équipes jeunes)',
+        36: 'Calendrier des trêves (géré dans l\'onglet Vacances)',
+        37: 'Joueur MVP du match (synchronisé avec Trophées)',
+        38: 'Casserole du match (synchronisée avec Trophées)'
+      };
+
+      for (let r = 18; r <= 38; r++) {
+        shCfg.setRowHeight(r, 25);
+        const bg = (r % 2 === 0) ? '#ffffff' : '#f8fafc';
+        shCfg.getRange(r, 2, 1, 6).setBackground(bg).setVerticalAlignment('middle');
+        shCfg.getRange(r, 2).setFontWeight('bold');
+
+        const gCell = shCfg.getRange(r, 5, 1, 3);
+        if (!gCell.isPartOfMerge()) gCell.merge();
+        gCell.setValue(guidesMap[r] || 'Paramètre du club')
+          .setFontColor('#64748b')
+          .setFontSize(8.5)
+          .setFontStyle('italic')
+          .setVerticalAlignment('middle');
+
+        if (r === 31) {
+          shCfg.getRange('C31').setDataValidation(ruleNbEq).setHorizontalAlignment('center').setFontWeight('bold');
+        } else if (r === 35) {
+          const c35 = shCfg.getRange('C35');
+          c35.setDataValidation(ruleCaisseStatut).setHorizontalAlignment('center').setFontWeight('bold');
+          const st = String(c35.getValue() || '').toUpperCase();
+          if (st.includes('OUV')) c35.setBackground('#dcfce7').setFontColor('#15803d');
+          else if (st.includes('FERM')) c35.setBackground('#fee2e2').setFontColor('#b91c1c');
+          else if (st.includes('DES')) c35.setBackground('#f1f5f9').setFontColor('#64748b');
+        }
+      }
+
+      // Boîtes de prévisualisation des couleurs D26:D30
+      shCfg.getRange('D26').setBackground(cfg.couleurPrimaire).setFontColor(getContrastColor(cfg.couleurPrimaire)).setValue('Aperçu ' + cfg.couleurPrimaire).setFontWeight('bold').setHorizontalAlignment('center');
+      shCfg.getRange('D27').setBackground(cfg.couleurSecondaire).setFontColor(getContrastColor(cfg.couleurSecondaire)).setValue('Aperçu ' + cfg.couleurSecondaire).setFontWeight('bold').setHorizontalAlignment('center');
+      shCfg.getRange('D28').setBackground(cfg.couleurEquipe1).setFontColor(getContrastColor(cfg.couleurEquipe1)).setValue('Aperçu ' + cfg.couleurEquipe1).setFontWeight('bold').setHorizontalAlignment('center');
+      shCfg.getRange('D29').setBackground(cfg.couleurEquipe2).setFontColor(getContrastColor(cfg.couleurEquipe2)).setValue('Aperçu ' + cfg.couleurEquipe2).setFontWeight('bold').setHorizontalAlignment('center');
+      shCfg.getRange('D30').setBackground(cfg.couleurEquipe3).setFontColor(getContrastColor(cfg.couleurEquipe3)).setValue('Aperçu ' + cfg.couleurEquipe3).setFontWeight('bold').setHorizontalAlignment('center');
+
+      shCfg.getRange('B16:G38').setBorder(true, true, true, true, true, true, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
+      shCfg.setHiddenGridlines(false);
+    } catch (eCfg) {
+      Logger.log('Erreur formatage shCfg: ' + eCfg.message);
+    }
+  }
+
+  // ========================================================
+  // 3. EMBELLISSEMENT DE LA FEUILLE 'EFFECTIF'
+  // ========================================================
+  const shEff = ss.getSheetByName('Effectif');
+  if (shEff) {
+    try {
+      shEff.getRange('A1:I1').setValues([[
+        'Nom et Prénom', 'Téléphone (format 336...)', 'Poste', 'Équipe habituelle', 'Photo (URL ou lien Drive)', 'Code PIN (Auto)', 'Notes du Coach (Privé)', 'Trésorier', 'Chouchou'
+      ]])
+      .setBackground('#0f172a')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold')
+      .setFontSize(10)
+      .setVerticalAlignment('middle')
+      .setHorizontalAlignment('center');
+      shEff.setRowHeight(1, 32);
+
+      shEff.setColumnWidth(1, 200); // Nom
+      shEff.setColumnWidth(2, 160); // Téléphone
+      shEff.setColumnWidth(3, 140); // Poste
+      shEff.setColumnWidth(4, 130); // Équipe
+      shEff.setColumnWidth(5, 180); // Photo
+      shEff.setColumnWidth(6, 110); // PIN
+      shEff.setColumnWidth(7, 260); // Notes
+      shEff.setColumnWidth(8, 100); // Trésorier
+      shEff.setColumnWidth(9, 100); // Chouchou
+
+      const lastRowEff = shEff.getLastRow();
+      if (lastRowEff >= 2) {
+        const nbLignes = lastRowEff - 1;
+        shEff.getRange(2, 1, nbLignes, 9).setVerticalAlignment('middle');
+
+        // Validation Postes
+        const rulePostes = SpreadsheetApp.newDataValidation()
+          .requireValueInList(['Gardien', 'Ailier Gauche', 'Arrière Gauche', 'Demi-Centre', 'Pivot', 'Arrière Droit', 'Ailier Droit'], true)
+          .setAllowInvalid(false)
+          .build();
+        shEff.getRange(2, 3, nbLignes, 1).setDataValidation(rulePostes);
+
+        // Validation Équipes
+        const ruleEquipes = SpreadsheetApp.newDataValidation()
+          .requireValueInList(['Équipe 1', 'Équipe 2', 'Équipe 3'], true)
+          .setAllowInvalid(false)
+          .build();
+        shEff.getRange(2, 4, nbLignes, 1).setDataValidation(ruleEquipes);
+
+        // Validation Trésorier & Chouchou
+        const ruleOuiNon = SpreadsheetApp.newDataValidation()
+          .requireValueInList(['OUI', 'NON'], true)
+          .setAllowInvalid(false)
+          .build();
+        shEff.getRange(2, 8, nbLignes, 2).setDataValidation(ruleOuiNon).setHorizontalAlignment('center');
+
+        for (let r = 2; r <= lastRowEff; r++) {
+          shEff.setRowHeight(r, 26);
+          const bg = (r % 2 === 0) ? '#ffffff' : '#f8fafc';
+          shEff.getRange(r, 1, 1, 9).setBackground(bg);
+          shEff.getRange(r, 1).setFontWeight('bold');
+
+          // Badges Trésorier et Chouchou
+          const cTres = shEff.getRange(r, 8);
+          if (String(cTres.getValue() || '').toUpperCase() === 'OUI') {
+            cTres.setBackground('#fef9c3').setFontColor('#854d0e').setFontWeight('bold');
+          }
+          const cChou = shEff.getRange(r, 9);
+          if (String(cChou.getValue() || '').toUpperCase() === 'OUI') {
+            cChou.setBackground('#ffe4e6').setFontColor('#be123c').setFontWeight('bold');
+          }
+        }
+        shEff.getRange(1, 1, lastRowEff, 9).setBorder(true, true, true, true, true, true, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
+      }
+      shEff.setHiddenGridlines(false);
+    } catch (eEff) {}
+  }
+
+  // ========================================================
+  // 4. EMBELLISSEMENT DES FEUILLES COMPOSITIONS & ENTRAINEMENTS
+  // ========================================================
+  const shComp = ss.getSheetByName('Compositions');
+  if (shComp) {
+    try {
+      const lastC = Math.max(shComp.getLastColumn(), 4);
+      shComp.getRange(1, 1, 1, lastC)
+        .setBackground(cfg.couleurEquipe1 || '#0f172a')
+        .setFontColor(getContrastColor(cfg.couleurEquipe1 || '#0f172a'))
+        .setFontWeight('bold')
+        .setFontSize(10)
+        .setVerticalAlignment('middle')
+        .setHorizontalAlignment('center');
+      shComp.setRowHeight(1, 30);
+      shComp.setColumnWidth(1, 140);
+      for (let c = 2; c <= lastC; c++) shComp.setColumnWidth(c, 240);
+      shComp.setHiddenGridlines(false);
+    } catch (eComp) {}
+  }
+
+  const shEnt = ss.getSheetByName('Entrainements');
+  if (shEnt) {
+    try {
+      const lastC = Math.max(shEnt.getLastColumn(), 5);
+      shEnt.getRange(1, 1, 1, lastC)
+        .setBackground('#1e293b')
+        .setFontColor('#ffffff')
+        .setFontWeight('bold')
+        .setFontSize(10)
+        .setVerticalAlignment('middle')
+        .setHorizontalAlignment('center');
+      shEnt.setRowHeight(1, 30);
+      shEnt.setColumnWidth(1, 140);
+      shEnt.setColumnWidth(2, 160);
+      shEnt.setColumnWidth(3, 260);
+      shEnt.setColumnWidth(4, 260);
+      shEnt.setColumnWidth(5, 200);
+      shEnt.setHiddenGridlines(false);
+    } catch (eEnt) {}
+  }
+
+  const shVotes = ss.getSheetByName('Votes_Semaine');
+  if (shVotes) {
+    try {
+      const lastC = Math.max(shVotes.getLastColumn(), 4);
+      shVotes.getRange(1, 1, 1, lastC)
+        .setBackground(cfg.couleurSecondaire || '#334155')
+        .setFontColor(getContrastColor(cfg.couleurSecondaire || '#334155'))
+        .setFontWeight('bold')
+        .setFontSize(10)
+        .setVerticalAlignment('middle')
+        .setHorizontalAlignment('center');
+      shVotes.setRowHeight(1, 30);
+      shVotes.setColumnWidth(1, 180);
+      shVotes.setColumnWidth(2, 130);
+      shVotes.setColumnWidth(3, 140);
+      for (let c = 4; c <= lastC; c++) shVotes.setColumnWidth(c, 130);
+      shVotes.setHiddenGridlines(false);
+    } catch (eVotes) {}
+  }
+
+  // ========================================================
+  // 5. APPLICATION DES COULEURS DES ONGLETS (TAB COLORS)
+  // ========================================================
+  try {
+    if (shCfg) shCfg.setTabColor(cfg.couleurPrimaire);
+    if (shEff) shEff.setTabColor(cfg.couleurPrimaire);
+    if (shComp) shComp.setTabColor(cfg.couleurEquipe1);
+    if (shEnt) shEnt.setTabColor(cfg.couleurEquipe2 || cfg.couleurPrimaire);
+    if (shVotes) shVotes.setTabColor(cfg.couleurSecondaire);
+
+    const shTrop = ss.getSheetByName('Trophées & Bêtisier');
+    if (shTrop) shTrop.setTabColor('#f59e0b');
+
+    const shCaisse = ss.getSheetByName('Caisse Noire');
+    if (shCaisse) shCaisse.setTabColor('#10b981');
+
+    const shCovoit = ss.getSheetByName('Covoiturage');
+    if (shCovoit) shCovoit.setTabColor('#6366f1');
+
+    const shAbs = ss.getSheetByName('Absences');
+    if (shAbs) shAbs.setTabColor('#38bdf8');
+
+    const shVac = ss.getSheetByName('Vacances');
+    if (shVac) shVac.setTabColor('#0ea5e9');
+
+    const shBrouillon = ss.getSheetByName('Brouillon_Compo');
+    if (shBrouillon) shBrouillon.setTabColor('#64748b');
+
+    const shMatchs = ss.getSheetByName('Matchs FFHB Détectés');
+    if (shMatchs) shMatchs.setTabColor('#1e293b');
+
+    const shApercu = ss.getSheetByName('Aperçu Sondage WhatsApp');
+    if (shApercu) shApercu.setTabColor('#22c55e');
+  } catch (eTabs) {}
+
+  // Replacer l'utilisateur sur la feuille Configuration
+  if (shCfg) {
+    try { ss.setActiveSheet(shCfg); } catch (eAct) {}
+  }
+
+  return { ok: true };
+}
+
+/**
  * Met à jour les aperçus et styles de couleurs dans le classeur Google Sheets
  */
 function actualiserCouleursClasseur() {
   const ss = getSpreadsheet();
+  const res = embellirEtReorganiserClasseur(ss);
   const cfg = getClubConfig(ss);
-  const shCfg = ss.getSheetByName('Configuration');
-  if (shCfg) {
-    try {
-      shCfg.getRange('D26').setBackground(cfg.couleurPrimaire).setFontColor(getContrastColor(cfg.couleurPrimaire)).setValue('Aperçu');
-      shCfg.getRange('D27').setBackground(cfg.couleurSecondaire).setFontColor(getContrastColor(cfg.couleurSecondaire)).setValue('Aperçu');
-      shCfg.getRange('D28').setBackground(cfg.couleurEquipe1).setFontColor(getContrastColor(cfg.couleurEquipe1)).setValue('Aperçu');
-      shCfg.getRange('D29').setBackground(cfg.couleurEquipe2).setFontColor(getContrastColor(cfg.couleurEquipe2)).setValue('Aperçu');
-      shCfg.getRange('D30').setBackground(cfg.couleurEquipe3).setFontColor(getContrastColor(cfg.couleurEquipe3)).setValue('Aperçu');
-    } catch (e) {}
+  ss.toast('Classeur réorganisé et embelli avec succès (' + cfg.couleurPrimaire + ', ' + cfg.couleurSecondaire + ') !', '✨ Handball Bot', 5);
+}
 
-    try {
-      shCfg.setTabColor(cfg.couleurPrimaire);
-      const shEff = ss.getSheetByName('Effectif');
-      if (shEff) shEff.setTabColor(cfg.couleurPrimaire);
-      const shVotes = ss.getSheetByName('Votes_Semaine');
-      if (shVotes) shVotes.setTabColor(cfg.couleurSecondaire);
-      const shComp = ss.getSheetByName('Compositions');
-      if (shComp) shComp.setTabColor(cfg.couleurEquipe1);
-      const shEnt = ss.getSheetByName('Entrainements');
-      if (shEnt) shEnt.setTabColor(cfg.couleurEquipe2 || cfg.couleurPrimaire);
-      const shTrop = ss.getSheetByName('Trophées & Bêtisier');
-      if (shTrop) shTrop.setTabColor('#f59e0b');
-      const shAbs = ss.getSheetByName('Absences');
-      if (shAbs) shAbs.setTabColor('#38bdf8');
-      const shVac = ss.getSheetByName('Vacances');
-      if (shVac) shVac.setTabColor('#0ea5e9');
-      const shCaisse = ss.getSheetByName('Caisse Noire');
-      if (shCaisse) shCaisse.setTabColor('#10b981');
-      const shCovoit = ss.getSheetByName('Covoiturage');
-      if (shCovoit) shCovoit.setTabColor('#6366f1');
-      const shBrouillon = ss.getSheetByName('Brouillon_Compo');
-      if (shBrouillon) shBrouillon.setTabColor('#64748b');
-    } catch (e) {}
+/**
+ * Déclencheur menu pour embellir et réorganiser l'intégralité du classeur
+ */
+function menuEmbellirClasseurComplet() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const res = embellirEtReorganiserClasseur(ss);
+    if (res && res.ok) {
+      ss.toast('Classeur réorganisé et embelli avec succès !', '✨ Handball Bot', 5);
+    }
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur lors de l\'embellissement du classeur : ' + e.message);
   }
-  ss.toast('Couleurs appliquées avec succès (' + cfg.couleurPrimaire + ', ' + cfg.couleurSecondaire + ') !', 'Handball Bot');
 }
 
 function convertirUrlPhoto(urlBrute) {
@@ -12372,7 +12823,7 @@ function onOpen() {
       .addItem('⚡ 4. Importer les votes depuis GitHub (1 sec)', 'synchroniserDepuisGitHub')
       .addItem('🛠️ 5. Mettre à jour les onglets (Conserver mes données)', 'initialiserOngletsWebApp')
       .addItem('⚠️ 6. Réinitialiser à zéro (Nouveau club vierge uniquement)', 'initialiserClasseurComplet')
-      .addItem('🎨 7. Actualiser les couleurs et styles', 'actualiserCouleursClasseur')
+      .addItem('✨ 7. Réorganiser et embellir tout le classeur', 'menuEmbellirClasseurComplet')
       .addItem('🔄 8. Vérifier les mises à jour du modèle', 'menuVerifierMiseAJour')
       .addSeparator()
       .addItem('🔐 9. Chiffrer tous les numéros de l\'effectif (RGPD)', 'menuChiffrerNumerosEffectif')

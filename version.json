@@ -1,8 +1,15 @@
 {
-  "version": "1.18.0",
+  "version": "1.19.0",
   "releaseDate": "2026-10-12",
-  "title": "Architecture 100% Google Sheets (Single Source of Truth) - Élimination de la dépendance ScriptProperties",
+  "title": "Refonte visuelle et réorganisation ergonomique complète du classeur Google Sheets",
   "changelog": [
+    "Refonte visuelle complète de l'onglet 'Configuration' : bannière d'en-tête premium personnalisée aux couleurs du club, sections structurées avec badges, séparation des blocs et suppression de l'espace vide à gauche",
+    "Réorganisation logique de l'ordre des onglets : flux opérationnel naturel (Configuration ➔ Effectif ➔ Compositions ➔ Entrainements ➔ Votes ➔ Trophées ➔ Caisse Noire ➔ Covoiturage ➔ Absences ➔ Vacances...)",
+    "Harmonisation globale des couleurs d'onglets (Tab Colors) selon la charte graphique officielle du club",
+    "Auto-réparation intelligente des décalages : réconciliation automatique des numéros de coachs (C25/D25) et restauration de l'en-tête 'Aperçu / Description'",
+    "Formatage visuel enrichi : badges colorés OUI (vert menthe) / NON (gris doux), menus déroulants interactifs de validation (Postes, Équipes, Statut Caisse, Nombre d'équipes)",
+    "Redimensionnement optimal de toutes les colonnes et hauteurs de lignes aérées éliminant toute troncature de texte",
+    "Nouveau menu Google Sheets '✨ 7. Réorganiser et embellir tout le classeur' permettant une remise en beauté instantanée en 1 clic",
     "Architecture 100% Google Sheets (Single Source of Truth) : migration intégrale des données applicatives de ScriptProperties vers les onglets du tableur",
     "Élimination du risque de dépassement de quota Apps Script (500 Ko) : historique et données illimités, auditables et exportables à tout moment",
     "Nouvel onglet Google Sheets '💰 Caisse Noire' : tableau de bord avec KPIs (cagnotte, amendes, dépenses), table des amendes (Cols A:J), barème officiel (Cols L:O) et dépenses (Cols Q:U)",
