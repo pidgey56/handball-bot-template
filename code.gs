@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.20.1';
+const APP_VERSION = '1.20.2';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -5750,27 +5750,31 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
 
   const rowsMatchs = shMatchs ? shMatchs.getRange('B4:K6').getValues() : [];
   const extraireDetailMatch = function(row, nomDefaut) {
-    if (!row || !row[0]) return { label: nomDefaut, aMatch: false, adversaire: '', salle: '', date: '', dateMatch: '', heure: '', heureMatch: '', rdv: '', heureRdv: '', lieu: '' };
-    const dateM = formaterDateMatchFr(row[2]);
+    if (!row || !row[0]) return { label: nomDefaut, aMatch: false, adversaire: '', salle: '', date: '', dateMatch: '', heure: '', heureMatch: '', rdv: '', heureRdv: '', lieu: '', statut: '' };
+    const dateBrute = String(row[2] || '').trim();
+    const dateM = formaterDateMatchFr(dateBrute);
     let heureM = String(row[3] || '').trim().replace(/^à\s*/i, '');
     let heureRdv = String(row[4] || '').trim().replace(/^à\s*/i, '');
     const lieu = String(row[5] || '').trim();
     const adv = String(row[6] || '').trim();
     const salle = String(row[7] || '').trim();
     const libelle = String(row[8] || '').trim();
-    const aMatch = Boolean(adv && adv !== '-' && !/pas de match/i.test(adv));
+    const statut = String(row[9] || '').trim();
+    const pasDeMatch = !adv || adv === '-' || /pas de match/i.test(adv) || /exempt/i.test(adv) || /aucun/i.test(adv) || /pas de match/i.test(dateBrute) || /exempt/i.test(statut);
+    const aMatch = !pasDeMatch;
     return {
       label: (libelle && libelle !== '-') ? libelle : nomDefaut,
       aMatch: aMatch,
-      date: dateM,
-      dateMatch: dateM,
-      heure: heureM,
-      heureMatch: heureM,
-      rdv: heureRdv,
-      heureRdv: heureRdv,
-      lieu: lieu,
-      adversaire: adv,
-      salle: salle
+      date: (aMatch && dateM !== '-') ? dateM : '',
+      dateMatch: (aMatch && dateM !== '-') ? dateM : '',
+      heure: (aMatch && heureM !== '-') ? heureM : '',
+      heureMatch: (aMatch && heureM !== '-') ? heureM : '',
+      rdv: (aMatch && heureRdv !== '-') ? heureRdv : '',
+      heureRdv: (aMatch && heureRdv !== '-') ? heureRdv : '',
+      lieu: (aMatch && lieu !== '-') ? lieu : '',
+      adversaire: aMatch ? adv : '',
+      salle: (aMatch && salle !== '-') ? salle : '',
+      statut: statut
     };
   };
 
@@ -5800,9 +5804,29 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
     const separerNoms = function(str) {
       return String(str || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
     };
+    let estCompoSemainePassee = false;
+    try {
+      const parts = dateCompo.replace(/\[pr[ée]c[ée]dente\]\s*/i, '').trim().split(/[\s/:]+/);
+      if (parts.length >= 3) {
+        const j = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const a = parseInt(parts[2], 10);
+        const dObj = new Date(a, m, j);
+        const now = new Date();
+        const jourSem = (now.getDay() + 6) % 7; // 0 = lundi
+        const lundiActuel = new Date(now.getFullYear(), now.getMonth(), now.getDate() - jourSem, 0, 0, 0);
+        if (dObj < lundiActuel) {
+          estCompoSemainePassee = true;
+        }
+      }
+    } catch (e) {}
+    const estPrecedente = /\[pr[ée]c[ée]dente\]/i.test(dateCompo) || estCompoSemainePassee;
+    const datePropre = dateCompo.replace(/\[pr[ée]c[ée]dente\]\s*/i, '').trim();
     if (cfg.nbEquipes === 1) {
       derniereCompo = {
-        date: dateCompo,
+        date: datePropre,
+        estActive: !estPrecedente,
+        estPrecedente: estPrecedente,
         equipe1B: separerNoms(lastRowVals[1]),
         equipe1C: [],
         equipe1D: [],
@@ -5810,7 +5834,9 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
       };
     } else if (cfg.nbEquipes === 3) {
       derniereCompo = {
-        date: dateCompo,
+        date: datePropre,
+        estActive: !estPrecedente,
+        estPrecedente: estPrecedente,
         equipe1B: separerNoms(lastRowVals[1]),
         equipe1C: separerNoms(lastRowVals[2]),
         equipe1D: separerNoms(lastRowVals[3]),
@@ -5818,7 +5844,9 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
       };
     } else {
       derniereCompo = {
-        date: dateCompo,
+        date: datePropre,
+        estActive: !estPrecedente,
+        estPrecedente: estPrecedente,
         equipe1B: separerNoms(lastRowVals[1]),
         equipe1C: separerNoms(lastRowVals[2]),
         equipe1D: [],
@@ -9597,11 +9625,12 @@ function construireHtmlWebApp() {
     '}',
     'function ouvrirGpsGymnase(type){',
       'var salle = CURRENT_MATCH_SALLE || "";',
-      'if(!salle && INFOS_MATCHS){',
+      'if((!salle || salle === "-") && INFOS_MATCHS){',
         'var d = INFOS_MATCHS.details1B || INFOS_MATCHS.details1C || INFOS_MATCHS.details1D;',
-        'if(d && d.salle) salle = d.salle;',
+        'if(d && d.salle && d.salle !== "-") salle = d.salle;',
       '}',
-      'if(!salle && CLUB_CONFIG && CLUB_CONFIG.nomClub) salle = CLUB_CONFIG.nomClub;',
+      'if((!salle || salle === "-") && CLUB_CONFIG && CLUB_CONFIG.nomClub) salle = CLUB_CONFIG.nomClub;',
+      'if(!salle || salle === "-"){ afficherToast("Aucune salle renseignée pour ce match.", "info"); return; }',
       'var q = encodeURIComponent(salle + " Gymnase");',
       'var url = (type === "waze") ? ("https://waze.com/ul?q=" + q) : ("https://www.google.com/maps/search/?api=1&query=" + q);',
       'window.open(url, "_blank");',
@@ -9614,7 +9643,14 @@ function construireHtmlWebApp() {
         'var bSav = document.getElementById("btnSavePreview"); if(bSav) bSav.style.display = "none";',
         'var bPub = document.getElementById("btnPublishPreview"); if(bPub) bPub.style.display = "none";',
         'var txtM = document.getElementById("txtPreviewMatch"); if(txtM) txtM.readOnly = true;',
-        'var hSwap = document.getElementById("tacticalSwapHint"); if(hSwap) hSwap.innerHTML = "<span style=\'color:#38bdf8;\'>Mode consultation joueur : visualisez les postes et remplaçants du match.</span>";',
+        'var hSwap = document.getElementById("tacticalSwapHint");',
+        'if(hSwap){',
+          'if(DERNIERE_COMPO && DERNIERE_COMPO.estActive === false){',
+            'hSwap.innerHTML = "<span style=\'color:#facc15;\'>Mode consultation joueur : composition en préparation par le coach (composition précédente affichée).</span>";',
+          '} else {',
+            'hSwap.innerHTML = "<span style=\'color:#38bdf8;\'>Mode consultation joueur : visualisez les postes et remplaçants du match.</span>";',
+          '}',
+        '}',
       '}',
     '}',
     'function majEspaceJoueur(nom){',
@@ -9685,7 +9721,17 @@ function construireHtmlWebApp() {
           'return iClean === t;',
         '});',
       '}',
-      'if(DERNIERE_COMPO){',
+      'function aVraiMatch(m){',
+        'if(!m) return false;',
+        'if(m.aMatch === false) return false;',
+        'var adv = String(m.adversaire || "").trim();',
+        'if(!adv || adv === "-" || /pas de match/i.test(adv) || /exempt/i.test(adv) || /aucun/i.test(adv)) return false;',
+        'var dt = String(m.dateMatch || m.date || "").trim();',
+        'if(/pas de match/i.test(dt)) return false;',
+        'return true;',
+      '}',
+      'var compoActive = Boolean(DERNIERE_COMPO && DERNIERE_COMPO.estActive !== false);',
+      'if(compoActive){',
         'if(nomDans(DERNIERE_COMPO.equipe1B, nom)){',
           'eqNomConvoque = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "Équipe 1";',
           'if(INFOS_MATCHS) detailsEquipe = INFOS_MATCHS.details1B || INFOS_MATCHS.eq1;',
@@ -9699,68 +9745,84 @@ function construireHtmlWebApp() {
           'eqNomConvoque = "REPOS";',
         '}',
       '}',
-      'if(detailsEquipe && detailsEquipe.salle) CURRENT_MATCH_SALLE = detailsEquipe.salle;',
-      'if(eqNomConvoque === "REPOS"){',
+      'if(detailsEquipe && detailsEquipe.salle && detailsEquipe.salle !== "-"){',
+        'CURRENT_MATCH_SALLE = detailsEquipe.salle;',
+      '} else {',
+        'CURRENT_MATCH_SALLE = "";',
+      '}',
+      'if(VACANCES_DATA && VACANCES_DATA.enVacancesCetteSemaine){',
+        'var infoV = VACANCES_DATA.infoSemaine || {};',
+        'if(statutBadge){ statutBadge.textContent = "🏖️ VACANCES"; statutBadge.style.background = "rgba(14,165,233,0.25)"; statutBadge.style.color = "#7dd3fc"; }',
+        'if(equipeBadge) equipeBadge.textContent = infoV.nom || "Trêve sportive";',
+        'if(advEl) advEl.textContent = "🏖️ Pas de match cette semaine";',
+        'var txtVac = "Période de vacances : " + (infoV.nom || "Vacances") + " (du " + (infoV.debutTexte || "") + " au " + (infoV.finTexte || "") + "). Aucun entraînement ni match programmé. Bon repos !";',
+        'if(infoV.commentaire) txtVac += " • " + infoV.commentaire;',
+        'if(detEl) detEl.textContent = txtVac;',
+        'if(actBox) actBox.style.display = "none";',
+      '} else if(eqNomConvoque === "REPOS"){',
         'if(statutBadge){ statutBadge.textContent = "🛌 AU REPOS"; statutBadge.style.background = "rgba(239,68,68,0.2)"; statutBadge.style.color = "#fca5a5"; }',
         'if(equipeBadge) equipeBadge.textContent = "Non retenu ce week-end";',
         'if(advEl) advEl.textContent = "Repos ce week-end";',
         'if(detEl) detEl.textContent = "Profitez de votre week-end pour recharger les batteries ! Rendez-vous au prochain entraînement.";',
         'if(actBox) actBox.style.display = "none";',
-      '} else if(eqNomConvoque){',
+      '} else if(eqNomConvoque && aVraiMatch(detailsEquipe)){',
         'if(statutBadge){ statutBadge.textContent = "🔥 CONVOQUÉ"; statutBadge.style.background = "rgba(34,197,94,0.25)"; statutBadge.style.color = "#86efac"; }',
         'if(equipeBadge) equipeBadge.textContent = eqNomConvoque;',
-        'var advTxt = (detailsEquipe && detailsEquipe.adversaire) ? detailsEquipe.adversaire : "Match à venir";',
-        'if(advEl) advEl.textContent = "⚔️ Contre " + advTxt;',
+        'if(advEl) advEl.textContent = "⚔️ Contre " + detailsEquipe.adversaire;',
         'var detLignes = [];',
-        'if(detailsEquipe && detailsEquipe.dateMatch) detLignes.push("📅 " + detailsEquipe.dateMatch + (detailsEquipe.heureMatch ? (" à " + detailsEquipe.heureMatch) : ""));',
-        'if(detailsEquipe && detailsEquipe.salle) detLignes.push("📍 Salle : " + detailsEquipe.salle);',
-        'if(detailsEquipe && detailsEquipe.heureRdv) detLignes.push("⏱️ Rendez-vous : " + detailsEquipe.heureRdv);',
+        'if(detailsEquipe.dateMatch) detLignes.push("📅 " + detailsEquipe.dateMatch + (detailsEquipe.heureMatch ? (" à " + detailsEquipe.heureMatch) : ""));',
+        'if(detailsEquipe.salle && detailsEquipe.salle !== "-") detLignes.push("📍 Salle : " + detailsEquipe.salle);',
+        'if(detailsEquipe.heureRdv && detailsEquipe.heureRdv !== "-") detLignes.push("⏱️ Rendez-vous : " + detailsEquipe.heureRdv);',
         'if(detEl) detEl.textContent = detLignes.length ? detLignes.join(" • ") : "Consultez les horaires et le gymnase ci-dessous.";',
         'if(actBox) actBox.style.display = "flex";',
+      '} else if(eqNomConvoque && !aVraiMatch(detailsEquipe)){',
+        'if(statutBadge){ statutBadge.textContent = "🏖️ PAS DE MATCH"; statutBadge.style.background = "rgba(59,130,246,0.15)"; statutBadge.style.color = "#93c5fd"; }',
+        'if(equipeBadge) equipeBadge.textContent = eqNomConvoque + " • Exempt";',
+        'if(advEl) advEl.textContent = "🏖️ Pas de match officiel ce week-end";',
+        'if(detEl) detEl.textContent = "L\'équipe " + eqNomConvoque + " n\'a pas de match officiel programmé ce week-end (exempt ou pause de calendrier). Profitez-en pour vous reposer !";',
+        'if(actBox) actBox.style.display = "none";',
       '} else {',
         'var eqHab = (pObj.equipe || "").toLowerCase();',
         'var matchAvenir = null;',
         'var nomEqAvenir = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "Équipe 1";',
-        'if(eqHab.includes("2") || eqHab.includes("1c")){',
-          'matchAvenir = INFOS_MATCHS ? (INFOS_MATCHS.details1C || INFOS_MATCHS.eq2) : null;',
-          'nomEqAvenir = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "Équipe 2";',
-        '} else if(eqHab.includes("3") || eqHab.includes("1d")){',
+        'if(eqHab.includes("3") || eqHab.includes("1d")){',
           'matchAvenir = INFOS_MATCHS ? (INFOS_MATCHS.details1D || INFOS_MATCHS.eq3) : null;',
           'nomEqAvenir = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "Équipe 3";',
+        '} else if(eqHab.includes("2") || eqHab.includes("1c")){',
+          'matchAvenir = INFOS_MATCHS ? (INFOS_MATCHS.details1C || INFOS_MATCHS.eq2) : null;',
+          'nomEqAvenir = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "Équipe 2";',
         '} else {',
           'matchAvenir = INFOS_MATCHS ? (INFOS_MATCHS.details1B || INFOS_MATCHS.eq1) : null;',
         '}',
-        'if(!matchAvenir || !matchAvenir.aMatch){',
-          'matchAvenir = INFOS_MATCHS ? (INFOS_MATCHS.details1B || INFOS_MATCHS.eq1) : null;',
+        'if(!aVraiMatch(matchAvenir)){',
+          'if(INFOS_MATCHS && aVraiMatch(INFOS_MATCHS.details1B || INFOS_MATCHS.eq1)){',
+            'matchAvenir = INFOS_MATCHS ? (INFOS_MATCHS.details1B || INFOS_MATCHS.eq1) : null;',
+            'nomEqAvenir = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "Équipe 1";',
+          '} else if(INFOS_MATCHS && aVraiMatch(INFOS_MATCHS.details1C || INFOS_MATCHS.eq2)){',
+            'matchAvenir = INFOS_MATCHS ? (INFOS_MATCHS.details1C || INFOS_MATCHS.eq2) : null;',
+            'nomEqAvenir = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "Équipe 2";',
+          '} else if(INFOS_MATCHS && aVraiMatch(INFOS_MATCHS.details1D || INFOS_MATCHS.eq3)){',
+            'matchAvenir = INFOS_MATCHS ? (INFOS_MATCHS.details1D || INFOS_MATCHS.eq3) : null;',
+            'nomEqAvenir = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "Équipe 3";',
+          '}',
         '}',
-        'if(matchAvenir && matchAvenir.aMatch){',
-          'if(matchAvenir.salle) CURRENT_MATCH_SALLE = matchAvenir.salle;',
+        'if(aVraiMatch(matchAvenir)){',
+          'if(matchAvenir.salle && matchAvenir.salle !== "-") CURRENT_MATCH_SALLE = matchAvenir.salle;',
           'if(statutBadge){ statutBadge.textContent = "⏳ SÉLECTION EN COURS"; statutBadge.style.background = "rgba(234,179,8,0.2)"; statutBadge.style.color = "#facc15"; }',
           'if(equipeBadge) equipeBadge.textContent = nomEqAvenir + " (Match à venir)";',
-          'if(advEl) advEl.textContent = "⚔️ Contre " + (matchAvenir.adversaire || "Adversaire FFHB");',
+          'if(advEl) advEl.textContent = "⚔️ Contre " + matchAvenir.adversaire;',
           'var detLignes = [];',
           'if(matchAvenir.dateMatch) detLignes.push("📅 " + matchAvenir.dateMatch + (matchAvenir.heureMatch ? (" à " + matchAvenir.heureMatch) : ""));',
-          'if(matchAvenir.salle) detLignes.push("📍 " + matchAvenir.salle);',
-          'if(matchAvenir.heureRdv) detLignes.push("⏱️ Rendez-vous : " + matchAvenir.heureRdv);',
+          'if(matchAvenir.salle && matchAvenir.salle !== "-") detLignes.push("📍 " + matchAvenir.salle);',
+          'if(matchAvenir.heureRdv && matchAvenir.heureRdv !== "-") detLignes.push("⏱️ Rendez-vous : " + matchAvenir.heureRdv);',
           'if(detEl) detEl.textContent = (detLignes.length ? detLignes.join(" • ") + " • " : "") + "Sélection finale en cours par le coach.";',
           'if(actBox) actBox.style.display = "flex";',
         '} else {',
-          'if(VACANCES_DATA && VACANCES_DATA.enVacancesCetteSemaine){',
-            'var infoV = VACANCES_DATA.infoSemaine || {};',
-            'if(statutBadge){ statutBadge.textContent = "🏖️ VACANCES"; statutBadge.style.background = "rgba(14,165,233,0.25)"; statutBadge.style.color = "#7dd3fc"; }',
-            'if(equipeBadge) equipeBadge.textContent = infoV.nom || "Trêve sportive";',
-            'if(advEl) advEl.textContent = "🏖️ Pas de match cette semaine";',
-            'var txtVac = "Période de vacances : " + (infoV.nom || "Vacances") + " (du " + (infoV.debutTexte || "") + " au " + (infoV.finTexte || "") + "). Aucun entraînement ni match programmé. Bon repos !";',
-            'if(infoV.commentaire) txtVac += " • " + infoV.commentaire;',
-            'if(detEl) detEl.textContent = txtVac;',
-            'if(actBox) actBox.style.display = "none";',
-          '} else {',
-            'if(statutBadge){ statutBadge.textContent = "⏳ MATCH DU WEEK-END"; statutBadge.style.background = "rgba(234,179,8,0.2)"; statutBadge.style.color = "#facc15"; }',
-            'if(equipeBadge) equipeBadge.textContent = "Sélection en préparation";',
-            'if(advEl) advEl.textContent = "Convocations en cours...";',
-            'if(detEl) detEl.textContent = "Les feuilles de match seront publiées très prochainement par l\'entraîneur.";',
-            'if(actBox) actBox.style.display = "none";',
-          '}',
+          'if(statutBadge){ statutBadge.textContent = "🏖️ PAS DE MATCH"; statutBadge.style.background = "rgba(59,130,246,0.15)"; statutBadge.style.color = "#93c5fd"; }',
+          'if(equipeBadge) equipeBadge.textContent = nomEqAvenir + " • Pas de match";',
+          'if(advEl) advEl.textContent = "🏖️ Pas de match officiel ce week-end";',
+          'if(detEl) detEl.textContent = "Aucun match officiel programmé ce week-end pour le club (exempt ou pause de calendrier). Bon repos !";',
+          'if(actBox) actBox.style.display = "none";',
         '}',
       '}',
       'var tBadgeMvp = document.getElementById("tileBadgeMvp");',
@@ -12821,10 +12883,18 @@ function reinitialiserPourNouvelleSemaine(ss) {
         const derniereCompoVals = shComp.getRange(lastRow, 1, 1, lastCol).getValues();
         // Vider tout le tableau sous l'en-tête
         shComp.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+        let dStr = String(derniereCompoVals[0][0] || '');
+        if (!/\[pr[ée]c[ée]dente\]/i.test(dStr)) {
+          derniereCompoVals[0][0] = '[Précédente] ' + dStr;
+        }
         // Réinsérer uniquement la composition précédente en ligne 2
         shComp.getRange(2, 1, 1, lastCol).setValues(derniereCompoVals);
+      } else if (lastRow === 2) {
+        let dStr = String(shComp.getRange(2, 1).getValue() || '');
+        if (dStr && !/\[pr[ée]c[ée]dente\]/i.test(dStr)) {
+          shComp.getRange(2, 1).setValue('[Précédente] ' + dStr);
+        }
       }
-      // Si lastRow === 2, il n'y a déjà qu'une seule composition (la précédente), elle est donc préservée
     }
   } catch (errComp) {
     Logger.log('Erreur reinitialiserPourNouvelleSemaine (Compositions): ' + errComp.message);

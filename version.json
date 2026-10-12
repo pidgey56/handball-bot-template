@@ -1,8 +1,12 @@
 {
-  "version": "1.20.1",
+  "version": "1.20.2",
   "releaseDate": "2026-10-12",
-  "title": "Correction de l'affichage WebApp : isolation stricte de l'Espace Joueur avant la connexion sur grand écran",
+  "title": "Correction du statut de convocation : vérification stricte de l'existence d'un match officiel",
   "changelog": [
+    "Correction du statut de convocation sur l'Espace Joueur : un joueur n'est plus marqué comme 🔥 CONVOQUÉ lorsqu'aucun match officiel n'est programmé pour son équipe (exempt, trêve ou match non programmé)",
+    "Nettoyage et sécurisation des données de match : élimination des tirets résiduels '-' (adversaire, salle, horaires) et affichage clair du statut '🏖️ PAS DE MATCH' / 'Exempt ce week-end' avec masquage automatique des boutons GPS Waze et Maps",
+    "Distinction intelligente entre la composition précédente archivée (conservée en référence) et la composition active validée de la semaine : évite de convoquer prématurément les joueurs sur la base de la compo de la semaine passée avant la sélection du coach",
+    "Sécurisation des liens GPS vers le gymnase : évite d'ouvrir des recherches erronées '- Gymnase' lorsqu'aucune salle valide n'est définie",
     "Correction du bug d'affichage sur desktop / écrans larges (>= 1024px) : l'Espace Joueur (playerBox) était affiché prématurément sous le formulaire de connexion à cause d'une règle CSS !important non scopée",
     "Isolation stricte du cycle de vie d'authentification : masquage garanti de playerBox tant que l'utilisateur n'est pas connecté (body:not(.user-logged-in)), et masquage garanti du loginBox dès la connexion réussie",
     "Réinitialisation automatique des disponibilités (Votes_Semaine) à l'envoi de chaque nouveau sondage WhatsApp : tous les joueurs de l'Effectif sont réinitialisés à 0 entraînement et 'NON' sur les créneaux de la nouvelle semaine",
