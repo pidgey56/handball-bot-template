@@ -283,22 +283,28 @@ function getClubConfig(ss) {
 
   let seancesTrain = [];
 
-  // 1. Lire depuis la feuille Configuration (B9:D18) si elle contient des créneaux
+  // 1. Lire depuis la feuille Configuration (B9:D16) si elle contient des créneaux (la ligne 17 étant l'en-tête Paramètres)
   if (shCfg) {
     try {
-      const rowsTrain = shCfg.getRange('B9:D18').getValues();
-      for (let i = 0; i < 5; i++) {
+      const rowsTrain = shCfg.getRange('B9:D16').getValues();
+      for (let i = 0; i < Math.min(4, Math.floor(rowsTrain.length / 2)); i++) {
         const rEnt = rowsTrain[i * 2];
         const rAbs = rowsTrain[i * 2 + 1];
         if (!rEnt || !rEnt[1]) continue;
+        const colB = String(rEnt[0] || '').trim().toLowerCase();
         const rawLabelEnt = String(rEnt[1]).trim();
         if (!rawLabelEnt || rawLabelEnt.toLowerCase() === 'désactivé' || rawLabelEnt.toLowerCase() === 'desactive') continue;
+        if (rawLabelEnt.toLowerCase() === 'valeur' || colB === 'paramètre' || /paramètre|valeur/i.test(rawLabelEnt)) continue;
+        // Si le libellé mentionne un match ou une poule, ce n'est PAS un entraînement
+        if (/match|poule|coupe|championnat/i.test(rawLabelEnt)) continue;
 
         const j = extraireJour(rawLabelEnt) || defJours[i] || ('Séance ' + (i + 1));
         const h = extraireHoraire(rawLabelEnt) || defHoraires[i] || '20h30';
         const baseId = mapJourId[j.toLowerCase()] || ('s' + (i + 1));
         const id = seancesTrain.some(function(x){ return x.id === baseId; }) ? (baseId + '_' + (i + 1)) : baseId;
         const actifEnt = (String(rEnt[2] || '').trim().toUpperCase() === 'OUI');
+        // Seules les séances actives (OUI) sont retenues comme entraînements de la semaine
+        if (!actifEnt) continue;
 
         let rawLabelAbs = (rAbs && rAbs[1]) ? String(rAbs[1]).trim() : '';
         if (rawLabelAbs.toLowerCase() === 'désactivé' || rawLabelAbs.toLowerCase() === 'desactive') rawLabelAbs = '';
@@ -311,12 +317,12 @@ function getClubConfig(ss) {
           horaire: h,
           label: rawLabelEnt,
           labelAbsent: labelAbs,
-          actif: actifEnt,
+          actif: true,
           actifAbsent: actifAbs
         });
       }
     } catch (e) {
-      Logger.log('Erreur lecture B9:D18 shCfg : ' + e.message);
+      Logger.log('Erreur lecture B9:D16 shCfg : ' + e.message);
     }
   }
 
@@ -327,7 +333,9 @@ function getClubConfig(ss) {
       if (rawProp) {
         const parsed = JSON.parse(rawProp);
         if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= 5) {
-          seancesTrain = parsed.map(function(s, idx) {
+          seancesTrain = parsed.filter(function(s) {
+            return s.actif !== false && s.actif !== 'NON' && !/match|poule|coupe|championnat/i.test(s.label || '');
+          }).map(function(s, idx) {
             const j = String(s.jour || ('Séance ' + (idx + 1))).trim();
             const h = extraireHoraire(s.horaire || '20h30');
             return {
@@ -336,7 +344,7 @@ function getClubConfig(ss) {
               horaire: h,
               label: s.label || ('Entraînement ' + j + ' ' + h),
               labelAbsent: s.labelAbsent || ('Absent ' + j),
-              actif: s.actif !== false,
+              actif: true,
               actifAbsent: s.actifAbsent !== false
             };
           });
@@ -347,12 +355,11 @@ function getClubConfig(ss) {
     }
   }
 
-  // 3. Fallback par défaut (3 séances)
+  // 3. Fallback par défaut (2 séances actives : Lundi et Mercredi)
   if (!seancesTrain.length) {
     seancesTrain = [
       { id: 'lun', jour: 'Lundi', horaire: '20h30', label: 'Entraînement Lundi 20h30', labelAbsent: 'Absent Lundi', actif: true, actifAbsent: true },
-      { id: 'mer', jour: 'Mercredi', horaire: '20h30', label: 'Entraînement Mercredi 20h30', labelAbsent: 'Absent Mercredi', actif: true, actifAbsent: true },
-      { id: 'jeu', jour: 'Jeudi', horaire: '20h30', label: 'Entraînement Jeudi 20h30', labelAbsent: 'Absent Jeudi', actif: false, actifAbsent: false }
+      { id: 'mer', jour: 'Mercredi', horaire: '20h30', label: 'Entraînement Mercredi 20h30', labelAbsent: 'Absent Mercredi', actif: true, actifAbsent: true }
     ];
   }
 
@@ -773,8 +780,10 @@ function initialiserOngletsWebApp(nbEquipesForce) {
   }
 
   let shVotes = ss.getSheetByName('Votes_Semaine');
-  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [
-    { jour: 'Lundi' }, { jour: 'Mercredi' }, { jour: 'Jeudi' }
+  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain.filter(function(s) {
+    return s.actif !== false && s.actif !== 'NON' && !/match|poule|coupe|championnat/i.test(s.label || '');
+  }) : [
+    { jour: 'Lundi' }, { jour: 'Mercredi' }
   ];
   const maxTrainStr = 'Nb Entraînements (0-' + seances.length + ')';
   const entetesVotes = ['Joueur', 'Poste', maxTrainStr, 'Dispo ' + cfg.nomEquipe1];
@@ -787,6 +796,10 @@ function initialiserOngletsWebApp(nbEquipesForce) {
     shVotes = ss.insertSheet('Votes_Semaine');
     shVotes.getRange(1, 1, 1, entetesVotes.length).setValues([entetesVotes]).setFontWeight('bold');
   } else {
+    const colMax = Math.max(shVotes.getLastColumn(), entetesVotes.length + 5);
+    if (colMax > entetesVotes.length) {
+      shVotes.getRange(1, entetesVotes.length + 1, Math.max(shVotes.getLastRow(), 1), colMax - entetesVotes.length).clear();
+    }
     shVotes.getRange(1, 1, 1, entetesVotes.length).setValues([entetesVotes]).setFontWeight('bold');
   }
 
@@ -1197,13 +1210,15 @@ function initialiserClasseurComplet() {
   ]);
 
   shCfg.getRange('B8:D8').setValues([['Ordre', "Intitulé de l'option dans le sondage", 'Actif (OUI/NON)']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
-  shCfg.getRange('B9:D14').setValues([
+  shCfg.getRange('B9:D16').setValues([
     [1, 'Entraînement Lundi 20h30', 'OUI'],
     [2, 'Absent Lundi', 'OUI'],
     [3, 'Entraînement Mercredi 20h30', 'OUI'],
     [4, 'Absent Mercredi', 'OUI'],
     [5, 'Entraînement Jeudi 20h30', 'NON'],
-    [6, 'Absent Jeudi', 'NON']
+    [6, 'Absent Jeudi', 'NON'],
+    [7, 'Désactivé', 'NON'],
+    [8, 'Désactivé', 'NON']
   ]);
 
   shCfg.getRange('B17:D17').setValues([['Paramètre', 'Valeur', 'Aperçu / Description']]).setFontWeight('bold').setBackground('#1e293b').setFontColor('#ffffff');
@@ -5468,8 +5483,10 @@ function enregistrerVotesDansSheet(votes) {
     if (alias) mapNom[alias] = { nom: nomPropre, poste: poste };
   });
 
-  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [
-    { jour: 'Lundi' }, { jour: 'Mercredi' }, { jour: 'Jeudi' }
+  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain.filter(function(s) {
+    return s.actif !== false && s.actif !== 'NON' && !/match|poule|coupe|championnat/i.test(s.label || '');
+  }) : [
+    { jour: 'Lundi' }, { jour: 'Mercredi' }
   ];
   const nbCols = 3 + cfg.nbEquipes + seances.length;
   const dictionnaireJoueurs = {};
@@ -5558,7 +5575,8 @@ function enregistrerVotesDansSheet(votes) {
     return String(a[0] || '').localeCompare(String(b[0] || ''), 'fr', { sensitivity: 'base' });
   });
 
-  if (shVotes.getLastRow() > 1) shVotes.getRange(2, 1, shVotes.getLastRow() - 1, nbCols).clearContent();
+  const colMax = Math.max(shVotes.getLastColumn(), nbCols + 5);
+  if (shVotes.getLastRow() > 1) shVotes.getRange(2, 1, shVotes.getLastRow() - 1, colMax).clearContent();
   if (lignesFinales.length > 0) shVotes.getRange(2, 1, lignesFinales.length, nbCols).setValues(lignesFinales);
   return lignesFinales.length;
 }
@@ -5658,10 +5676,11 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
   }
   const joueurs = [];
 
-  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [
+  const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain.filter(function(s) {
+    return s.actif !== false && s.actif !== 'NON' && !/match|poule|coupe|championnat/i.test(s.label || '');
+  }) : [
     { id: 'lun', jour: 'Lundi', horaire: '20h30', label: 'Entraînement Lundi 20h30', actif: true },
-    { id: 'mer', jour: 'Mercredi', horaire: '20h30', label: 'Entraînement Mercredi 20h30', actif: true },
-    { id: 'jeu', jour: 'Jeudi', horaire: '20h30', label: 'Entraînement Jeudi 20h30', actif: true }
+    { id: 'mer', jour: 'Mercredi', horaire: '20h30', label: 'Entraînement Mercredi 20h30', actif: true }
   ];
 
   const entrainements = {};
@@ -5974,18 +5993,18 @@ function enregistrerConfigEntrainements(telCoach, pinCoach, creneaux, nbSeances)
     Logger.log('Erreur PropertiesService: ' + e.message);
   }
 
-  // Mettre à jour la feuille Configuration (B9:D14) pour les 3 premières séances
+  // Mettre à jour la feuille Configuration (B9:D18) pour les 5 créneaux possibles
   const ss = getSpreadsheet();
   const shCfg = ss.getSheetByName('Configuration');
   if (shCfg) {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const rowIdx = 9 + (i * 2);
-      if (i < cList.length) {
+      if (i < cList.length && cList[i].actif) {
         const c = cList[i];
         const labelEnt = c.label;
         const labelAbs = c.labelAbsent || ('Absent ' + c.jour);
-        const actifStr = c.actif ? 'OUI' : 'NON';
-        const actifAbsStr = (c.actif && c.actifAbsent !== false) ? 'OUI' : 'NON';
+        const actifStr = 'OUI';
+        const actifAbsStr = (c.actifAbsent !== false) ? 'OUI' : 'NON';
         shCfg.getRange(rowIdx, 3, 1, 2).setValues([[labelEnt, actifStr]]);
         shCfg.getRange(rowIdx + 1, 3, 1, 2).setValues([[labelAbs, actifAbsStr]]);
       } else {
@@ -5994,6 +6013,10 @@ function enregistrerConfigEntrainements(telCoach, pinCoach, creneaux, nbSeances)
       }
     }
   }
+
+  try {
+    initialiserOngletsWebApp();
+  } catch (e) {}
 
   try {
     genererSondageHebdo();
@@ -7852,8 +7875,7 @@ function construireHtmlWebApp() {
     '  }',
     '  return s;',
     '}',
-    'var NOUVEAU_LOGO_IMPORTE = ""; var NOUVEAU_NOM_CLUB_IMPORTE = ""; var NOUVEAU_SALLE_IMPORTEE = "";',
-    'var SEANCES_TRAIN = ' + JSON.stringify(cfg.seancesTrain || [{ id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi (20h30)", actif: true }, { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi (20h30)", actif: true }, { id: "jeu", jour: "Jeudi", horaire: "20h30", label: "Jeudi (20h30)", actif: false }]) + ';',
+    'var SEANCES_TRAIN = ' + JSON.stringify(((cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [{ id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi (20h30)", actif: true }, { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi (20h30)", actif: true }]).filter(function(s){ return s.actif !== false && s.actif !== 'NON' && !/match|poule|coupe|championnat/i.test(s.label || ''); })) + ';',
     'var DERNIERE_COMPO = null;',
     'var EQUIPE_TACTIQUE_COURANTE = "1B";',
     'var COMPOSITIONS_TACTIQUES = { "1B": {}, "1C": {}, "1D": {} };',
@@ -9144,11 +9166,11 @@ function construireHtmlWebApp() {
     '  var cont = document.getElementById("trainTabsContainer");',
     '  if(!cont) return;',
     '  cont.innerHTML = "";',
-    '  if(!SEANCES_TRAIN || !SEANCES_TRAIN.length){',
+    '  SEANCES_TRAIN = (SEANCES_TRAIN || []).filter(function(s){ return s && s.actif !== false && s.actif !== "NON" && !/match|poule|coupe|championnat/i.test(s.label || ""); });',
+    '  if(!SEANCES_TRAIN.length){',
     '    SEANCES_TRAIN = [',
     '      { id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi 20h30", actif: true },',
-    '      { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi 20h30", actif: true },',
-    '      { id: "jeu", jour: "Jeudi", horaire: "20h30", label: "Jeudi 20h30", actif: false }',
+    '      { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi 20h30", actif: true }',
     '    ];',
     '  }',
     '  var activeExists = SEANCES_TRAIN.some(function(s){ return s.id === SEANCE_COURANTE; });',
@@ -12796,8 +12818,10 @@ function reinitialiserPourNouvelleSemaine(ss) {
     }
     const shEff = ss.getSheetByName('Effectif');
     if (shVotes) {
-      const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [
-        { jour: 'Lundi' }, { jour: 'Mercredi' }, { jour: 'Jeudi' }
+      const seances = (cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain.filter(function(s) {
+        return s.actif !== false && s.actif !== 'NON' && !/match|poule|coupe|championnat/i.test(s.label || '');
+      }) : [
+        { jour: 'Lundi' }, { jour: 'Mercredi' }
       ];
       const nbCols = 3 + cfg.nbEquipes + seances.length;
 
@@ -12809,6 +12833,12 @@ function reinitialiserPourNouvelleSemaine(ss) {
       seances.forEach(function(s) {
         entetesVotes.push('Dispo ' + (s.jour || 'Entraînement'));
       });
+
+      const colMax = Math.max(shVotes.getLastColumn(), entetesVotes.length + 5);
+      if (colMax > entetesVotes.length) {
+        shVotes.getRange(1, entetesVotes.length + 1, Math.max(shVotes.getLastRow(), 1), colMax - entetesVotes.length).clear();
+      }
+
       shVotes.getRange(1, 1, 1, entetesVotes.length).setValues([entetesVotes])
         .setBackground(cfg.couleurSecondaire || '#334155')
         .setFontColor(getContrastColor(cfg.couleurSecondaire || '#334155'))
@@ -12821,7 +12851,7 @@ function reinitialiserPourNouvelleSemaine(ss) {
       // Vider tout le contenu sous la ligne 1
       const lastRowVotes = shVotes.getLastRow();
       if (lastRowVotes > 1) {
-        shVotes.getRange(2, 1, lastRowVotes - 1, Math.max(shVotes.getLastColumn(), nbCols)).clearContent();
+        shVotes.getRange(2, 1, lastRowVotes - 1, colMax).clearContent();
       }
 
       // Remplir avec tous les joueurs de l'Effectif

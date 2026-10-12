@@ -1,9 +1,14 @@
 {
-  "version": "1.20.2",
+  "version": "1.20.3",
   "releaseDate": "2026-10-12",
-  "title": "Correction du statut de convocation : vérification stricte de l'existence d'un match officiel",
+  "title": "Suppression du créneau d'entraînement fantôme du samedi et nettoyage des colonnes de disponibilités",
   "changelog": [
-    "Correction du statut de convocation sur l'Espace Joueur : un joueur n'est plus marqué comme 🔥 CONVOQUÉ lorsqu'aucun match officiel n'est programmé pour son équipe (exempt, trêve ou match non programmé)",
+    "Correction de la détection des entraînements : restriction stricte aux lignes B9:D16 de l'onglet Configuration, empêchant l'en-tête de la table des Paramètres (ligne 17 'Paramètre | Valeur') d'être interprété par erreur comme un créneau d'entraînement 'Samedi 20h30'",
+    "Exclusion automatique des matchs de la liste des entraînements : détection des mots-clés (match, poule, coupe) pour empêcher toute confusion entre match officiel et séance d'entraînement",
+    "Filtrage strict des séances actives : seules les séances cochées 'OUI' sont désormais affichées dans la WebApp et intégrées dans le calcul 'Nb Entraînements (0-X)' et les colonnes de 'Votes_Semaine'",
+    "Nettoyage automatique des colonnes fantômes dans 'Votes_Semaine' : effacement complet des anciennes colonnes résiduelles (ex: 'Dispo Samedi') lors de la mise à jour des onglets ou de la réinitialisation hebdomadaire",
+    "Synchronisation intégrale des créneaux dans la feuille Configuration : les 5 créneaux possibles sont désormais proprement mis à jour ou désactivés lors de la configuration via la WebApp",
+    "Correction du statut de convocation : vérification stricte de l'existence d'un match officiel",
     "Nettoyage et sécurisation des données de match : élimination des tirets résiduels '-' (adversaire, salle, horaires) et affichage clair du statut '🏖️ PAS DE MATCH' / 'Exempt ce week-end' avec masquage automatique des boutons GPS Waze et Maps",
     "Distinction intelligente entre la composition précédente archivée (conservée en référence) et la composition active validée de la semaine : évite de convoquer prématurément les joueurs sur la base de la compo de la semaine passée avant la sélection du coach",
     "Sécurisation des liens GPS vers le gymnase : évite d'ouvrir des recherches erronées '- Gymnase' lorsqu'aucune salle valide n'est définie",
