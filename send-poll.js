@@ -301,6 +301,15 @@ async function startBot() {
   if (isConnecting) return;
   isConnecting = true;
 
+  if (MODE === 'setup' && PHONE_NUMBER) {
+    console.log('Mode setup avec numéro : réinitialisation de auth_info pour demander un nouveau code de jumelage...');
+    if (fs.existsSync('./auth_info')) {
+      try {
+        fs.rmSync('./auth_info', { recursive: true, force: true });
+      } catch (e) {}
+    }
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
 
   const sock = makeWASocket({
@@ -456,7 +465,21 @@ async function startBot() {
       isConnecting = false;
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       console.log('Connexion fermée (code: ' + statusCode + ')');
-      if (statusCode !== DisconnectReason.loggedOut && !actionDejaLancee) {
+      if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
+        console.log('====================================================');
+        console.log('❌ SESSION WHATSAPP EXPIRÉE OU DÉCONNECTÉE (Code 401)');
+        console.log('WhatsApp a fermé la session (appareil dissocié ou session expirée).');
+        console.log('👉 COMMENT RÉASSOCIER LE BOT EN 1 MINUTE :');
+        console.log('1. Allez sur votre dépôt GitHub > onglet "Actions"');
+        console.log('2. Cliquez sur le workflow "WhatsApp Poll Bot" à gauche');
+        console.log('3. Cliquez sur "Run workflow" :');
+        console.log('   - Mode : setup');
+        console.log('   - Numéro : votre numéro de téléphone (ex: 33612345678)');
+        console.log('4. Ouvrez le log du run et entrez le code de jumelage dans WhatsApp');
+        console.log('   (WhatsApp > Paramètres > Appareils connectés > Associer un appareil)');
+        console.log('====================================================');
+        process.exit(1);
+      } else if (!actionDejaLancee) {
         await delay(5000);
         startBot();
       }
