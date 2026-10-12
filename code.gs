@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '1.20.2';
+const APP_VERSION = '1.20.3';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 
@@ -6599,7 +6599,7 @@ function construireHtmlWebApp() {
             '[[div id="updateBannerBox" style="display:none;background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #6366f1;border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,0.35);"]]',
               '[[div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"]]',
                 '[[span style="font-weight:900;color:#c7d2fe;font-size:0.85rem;display:flex;align-items:center;gap:6px;"]]MISE À JOUR DISPONIBLE[[/span]]',
-                '[[span id="updateBadgeVer" style="background:#4338ca;color:#fff;padding:2px 8px;border-radius:99px;font-size:0.75rem;font-weight:800;"]]v1.4.0[[/span]]',
+                '[[span id="updateBadgeVer" style="background:#4338ca;color:#fff;padding:2px 8px;border-radius:99px;font-size:0.75rem;font-weight:800;"]]v' + APP_VERSION + '[[/span]]',
               '[[/div]]',
               '[[div id="updateBannerTitle" style="font-size:0.8rem;color:#e0e7ff;margin-bottom:8px;"]]Nouvelles fonctionnalités pour votre club ![[/div]]',
               '[[div style="display:flex;gap:6px;"]]',
@@ -7254,7 +7254,7 @@ function construireHtmlWebApp() {
         '[[/div]]',
         '[[div id="modalUpdateContent" style="font-size:0.85rem;color:#d4d4d4;line-height:1.45;"]]',
           '[[div style="background:#1e1e24;border:1px solid #312e81;padding:10px 12px;border-radius:10px;margin-bottom:12px;"]]',
-            '[[div style="font-weight:800;color:#e0e7ff;margin-bottom:4px;" id="modalUpdateTitle"]]Version v1.13.0[[/div]]',
+            '[[div style="font-weight:800;color:#e0e7ff;margin-bottom:4px;" id="modalUpdateTitle"]]Version v' + APP_VERSION + '[[/div]]',
             '[[div style="font-size:0.75rem;color:#a5b4fc;" id="modalUpdateMeta"]]Publiée récemment[[/div]]',
             '[[ul id="modalUpdateChangelog" style="margin:8px 0 0 16px;padding:0;color:#cbd5e1;font-size:0.8rem;line-height:1.4;"]][[/ul]]',
           '[[/div]]',
