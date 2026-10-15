@@ -105,6 +105,10 @@ Le geste tactile s'adapte automatiquement à votre nombre d'équipes :
    - La liste ordonnée des joueurs convoqués par équipe.
 3. Cliquez sur **📤 Publier sur WhatsApp** : la convocation part instantanément dans le groupe !
 
+> [!NOTE]
+> **Cohésion de groupe & Préservation des ego :**
+> Les joueurs non retenus / au repos ne figurent pas dans le message public diffusé sur WhatsApp. Ils restent en revanche consultables par le coach sur la WebApp et archivés dans Google Sheets.
+
 ---
 
 ## 🎨 3. Personnaliser le Blason et les Couleurs du Club

@@ -81,7 +81,8 @@ Vous avez deux méthodes au choix :
 1. Créez un classeur vierge sur [sheets.new](https://sheets.new).
 2. Allez dans **Extensions > Apps Script**.
 3. Collez le code de [`code.gs`](code.gs), enregistrez et rechargez la feuille.
-4. Cliquez sur le menu **« ⚡ Handball Bot » > « ✨ 6. Initialiser le classeur complet »** : tous les onglets, formules et styles sont créés automatiquement en 1 clic !
+4. Cliquez sur le menu **« ⚡ Handball Bot » > « ⚠️ 6. Réinitialiser à zéro (Nouveau club vierge uniquement) »** : tous les onglets, formules et styles sont créés automatiquement en 1 clic !  
+   *(Si vous disposez déjà d'un classeur avec des données et souhaitez simplement créer ou ajuster les onglets sans rien écraser, utilisez plutôt **« 🔄 5. Mettre à jour les onglets (Conserver mes données) »**).*
 
 ---
 
@@ -157,12 +158,14 @@ Dans l'onglet **Configuration** de votre Google Sheet :
   - **Couleur Équipe 1** (`C28`) : Couleur distinctive de l'équipe 1 (badges, colonne, maillot). Ex: `#3b82f6` (Bleu).
   - **Couleur Équipe 2** (`C29`) : Couleur distinctive de l'équipe 2. Ex: `#f97316` (Orange).
   - **Couleur Équipe 3** (`C30`) : Couleur distinctive de l'équipe 3. Ex: `#10b981` (Émeraude).
+- **Nombre d'équipes actives** (`C31`) : `1`, `2` ou `3` (force le nombre exact d'équipes affichées dans la WebApp et adapte le Mode Tinder).
+- **Page FFHB du Club (URL)** (`C32`) : Lien de votre club sur `monclub.ffhandball.fr` (ex: `https://monclub.ffhandball.fr/clubs/athletic-club-boulogne-billancourt/`). Permet à la WebApp d'aspirer automatiquement le blason haute résolution et la charte graphique officielle du club en un clic !
 
 > [!TIP]
 > **Personnalisation visuelle en 1 clic :**
-> Vous pouvez aussi configurer vos couleurs directement depuis votre smartphone sur la WebApp (bouton **🎨 Couleurs** ou via le menu Coach **🎨 Couleurs & Identité du Club**).
+> Vous pouvez aussi configurer vos couleurs directement depuis votre smartphone ou PC sur la WebApp (bouton **🎨 Couleurs** ou via le menu Coach **🎨 Couleurs & Identité du Club**).
 > Un sélecteur interactif propose des palettes prêtes à l'emploi (HBC Nantes, PSG, Montpellier MHB, USAM Nîmes, Chambéry, etc.) avec aperçu en temps réel et sauvegarde automatique dans le Google Sheet !
-> Si vous modifiez les couleurs directement dans la feuille Google Sheet, cliquez sur le menu **`⚡ Handball Bot` > `🎨 7. Actualiser les couleurs et styles`** pour recalculer les pastilles et la couleur des onglets.
+> Si vous modifiez les couleurs directement dans la feuille Google Sheet, cliquez sur le menu **`⚡ Handball Bot` > `🎨 7. Réorganiser et embellir tout le classeur`** pour recalculer les pastilles et la couleur des onglets.
 
 ### 2. Équipes & Poules FFHB (Lignes 4 à 6 - 3 équipes maximum)
 Pour préserver une ergonomie optimale sur smartphone et un mode Tinder fluide, le système gère **jusqu'à 3 équipes maximum** (ex: SG1, SG2, SG3) :
@@ -182,9 +185,10 @@ Pour préserver une ergonomie optimale sur smartphone et un mode Tinder fluide, 
 > - **2 équipes** : 👈 Gauche = Équipe 1 | 👉 Droite = Équipe 2 | 👇 Bas = Repos
 > - **3 équipes** : 👆 Haut = Équipe 1 | 👈 Gauche = Équipe 2 | 👉 Droite = Équipe 3 | 👇 Bas = Repos
 
-### 3. Créneaux d'Entraînement (Lignes 9 à 14)
-- Personnalisez l'intitulé de vos entraînements (jours, horaires, gymnase).
-- Mettez **`OUI`** ou **`NON`** dans la colonne **Actif** pour inclure ou exclure un créneau du sondage WhatsApp hebdomadaire.
+### 3. Créneaux d'Entraînement (1 à 5 séances par semaine)
+Vous avez deux manières très simples de régler vos séances :
+- **Depuis la WebApp (Recommandé)** : Dans l'**Espace Coach**, cliquez sur **« Configurer créneaux »**. Vous pouvez y ajuster les jours, les heures, le nombre d'entraînements actifs (1 à 5 séances), et les intégrer ou non au sondage WhatsApp du lundi sans jamais toucher au tableur !
+- **Depuis Google Sheets (Lignes B9:D16)** : Personnalisez l'intitulé de chaque séance (ex: `Entraînement Lundi 20h30`), mettez **`OUI`** ou **`NON`** dans la colonne **Actif** pour l'inclure dans le sondage, et renseignez l'option d'absence correspondante (ex: `Absent Lundi`). Seules les séances marquées **`OUI`** sont comptabilisées dans le volume d'entraînement hebdomadaire.
 
 ---
 
@@ -229,6 +233,10 @@ Dans l'onglet **Effectif** :
    - En quelques secondes, le sondage officiel est publié dans votre groupe WhatsApp !
 3. Les joueurs votent directement dans le groupe WhatsApp.
 4. Les votes sont récupérés automatiquement toutes les heures par GitHub Actions. Vous pouvez forcer la lecture à tout moment via **« 📥 3. Récupérer les votes WhatsApp »** puis **« ⚡ 4. Importer les votes depuis GitHub »**.
+
+> [!NOTE]
+> **Préservation des ego lors des annonces WhatsApp :**
+> Lorsque vous publiez les compositions de match ou les séances d'entraînement sur WhatsApp depuis la WebApp, seuls les joueurs retenus et convoqués sont listés publiquement. Les joueurs non retenus / au repos restent parfaitement visibles par le coach dans la WebApp et archivés dans les onglets *Compositions* et *Entrainements*.
 
 ---
 

@@ -91,6 +91,7 @@ Le cœur de Handball Bot : finis les brouillons sur papier ou les prises de têt
 > **La nouveauté demandée par les coachs** : quand un joueur n'est pas retenu, il ne disparaît plus dans la nature !
 * Une colonne / zone dédiée **« Au Repos / Non retenus »** (avec badge rouge) liste tous les joueurs écartés pour le week-end.
 * **Récupération instantanée** : si un joueur titulaire se blesse à l'échauffement ou déclare forfait, vous pouvez rebasculer un joueur au repos vers les disponibles ou directement dans l'équipe en un clic.
+* **Préservation des ego sur WhatsApp** : Les joueurs non retenus restent visibles pour le coach sur la WebApp et dans le tableur, mais sont automatiquement masqués de l'annonce publique diffusée sur WhatsApp pour préserver la cohésion d'équipe.
 
 ---
 
