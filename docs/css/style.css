@@ -1302,7 +1302,7 @@ body.theme-slate .carnet-tab.active {
   color: #fff!important;
   font-size: 2.6rem!important;
   font-weight: 900!important;
-  display: flex!important;
+  display: flex;
   align-items: center!important;
   justify-content: center!important;
 }
@@ -1603,6 +1603,9 @@ body.user-logged-in .carnet-tab-label {
   overflow: hidden!important;
   position: relative!important;
   background: #f1f5f9!important;
+  display: flex!important;
+  align-items: center!important;
+  justify-content: center!important;
 }
 
 .player-photo-img {

@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.1.5">
+  <link rel="stylesheet" href="css/style.css?v=2.1.6">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -103,7 +103,7 @@
           <div class="masking-tape masking-tape-orange"></div>
           <div class="player-photo-container">
             <img id="playerImgPreview" class="player-photo-img" style="display:none;">
-            <div id="playerInitialPreview" class="player-photo-fallback">J</div>
+            <div id="playerInitialPreview" class="player-photo-fallback" style="display:none;">J</div>
           </div>
           <div class="player-details-container">
             <div id="playerChouchouBadgeCard" style="display:none;margin-bottom:3px;"><span class="chouchou-badge">❤️ Chouchou du coach</span></div>
@@ -1466,12 +1466,12 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/api.js?v=2.1.5"></script>
-  <script src="js/app.js?v=2.1.5"></script>
+  <script src="js/api.js?v=2.1.6"></script>
+  <script src="js/app.js?v=2.1.6"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.1.5').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.1.6').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

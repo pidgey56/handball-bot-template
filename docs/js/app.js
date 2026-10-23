@@ -1876,13 +1876,13 @@ if(pInit) pInit.textContent = pLtr;
 if(pObj.photo){
 if(pImg){
 pImg.src = pObj.photo;
-pImg.style.display = "block";
-pImg.onerror = function(){ pImg.style.display = "none"; if(pInit) pInit.style.display = "flex"; };
+pImg.style.setProperty("display", "block", "important");
+pImg.onerror = function(){ pImg.style.setProperty("display", "none", "important"); if(pInit) pInit.style.setProperty("display", "flex", "important"); };
 }
-if(pInit) pInit.style.display = "none";
+if(pInit) pInit.style.setProperty("display", "none", "important");
 } else {
-if(pInit) pInit.style.display = "flex";
-if(pImg){ pImg.src = ""; pImg.style.display = "none"; }
+if(pInit) pInit.style.setProperty("display", "flex", "important");
+if(pImg){ pImg.src = ""; pImg.style.setProperty("display", "none", "important"); }
 }
 var isChou = estJoueurChouchou(nom);
 var chouBadge = document.getElementById("playerChouchouBadgeCard");
