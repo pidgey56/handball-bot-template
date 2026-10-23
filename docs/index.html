@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.6">
+  <link rel="stylesheet" href="css/style.css?v=2.2.7">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -561,11 +561,35 @@
 </div>
 </header>
 <main class="roster-wrap">
-<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
-<input id="inpSearchRoster" class="inp-field" style="max-width:400px;" type="text" placeholder="Rechercher un joueur..." oninput="filtrerRoster(this.value)">
-<div style="font-size:0.8rem;color:#a3a3a3;">Cliquez sur une fiche pour modifier la photo, le poste, l'équipe ou la note coach</div>
+<div class="roster-toolbar">
+  <div class="roster-search-box">
+    <span class="roster-search-icon">🔍</span>
+    <input id="inpSearchRoster" class="inp-field roster-search-input" type="text" placeholder="Rechercher par nom, poste, équipe, note..." oninput="filtrerRosterTexte(this.value)">
+    <button type="button" id="btnRosterClearSearch" class="btn-reset roster-clear-search" style="display:none;" onclick="effacerRechercheRoster()">✕</button>
+  </div>
+  <div class="roster-info-hint">💡 Cliquez sur un joueur pour modifier sa photo, son poste, son équipe ou ses notes.</div>
 </div>
+
+<!-- Filtres rapides par équipe et catégorie -->
+<div class="roster-filter-pills" id="rosterFilterPills">
+  <button type="button" class="roster-pill active" onclick="definirFiltreRoster('all', this)">Tous</button>
+</div>
+
+<!-- Compteur de filtrage actif -->
+<div class="roster-status-bar" id="rosterStatusBar" style="display:none;">
+  <span id="rosterFilteredCount">42 joueurs</span>
+</div>
+
+<!-- Grille responsive des cartes joueurs -->
 <div class="roster-grid" id="rosterGrid"></div>
+
+<!-- Message si aucun joueur ne correspond -->
+<div id="rosterEmptyState" class="roster-empty-state" style="display:none;">
+  <div class="roster-empty-icon">🔍</div>
+  <h3>Aucun joueur trouvé</h3>
+  <p>Aucun joueur ne correspond à votre recherche ou au filtre sélectionné.</p>
+  <button type="button" class="btn-reset" onclick="reinitialiserFiltresRoster()">Réinitialiser les filtres</button>
+</div>
 </main>
 </div>
 <div class="modal-bg" id="modalJoueurBg" onclick="fermerModalSurBg(event)">
@@ -1555,7 +1579,7 @@
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
   <script src="js/spakta-data.js?v=2.2.6"></script>
   <script src="js/api.js?v=2.2.6"></script>
-  <script src="js/app.js?v=2.2.6"></script>
+  <script src="js/app.js?v=2.2.7"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {

@@ -953,61 +953,433 @@ body.theme-slate .handball-field-wrapper {
   color: #fff;
 }
 
-/* Roster / Trombinoscope (Vestiaire) */
+/* ==============================================================================
+ * ROSTER / EFFECTIF DU CLUB (Trombinoscope Haute Lisibilité PC & Mobile)
+ * ============================================================================== */
+
+.roster-wrap {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 18px 20px 40px;
+  box-sizing: border-box;
+}
+
+.roster-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.roster-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 260px;
+  max-width: 440px;
+}
+
+.roster-search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.roster-search-input {
+  width: 100%;
+  padding-left: 36px;
+  padding-right: 32px;
+  height: 42px;
+  font-size: 0.9rem;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  color: var(--text-main);
+  box-shadow: var(--card-shadow);
+  transition: all 0.2s ease;
+}
+
+.roster-search-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
+}
+
+.roster-clear-search {
+  position: absolute;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-page);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+}
+
+.roster-info-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Filtres rapides par équipe et poste */
+.roster-filter-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding-bottom: 4px;
+}
+
+.roster-pill {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.roster-pill:hover {
+  border-color: var(--color-primary);
+  color: var(--text-main);
+}
+
+.roster-pill.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+}
+
+.roster-status-bar {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* Grille responsive des fiches joueurs */
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+/* Carte Athlète individuelle */
 .rcard {
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);
   border-radius: 16px;
-  padding: 14px 18px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   gap: 14px;
   cursor: pointer;
-  box-shadow: 2px 2.5px 0px var(--card-border);
-  transition: all 0.15s ease;
+  box-shadow: var(--card-shadow);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
   overflow: hidden;
   box-sizing: border-box;
 }
+
 .rcard:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 4px 0px var(--card-border);
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+  box-shadow: var(--card-shadow-hover);
 }
-.rcard .pmini {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
-  max-width: 48px;
-  max-height: 48px;
-  font-size: 1.2rem;
-  overflow: hidden !important;
+
+.rcard:active {
+  transform: translateY(0);
+}
+
+/* Avatar dans la carte */
+.rcard-avatar-wrap {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  min-height: 54px;
+  max-width: 54px;
+  max-height: 54px;
   border-radius: 50%;
+  overflow: hidden;
   flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--card-border);
+  background: var(--bg-page);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
 }
-.rcard .pmini img {
+
+.rcard:hover .rcard-avatar-wrap {
+  border-color: var(--color-primary);
+}
+
+.rcard-avatar-wrap img {
   width: 100% !important;
   height: 100% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
   object-fit: cover !important;
-  display: block !important;
   border-radius: 50% !important;
+  display: block !important;
 }
-.rcard .pname {
-  font-size: 1.05rem;
+
+.rcard-initiale {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
-.rcard .pmeta {
-  font-size: 0.85rem;
+
+/* Badge N° Maillot officiel sur l'avatar */
+.rcard-jersey-pill {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1.2;
 }
-.rnote {
-  font-family: 'Patrick Hand', cursive, sans-serif;
-  font-size: 0.8rem;
+
+body.theme-slate .rcard-jersey-pill {
+  background: var(--color-primary);
+  border-color: #1e2530;
+}
+
+/* Corps de la carte */
+.rcard-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rcard-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rcard-name {
+  font-weight: 800;
+  font-size: 1.02rem;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+/* Ligne des badges (Poste, Équipe, Stats) */
+.rcard-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+/* Badges de poste avec haut contraste */
+.rcard-poste {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.12);
   color: var(--text-muted);
-  margin-top: 3px;
+  border: 1px solid var(--card-border);
+}
+
+.rcard-poste.poste-gardien {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.rcard-poste.poste-ailier {
+  background: #f0f9ff;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.rcard-poste.poste-arriere {
+  background: #faf5ff;
+  color: #6b21a8;
+  border-color: #e9d5ff;
+}
+
+.rcard-poste.poste-pivot {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.rcard-poste.poste-demi {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+body.theme-slate .rcard-poste.poste-gardien { background: #064e3b; color: #a7f3d0; border-color: #047857; }
+body.theme-slate .rcard-poste.poste-ailier { background: #0c4a6e; color: #bae6fd; border-color: #0369a1; }
+body.theme-slate .rcard-poste.poste-arriere { background: #581c87; color: #e9d5ff; border-color: #7e22ce; }
+body.theme-slate .rcard-poste.poste-pivot { background: #78350f; color: #fde68a; border-color: #b45309; }
+body.theme-slate .rcard-poste.poste-demi { background: #1e3a8a; color: #bfdbfe; border-color: #2563eb; }
+
+/* Badge Équipe */
+.rcard-team {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(234, 88, 12, 0.12);
+  color: var(--color-primary);
+  border: 1px solid rgba(234, 88, 12, 0.25);
+}
+
+/* Badge Stats Spakta */
+.rcard-stats-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bg-page);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Note Confidentielle du Coach façon Post-it */
+.rcard-note {
+  background: var(--postit-yellow);
+  border: 1px dashed var(--postit-yellow-border);
+  color: var(--text-main);
+  font-family: 'Patrick Hand', cursive, sans-serif;
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-top: 4px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
+}
+
+body.theme-slate .rcard-note {
+  background: var(--postit-yellow);
+  border-color: var(--postit-yellow-border);
+  color: #fef08a;
+}
+
+/* Affordance de clic / Éditer */
+.rcard-arrow {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  opacity: 0.5;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding-left: 4px;
+}
+
+.rcard:hover .rcard-arrow {
+  opacity: 1;
+  color: var(--color-primary);
+  transform: translateX(2px);
+}
+
+/* État vide */
+.roster-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--card-bg);
+  border: 1.5px dashed var(--card-border);
+  border-radius: 16px;
+  margin-top: 16px;
+}
+
+.roster-empty-icon {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.roster-empty-state h3 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  color: var(--text-main);
+}
+
+.roster-empty-state p {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Adaptations Mobile (< 640px) */
+@media (max-width: 640px) {
+  .roster-wrap {
+    padding: 12px 14px 30px;
+  }
+  .roster-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .roster-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .roster-search-box {
+    max-width: 100%;
+  }
+  .roster-filter-pills {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .roster-pill {
+    flex-shrink: 0;
+  }
+  .rcard {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  .rcard-avatar-wrap {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+  .rcard-name {
+    font-size: 0.96rem;
+  }
 }
 
 /* Mode Tinder defini en section specifique */

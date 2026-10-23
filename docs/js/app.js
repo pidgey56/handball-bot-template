@@ -1,7 +1,7 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
-var APP_VERSION = '2.2.6';
+var APP_VERSION = '2.2.7';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -2062,7 +2062,7 @@ function synchroniserStatsSpakta(callback) {
   // Si pas encore de données, charger le snapshot local statique
   if (!STATS_SPAKTA) {
     try {
-      fetch('js/spakta-data.json?v=2.2.6')
+      fetch('js/spakta-data.json?v=2.2.7')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (!STATS_SPAKTA && data && data.joueurs) {
@@ -3908,37 +3908,239 @@ function initSortables(){
     });
   } catch(e){}
 }
+var ROSTER_FILTRE_COURANT = "all";
+var ROSTER_RECHERCHE_TEXTE = "";
+
 function rendreRosterGrid(){
-var grid = document.getElementById("rosterGrid"); if(!grid) return; grid.innerHTML = "";
-document.getElementById("rosterCount").textContent = EFFECTIF_COMPLET.length + " joueurs";
-EFFECTIF_COMPLET.forEach(function(p){
-var card = document.createElement("div"); card.className = "rcard"; card.onclick = function(){ ouvrirModalJoueur(p.nom); };
-var isChou = estJoueurChouchou(p.nom);
-var isMvp = estJoueurMvp(p.nom);
-var isChevre = estJoueurChevre(p.nom);
-var avCls = "pmini"; if(isChou) avCls += " is-chouchou"; if(isMvp) avCls += " is-mvp"; if(isChevre) avCls += " is-chevre";
-var av = document.createElement("div"); av.className = avCls;
-av.style.cssText = "width:48px;height:48px;min-width:48px;min-height:48px;max-width:48px;max-height:48px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;";
-var rInit = (p.nom || "").trim().charAt(0).toUpperCase();
-if(p.photo){ var img = document.createElement("img"); img.src = p.photo; img.style.cssText = "width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;border-radius:50%!important;display:block!important;"; img.onerror = function(){ this.remove(); av.textContent = rInit; }; av.appendChild(img); }
-else { av.textContent = rInit; }
-card.appendChild(av);
-var inf = document.createElement("div"); inf.style.flex = "1"; inf.style.minWidth = "0";
-var nm = document.createElement("div"); nm.style.fontWeight = "700"; nm.textContent = p.nom;
-if(isChou){ var cB = document.createElement("span"); cB.className = "chouchou-badge"; cB.textContent = "❤️ Chouchou"; nm.appendChild(cB); }
-if(isMvp){ var mB = document.createElement("span"); mB.className = "mvp-badge"; mB.textContent = "🏆 MVP"; nm.appendChild(mB); }
-if(isChevre){ var chB = document.createElement("span"); chB.className = "chevre-badge"; chB.textContent = "🐐 Chèvre"; nm.appendChild(chB); }
-inf.appendChild(nm);
-var pst = document.createElement("div"); pst.style.fontSize = "0.78rem"; pst.style.color = "#d4d4d4"; pst.style.display = "flex"; pst.style.alignItems = "center"; pst.style.gap = "6px"; pst.style.flexWrap = "wrap";
-var pstTxt = document.createElement("span"); pstTxt.textContent = p.poste || "Demi-Centre"; pst.appendChild(pstTxt);
-if(p.equipe){
-  var eqTag = document.createElement("span"); eqTag.style.fontSize = "0.7rem"; eqTag.style.padding = "2px 6px"; eqTag.style.borderRadius = "4px"; eqTag.style.background = "rgba(148,163,184,0.18)"; eqTag.style.color = "var(--color-primary)"; eqTag.style.fontWeight = "700"; eqTag.textContent = p.equipe; pst.appendChild(eqTag);
+  var grid = document.getElementById("rosterGrid");
+  if(!grid) return;
+  grid.innerHTML = "";
+
+  var totalCount = EFFECTIF_COMPLET.length;
+  var badgeCount = document.getElementById("rosterCount");
+  if(badgeCount) badgeCount.textContent = totalCount + " joueurs";
+
+  mettreAJourFiltresRosterBar();
+
+  EFFECTIF_COMPLET.forEach(function(p){
+    var card = document.createElement("div");
+    card.className = "rcard";
+    card.onclick = function(){ ouvrirModalJoueur(p.nom); };
+
+    var spData = (typeof trouverStatsSpaktaJoueur === "function") ? trouverStatsSpaktaJoueur(p.nom) : null;
+    var jerseyNum = (spData && spData.jersey_numbers && spData.jersey_numbers.length > 0) ? spData.jersey_numbers[0] : null;
+
+    var isChou = estJoueurChouchou(p.nom);
+    var isMvp = estJoueurMvp(p.nom);
+    var isChevre = estJoueurChevre(p.nom);
+    var isTresorier = !!p.estTresorier;
+
+    var avWrap = document.createElement("div");
+    avWrap.className = "rcard-avatar-wrap";
+    if(isChou) avWrap.style.borderColor = "#f43f5e";
+    else if(isMvp) avWrap.style.borderColor = "#f59e0b";
+    else if(isChevre) avWrap.style.borderColor = "#ea580c";
+
+    var rInit = (p.nom || "").trim().charAt(0).toUpperCase();
+    if(p.photo){
+      var img = document.createElement("img");
+      img.src = p.photo;
+      img.alt = p.nom;
+      img.onerror = function(){
+        this.remove();
+        var initEl = document.createElement("span");
+        initEl.className = "rcard-initiale";
+        initEl.textContent = rInit;
+        avWrap.appendChild(initEl);
+      };
+      avWrap.appendChild(img);
+    } else {
+      var initEl = document.createElement("span");
+      initEl.className = "rcard-initiale";
+      initEl.textContent = rInit;
+      avWrap.appendChild(initEl);
+    }
+
+    if(jerseyNum){
+      var jPill = document.createElement("span");
+      jPill.className = "rcard-jersey-pill";
+      jPill.textContent = "#" + jerseyNum;
+      jPill.title = "N° de maillot officiel Spakta / FFHB";
+      avWrap.appendChild(jPill);
+    }
+    card.appendChild(avWrap);
+
+    var body = document.createElement("div");
+    body.className = "rcard-body";
+
+    var head = document.createElement("div");
+    head.className = "rcard-head";
+
+    var nameEl = document.createElement("span");
+    nameEl.className = "rcard-name";
+    nameEl.textContent = p.nom;
+    head.appendChild(nameEl);
+
+    if(isChou){
+      var cB = document.createElement("span");
+      cB.className = "chouchou-badge";
+      cB.textContent = "❤️ Chouchou";
+      head.appendChild(cB);
+    }
+    if(isMvp){
+      var mB = document.createElement("span");
+      mB.className = "mvp-badge";
+      mB.textContent = "🏆 MVP";
+      head.appendChild(mB);
+    }
+    if(isChevre){
+      var chB = document.createElement("span");
+      chB.className = "chevre-badge";
+      chB.textContent = "🐐 Chèvre";
+      head.appendChild(chB);
+    }
+    if(isTresorier){
+      var trB = document.createElement("span");
+      trB.style.cssText = "font-size:0.68rem;padding:2px 7px;border-radius:6px;background:#fef3c7;color:#b45309;font-weight:700;border:1px solid #fde68a;";
+      trB.textContent = "⭐ Trésorier";
+      head.appendChild(trB);
+    }
+    body.appendChild(head);
+
+    var meta = document.createElement("div");
+    meta.className = "rcard-meta";
+
+    var posteVal = p.poste || "Demi-Centre";
+    var pLower = posteVal.toLowerCase();
+    var posteClass = "poste-demi";
+    if(pLower.includes("gardien")) posteClass = "poste-gardien";
+    else if(pLower.includes("ailier")) posteClass = "poste-ailier";
+    else if(pLower.includes("arrière") || pLower.includes("arriere")) posteClass = "poste-arriere";
+    else if(pLower.includes("pivot")) posteClass = "poste-pivot";
+
+    var posteTag = document.createElement("span");
+    posteTag.className = "rcard-poste " + posteClass;
+    posteTag.textContent = posteVal;
+    meta.appendChild(posteTag);
+
+    if(p.equipe){
+      var eqTag = document.createElement("span");
+      eqTag.className = "rcard-team";
+      eqTag.textContent = p.equipe;
+      meta.appendChild(eqTag);
+    }
+
+    if(spData && spData.totals){
+      var statTag = document.createElement("span");
+      statTag.className = "rcard-stats-tag";
+      if(spData.is_goalkeeper){
+        var saves = spData.totals.saves || 0;
+        var avgS = (spData.per_sheet && spData.per_sheet.saves) || 0;
+        statTag.innerHTML = "🧤 <b>" + saves + "</b> arrêts (" + avgS + "/m)";
+      } else {
+        var goals = spData.totals.goals || 0;
+        var avgG = (spData.per_sheet && spData.per_sheet.goals) || 0;
+        statTag.innerHTML = "⚽ <b>" + goals + "</b> buts (" + avgG + "/m)";
+      }
+      meta.appendChild(statTag);
+    }
+
+    body.appendChild(meta);
+
+    if(p.note){
+      var noteEl = document.createElement("div");
+      noteEl.className = "rcard-note";
+      noteEl.textContent = "📝 " + p.note;
+      body.appendChild(noteEl);
+    }
+
+    card.appendChild(body);
+
+    var arrow = document.createElement("div");
+    arrow.className = "rcard-arrow";
+    arrow.textContent = "✏️";
+    arrow.title = "Modifier la fiche joueur";
+    card.appendChild(arrow);
+
+    card.dataset.nom = (p.nom || "").toLowerCase();
+    card.dataset.poste = pLower;
+    card.dataset.equipe = (p.equipe || "").toLowerCase();
+    card.dataset.isGardien = pLower.includes("gardien") ? "1" : "0";
+    card.dataset.isSpecial = (isChou || isMvp || isChevre || isTresorier) ? "1" : "0";
+
+    grid.appendChild(card);
+  });
+
+  appliquerFiltresRoster();
 }
-inf.appendChild(pst);
-if(p.note){ var nt = document.createElement("div"); nt.className = "rnote"; nt.textContent = "Note : " + p.note; inf.appendChild(nt); }
-card.appendChild(inf); grid.appendChild(card);
-});
+
+function mettreAJourFiltresRosterBar(){
+  var bar = document.getElementById("rosterFilterPills");
+  if(!bar) return;
+
+  var equipesSet = {};
+  EFFECTIF_COMPLET.forEach(function(p){
+    if(p.equipe) equipesSet[p.equipe] = true;
+  });
+  var equipes = Object.keys(equipesSet).sort();
+
+  var html = '<button type="button" class="roster-pill ' + (ROSTER_FILTRE_COURANT === 'all' ? 'active' : '') + '" onclick="definirFiltreRoster(\'all\', this)">Tous (' + EFFECTIF_COMPLET.length + ')</button>';
+
+  equipes.forEach(function(eq){
+    var countEq = EFFECTIF_COMPLET.filter(function(p){ return p.equipe === eq; }).length;
+    var isActive = (ROSTER_FILTRE_COURANT === 'eq:' + eq.toLowerCase());
+    html += '<button type="button" class="roster-pill ' + (isActive ? 'active' : '') + '" onclick="definirFiltreRoster(\'eq:' + eq.toLowerCase().replace(/'/g, "\\'") + '\', this)">' + eq + ' (' + countEq + ')</button>';
+  });
+
+  var countGK = EFFECTIF_COMPLET.filter(function(p){ return (p.poste || '').toLowerCase().includes('gardien'); }).length;
+  if(countGK > 0){
+    var isGK = (ROSTER_FILTRE_COURANT === 'gk');
+    html += '<button type="button" class="roster-pill ' + (isGK ? 'active' : '') + '" onclick="definirFiltreRoster(\'gk\', this)">🧤 Gardiens (' + countGK + ')</button>';
+  }
+
+  var countSpec = EFFECTIF_COMPLET.filter(function(p){ return estJoueurChouchou(p.nom) || estJoueurMvp(p.nom) || estJoueurChevre(p.nom) || !!p.estTresorier; }).length;
+  if(countSpec > 0){
+    var isSpec = (ROSTER_FILTRE_COURANT === 'special');
+    html += '<button type="button" class="roster-pill ' + (isSpec ? 'active' : '') + '" onclick="definirFiltreRoster(\'special\', this)">⭐ Rôles & Distinctions (' + countSpec + ')</button>';
+  }
+
+  bar.innerHTML = html;
 }
+
+function definirFiltreRoster(filtre, btn){
+  ROSTER_FILTRE_COURANT = filtre;
+  var bar = document.getElementById("rosterFilterPills");
+  if(bar){
+    bar.querySelectorAll(".roster-pill").forEach(function(p){ p.classList.remove("active"); });
+    if(btn) btn.classList.add("active");
+  }
+  appliquerFiltresRoster();
+}
+
+function filtrerRosterTexte(val){
+  ROSTER_RECHERCHE_TEXTE = String(val || "").toLowerCase().trim();
+  var clearBtn = document.getElementById("btnRosterClearSearch");
+  if(clearBtn) clearBtn.style.display = ROSTER_RECHERCHE_TEXTE ? "flex" : "none";
+  appliquerFiltresRoster();
+}
+
+function effacerRechercheRoster(){
+  var inp = document.getElementById("inpSearchRoster");
+  if(inp) inp.value = "";
+  filtrerRosterTexte("");
+}
+
+function reinitialiserFiltresRoster(){
+  effacerRechercheRoster();
+  definirFiltreRoster('all', null);
+  var bar = document.getElementById("rosterFilterPills");
+  if(bar && bar.firstElementChild) bar.firstElementChild.classList.add("active");
+}
+
+function filtrerRoster(q){
+  filtrerRosterTexte(q);
+}
+
 function formaterNumeroAffichage(t){
 if(!t) return "";
 var s = String(t).replace(/[^0-9]/g, "");
@@ -3946,11 +4148,52 @@ if(s.indexOf("33") === 0 && s.length === 11) s = "0" + s.substring(2);
 if(s.length === 10) return s.slice(0,2) + " " + s.slice(2,4) + " " + s.slice(4,6) + " " + s.slice(6,8) + " " + s.slice(8,10);
 return t;
 }
-function filtrerRoster(q){
-var val = String(q || "").toLowerCase().trim();
-Array.from(document.getElementById("rosterGrid").children).forEach(function(c){
-c.style.display = c.textContent.toLowerCase().includes(val) ? "flex" : "none";
-});
+
+function appliquerFiltresRoster(){
+  var grid = document.getElementById("rosterGrid");
+  if(!grid) return;
+
+  var cards = Array.from(grid.children);
+  var visibleCount = 0;
+
+  cards.forEach(function(c){
+    var textMatch = true;
+    if(ROSTER_RECHERCHE_TEXTE){
+      textMatch = (c.textContent || "").toLowerCase().includes(ROSTER_RECHERCHE_TEXTE);
+    }
+
+    var filterMatch = true;
+    if(ROSTER_FILTRE_COURANT === 'all'){
+      filterMatch = true;
+    } else if(ROSTER_FILTRE_COURANT.indexOf('eq:') === 0){
+      var targetEq = ROSTER_FILTRE_COURANT.substring(3);
+      filterMatch = (c.dataset.equipe || "").includes(targetEq);
+    } else if(ROSTER_FILTRE_COURANT === 'gk'){
+      filterMatch = (c.dataset.isGardien === '1');
+    } else if(ROSTER_FILTRE_COURANT === 'special'){
+      filterMatch = (c.dataset.isSpecial === '1');
+    }
+
+    var show = textMatch && filterMatch;
+    c.style.display = show ? "flex" : "none";
+    if(show) visibleCount++;
+  });
+
+  var emptyState = document.getElementById("rosterEmptyState");
+  if(emptyState){
+    emptyState.style.display = (visibleCount === 0 && cards.length > 0) ? "block" : "none";
+  }
+
+  var statusBar = document.getElementById("rosterStatusBar");
+  var statusText = document.getElementById("rosterFilteredCount");
+  if(statusBar && statusText){
+    if(ROSTER_RECHERCHE_TEXTE || ROSTER_FILTRE_COURANT !== 'all'){
+      statusBar.style.display = "block";
+      statusText.textContent = "Affichage de " + visibleCount + " sur " + cards.length + " joueurs";
+    } else {
+      statusBar.style.display = "none";
+    }
+  }
 }
 function majOptionsEquipesSelects(){
   var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
