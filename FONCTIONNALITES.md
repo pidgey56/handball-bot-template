@@ -16,7 +16,7 @@ Ce document a été pensé **spécifiquement pour les entraîneurs, capitaines e
    - [Mémoire de Sélection & Compo Précédente](#-mémoire-de-sélection--recharger-la-semaine-précédente)
    - [Aperçu du Terrain Tactique en 2D](#-aperçu-du-terrain-tactique-en-2d)
    - [Diffusion de la Convocation Officielle](#-convocation-whatsapp-prête-en-1-clic)
-4. [🏋️ La Gestion des Entraînements](#-4-la-gestion-des-entraînements)
+4. [🏋️ La Gestion des Entraînements](#-4-la-gestion-des-entraînements-1-à-5-séances-par-semaine)
    - [3 Formats de Séances selon le Terrain](#3-formats-de-séances-adaptés)
    - [Configuration des Jours et Horaires](#paramétrage-des-jours-et-horaires)
    - [Option Avec ou Sans Emojis](#option-avec-ou-sans-emojis)
@@ -24,9 +24,13 @@ Ce document a été pensé **spécifiquement pour les entraîneurs, capitaines e
    - [Ajouter, Modifier ou Supprimer un Joueur](#ajouter-modifier-ou-supprimer-un-joueur-sans-ouvrir-excel)
    - [Trombinoscope & Notes Tactiques Privées](#trombinoscope-photos-et-notes-confidentielles)
    - [Multi-Collectifs & Multi-Groupes WhatsApp](#-multi-collectifs--gérer-plusieurs-groupes-sur-la-même-page)
-6. [🔒 Sécurité, Codes PIN & Chiffrement des Numéros (Ados / RGPD)](#-6-sécurité-codes-pin--chiffrement-des-numéros-ados--rgpd)
-7. [🎨 Personnalisation du Club & Couleurs](#-7-personnalisation-du-club--couleurs)
-8. [🔄 Mises à Jour en 1 Clic](#-8-mises-à-jour-en-1-clic)
+6. [📊 Statistiques Officielles Spakta (Saison 2026-2027)](#-6-statistiques-officielles-spakta-saison-2026-2027)
+7. [💰 Vie d'Équipe : Caisse Noire, Amendes & Covoiturage](#-7-vie-déquipe--caisse-noire-amendes--covoiturage)
+8. [🏖️ Gestion des Périodes de Vacances Scolaires](#-8-gestion-des-périodes-de-vacances-scolaires)
+9. [📄 Direction Artistique « Carnet de Coach » & Thèmes](#-9-direction-artistique-carnet-de-coach--thèmes)
+10. [🔒 Sécurité, Codes PIN & Chiffrement des Numéros (Ados / RGPD)](#-10-sécurité-codes-pin--chiffrement-des-numéros-ados--rgpd)
+11. [🎨 Personnalisation du Club & Couleurs](#-11-personnalisation-du-club--couleurs)
+12. [🔄 Mises à Jour en 1 Clic](#-12-mises-à-jour-en-1-clic)
 
 ---
 
@@ -177,7 +181,72 @@ Vous coachez les **Séniors Garçons (SG1 & SG2)** ET les **-15 Filles (-15F1 & 
 
 ---
 
-## 🔒 6. Sécurité, Codes PIN & Chiffrement des Numéros (Ados / RGPD)
+## 📊 6. Statistiques Officielles Spakta (Saison 2026-2027)
+
+L'application intègre officiellement le moteur **Spakta Scout**, référence des statistiques de handball :
+
+* **Numéro de maillot officiel** : Affichage automatique du numéro de maillot officiel (ex : `#55`) sur la carte athlète du joueur.
+* **Tuile de statistiques personnalisée selon le poste** :
+  * **Pour un joueur de champ** : Buts marqués, Moyenne de buts par match, % de réussite au tir, Jets de 7m réussis, Matchs joués, Discipline (exclusions 2 min).
+  * **Pour un gardien de but** : Arrêts totaux, Moyenne d'arrêts par match, Matchs joués, Arrêts sur la dernière rencontre.
+* **Historique déroulant match par match** :
+  * Cliquez sur « 📅 Historique match par match » pour dérouler toutes les journées de championnat.
+  * Affiche la date, l'adversaire (ex : *vs Stade de Vanves*), le score final du match et la performance individuelle détaillée du joueur.
+* **Multi-Équipes consolidé (1B & 1C)** :
+  * Si un joueur a disputé des rencontres avec plusieurs collectifs (par exemple en Équipe 1B et en Équipe 1C), ses statistiques sont cumulées sur la saison avec le badge officiel combiné (`ÉQUIPE 1C & 1B`).
+* **Source & Conformité** :
+  * Mention officielle de provenance Spakta avec attribution FFHB sur chaque fiche statistique.
+  * Synchronisation en direct avec snapshot de secours hors-ligne pour un affichage instantané sans latence.
+
+---
+
+## 💰 7. Vie d'Équipe : Caisse Noire, Amendes & Covoiturage
+
+Renforcez la cohésion et le folklore du vestiaire avec des outils dédiés :
+
+### 💰 Caisse Noire & Amendes de vestiaire :
+* **Suivi de la cagnotte en direct** : Visualisation du montant total en caisse, des montants encaissés, du restant dû et de la progression vers l'objectif de fin de saison (ex : *Resto & Tournée de fin d'année*).
+* **Ardoise individuelle** : Chaque joueur peut consulter son ardoise personnelle en toute transparence (amendes reçues, motif, date, montant payé ou impayé).
+* **Barème officiel du vestiaire** : Retard à l'entraînement, oubli de chasuble, tir dans la tête du gardien, chèvre du match... le barème est consultable par tous.
+* **Palmarès & Classement** : Tableau d'honneur des plus gros contributeurs de la caisse.
+* **Rôle Trésorier dédié** : Le coach peut désigner un ou plusieurs joueurs avec le statut « ⭐ Trésorier de la Caisse Noire » dans leur fiche, leur donnant accès à l'administration des amendes sans leur ouvrir les droits de composition d'équipe.
+* **Copie des modalités de règlement** : Bouton 1 clic pour copier le Lydia, le RIB ou les consignes de règlement en espèces.
+
+### 🚗 Covoiturage & Déplacements :
+* Les joueurs peuvent signaler qu'ils conduisent et indiquer le nombre de places disponibles ainsi que leur ville de départ.
+* Les joueurs sans véhicule peuvent réserver leur place en un clic, facilitant l'organisation des matchs à l'extérieur.
+
+### 📅 Déclaration des Absences & Indisponibilités :
+* Les joueurs peuvent poser leurs dates d'absence à l'avance (vacances, blessure, obligations professionnelles).
+* Le coach voit immédiatement les indisponibilités sur le tableau de bord et dans l'effectif.
+
+---
+
+## 🏖️ 8. Gestion des Périodes de Vacances Scolaires
+
+* **Détection automatique des vacances** : L'application détecte automatiquement les semaines de vacances scolaires (Toussaint, Noël, Hiver, Printemps selon les zones académiques).
+* **Bannière d'information claire** : En période de vacances scolaires sans match officiel programmé par la FFHB, une bannière dédiée informe le groupe.
+* **Gestion des trêves** : Le coach peut ajuster ou forcer l'état des vacances d'un simple clic pour suspendre ou maintenir les convocations.
+
+---
+
+## 📄 9. Direction Artistique « Carnet de Coach » & Thèmes
+
+L'interface adopte une esthétique soignée inspirée du carnet de notes de terrain :
+
+* **5 Onglets intercalaires rapides** :
+  * 👤 **Mon Profil** : Carte joueur polaroïd/athlète, N° de maillot, assiduité, préférences de poste/photo, stats Spakta.
+  * 🤾 **Matchs** : Choix du Mode Tactique ou Mode Tinder, composition des 1 à 3 équipes, aperçu terrain et convocations.
+  * 🏃 **Entraînements** : Gestion des séances hebdomadaires, répartition par groupes et présence.
+  * 🏆 **Vie d'Équipe** : Caisse Noire, ardoises, covoiturage et déclarations d'absence.
+  * ⚙️ **Coach** : Trombinoscope complet, notes privées, gestion des collectifs et couleurs.
+* **Double Thème Visuel en 1 clic** :
+  * **Mode Clair (📄 Carnet Moleskine)** : Texture papier millimétré, ruban adhésif orange, cartes blanches contrastées haute lisibilité.
+  * **Mode Sombre (📋 Ardoise Vestiaire)** : Fond ardoise nuit, contraste doux adapté aux vestiaires sombres et aux utilisations nocturnes.
+
+---
+
+## 🔒 10. Sécurité, Codes PIN & Chiffrement des Numéros (Ados / RGPD)
 
 > [!IMPORTANT]
 > **Protection des coordonnées des mineurs et adolescents**
@@ -190,7 +259,7 @@ Vous coachez les **Séniors Garçons (SG1 & SG2)** ET les **-15 Filles (-15F1 & 
 
 ---
 
-## 🎨 7. Personnalisation du Club & Couleurs
+## 🎨 11. Personnalisation du Club & Couleurs
 
 * **⚡ Synchronisation Automatique FFHB en 1 clic** :
   * Fournissez simplement l'URL de la page de votre club sur `monclub.ffhandball.fr` (ex : *https://monclub.ffhandball.fr/clubs/athletic-club-boulogne-billancourt/*).
@@ -204,7 +273,7 @@ Vous coachez les **Séniors Garçons (SG1 & SG2)** ET les **-15 Filles (-15F1 & 
 
 ---
 
-## 🔄 8. Mises à Jour en 1 Clic
+## 🔄 12. Mises à Jour en 1 Clic
 
 * **Détection automatique des mises à jour** : Si une nouvelle version de Handball Bot sort, un badge discret vous prévient sur l'accueil.
 * **Synchronisation en 1 clic** : Cliquez sur le bouton de mise à jour pour rapatrier les dernières améliorations sans aucune manipulation technique.

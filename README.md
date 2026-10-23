@@ -1,14 +1,15 @@
-# 🤾 Handball Bot Template
+# 🤾 Handball Bot Template (v2.2)
 
 [![Node.js](https://img.shields.io/badge/Node.js-20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Baileys-25D366?logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
 [![Google Sheets](https://img.shields.io/badge/Google%20Sheets-Apps%20Script-34A853?logo=googlesheets&logoColor=white)](https://workspace.google.com/products/sheets/)
 [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Automated-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![Spakta Scout](https://img.shields.io/badge/Spakta-Stats%20Officielles-FF6B00)](https://spakta.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Handball Bot** est une solution complète, universelle et **100% gratuite** conçue pour les entraîneurs, dirigeants et capitaines de clubs de handball.
+**Handball Bot** est une solution complète, universelle et **100% gratuite** conçue pour les entraîneurs, dirigeants, capitaines et joueurs de clubs de handball.
 
-Elle combine un **robot WhatsApp officiel** (sans API payante), un **scraping automatique des matchs FFHB** et une **WebApp mobile interactive** pour composer vos équipes en glisser-déposer ou en mode "Tinder".
+Elle combine un **robot WhatsApp officiel** (sans API payante), un **scraping automatique des matchs FFHB**, une **intégration des statistiques officielles Spakta** et une **WebApp PWA "Carnet de Coach"** pour composer vos équipes en glisser-déposer ou en mode "Tinder".
 
 ---
 
@@ -28,33 +29,51 @@ Handball Bot est né d'un constat simple dans les clubs amateurs :
 
 * 🤖 **Sondages WhatsApp hebdomadaires automatiques** : Détection des matchs de vos équipes sur `ffhandball.fr`, calcul automatique des heures de rendez-vous (domicile ou extérieur avec temps de trajet), et publication du sondage à choix multiples dans votre groupe d'équipe (support de 1, 2 ou 3 équipes maximum).
 * 📥 **Déchiffrement et synchronisation des votes** : Lecture des votes chiffrés AES-GCM multi-appareils (Baileys), mise en correspondance automatique avec le répertoire des joueurs via leur numéro de téléphone. Nettoyage automatique des fichiers de session temporaires (`auth_info/`) sans déconnexion.
-* 🤾 **WebApp mobile de composition d'équipe (1 à 3 équipes)** :
-  * **Mode Classique** : Tableau responsive en colonnes (Équipe 1, Équipe 2, Équipe 3, Joueurs disponibles, Au repos) avec glisser-déposer (Drag & Drop) intuitif.
+* 📊 **Statistiques officielles Spakta Scout (Saison 2026-2027)** :
+  * Intégration des performances réelles des joueurs (buteurs et gardiens de but).
+  * Affichage automatique du numéro de maillot officiel (`#55`).
+  * Métriques détaillées : buts, moyenne/match, % de réussite aux tirs, 7m, 2 min, arrêts totaux et arrêts par match.
+  * Historique match par match déroulant (date, adversaire, score, stats individuelles).
+  * Consolidation multi-équipes pour les joueurs évoluant sur plusieurs collectifs (ex: `1B & 1C`).
+* 💰 **Vie d'Équipe : Caisse Noire & Amendes de vestiaire** :
+  * Suivi de la cagnotte en direct avec jauge d'objectif (resto de fin d'année, tournée).
+  * Ardoise individuelle consultable par chaque joueur en toute transparence.
+  * Barème officiel des infractions et retards.
+  * Palmarès des plus gros contributeurs.
+  * Rôle dédié « ⭐ Trésorier de la Caisse Noire » paramétrable par le coach.
+* 🚗 **Covoiturage & Déclarations d'absence** :
+  * Organisation des trajets pour les matchs extérieurs (conducteurs, places, passagers).
+  * Déclaration anticipée des indisponibilités (blessure, travail, congés).
+* 🏖️ **Gestion des Vacances Scolaires & Trêves** :
+  * Détection automatique des vacances académiques.
+  * Bannière d'information et neutralisation intelligente des sondages hors compétition.
+* 🤾 **WebApp PWA "Carnet de Coach" (5 onglets)** :
+  * **5 Onglets interactifs** : Mon Profil, Matchs, Entraînements, Vie d'Équipe, Coach.
   * **Mode Tinder adaptatif** :
     * **1 équipe** : 👈 Gauche = Repos | 👉 Droite = Sélectionné
     * **2 équipes** : 👈 Gauche = Équipe 1 | 👉 Droite = Équipe 2 | 👇 Bas = Repos
     * **3 équipes** : 👆 Haut = Équipe 1 | 👈 Gauche = Équipe 2 | 👉 Droite = Équipe 3 | 👇 Bas = Repos
-  * **Gestion des entraînements** : Répartition des présents en 2 groupes distincts, effectif réduit avec quota max ou effectif complet.
-  * **Terrain tactique interactif** : Visualisation d'un demi-terrain de handball réglementaire avec les 7 postes en attaque + gardien dans les cages et banc interactif pour ajuster le 7 majeur avant convocation.
-  * **Gestion des renforts** : Ajout en un clic de joueurs hors sondage ou descendant d'une équipe supérieure.
-  * **Gestion d'effectif et d'équipes intégrée** : Ajout, modification et suppression de joueurs ou d'équipes directement depuis la WebApp sans ouvrir Google Sheets.
-  * **Multi-collectifs & Multi-groupes WhatsApp** : Sélecteur instantané pour basculer d'une catégorie à une autre (ex: Séniors Garçons et -15 Filles) depuis la même page.
-  * **Installation PWA sur mobile (Android & iPhone)** : Mode plein écran sans barre d'adresse pour une expérience digne d'une application native.
+  * **Mode Tactique (Tableau & Drag-and-Drop)** : Colonnes d'équipes modulables, compteurs de quotas et renforts.
+  * **Terrain tactique interactif 2D** : Demi-terrain réglementaire avec placement des 7 attaquants et gardien.
+  * **Gestion des entraînements (1 à 5 séances / semaine)** : 3 formats de séances (séparé, réduit avec quota, effectif complet).
+  * **Multi-collectifs** : Changement instantané de catégorie (ex: Séniors Garçons, Séniors Filles, -18M).
+  * **Thèmes visuels** : Carnet de Coach (papier millimétré), Mode Clair, Mode Sombre (ardoise vestiaire).
+  * **Installation PWA** : Compatible Android & iPhone en plein écran, support hors-ligne (Stale-While-Revalidate).
 * 📤 **Convocations WhatsApp en 1 clic** : Mise en forme instantanée de la liste des convoqués avec adversaire, lieu et heure de rendez-vous, envoyée directement dans le groupe WhatsApp depuis la WebApp.
-* 🎨 **Identité visuelle & Couleurs personnalisées** : Adaptation automatique de la WebApp et du classeur aux couleurs de votre club. Nuanciers de clubs professionnels (HBC Nantes, PSG, Montpellier MHB, etc.) ou codes hexadécimaux libres.
-* 🔄 **Mises à jour faciles & Détection de version** : Détection automatique des nouvelles versions du modèle dans la WebApp et Google Sheets, avec synchronisation de votre robot GitHub Actions en 1 clic.
-* 🔐 **Protection des données & Chiffrement au repos (RGPD / Mineurs)** : Les numéros de téléphone des joueurs et des adolescents sont chiffrés directement dans Google Sheets (format `enc:...`). Aucun numéro n'apparaît en clair dans le tableur. La gestion des coordonnées s'effectue exclusivement depuis la WebApp sécurisée par code PIN.
-* 💸 **0 € de frais d'hébergement** : Fonctionne entièrement sur les quotas gratuits de Google Sheets et de GitHub Actions. Aucun serveur ni base de données à administrer.
+* 🎨 **Identité visuelle & Couleurs du Club** : Import automatique du blason et des couleurs officielles en 1 clic depuis l'URL de votre club sur `monclub.ffhandball.fr`.
+* 🔄 **Mises à jour faciles & Détection de version** : Détection automatique des nouvelles versions dans la WebApp et Google Sheets avec synchronisation en 1 clic.
+* 🔐 **Protection des données & Chiffrement au repos (RGPD / Mineurs)** : Numéros de téléphone chiffrés directement dans Google Sheets (format `enc:...`). Aucun numéro en clair dans le tableur.
+* 💸 **0 € de frais d'hébergement** : Fonctionne entièrement sur les quotas gratuits de Google Sheets et de GitHub Actions.
 
 ---
 
 ## 🚀 Démarrage Rapide
 
-Pour installer le bot dans votre club en moins de 15 minutes, consultez le guide pas à pas :
+Pour installer le bot dans votre club en moins de 15 minutes, consultez les guides pas à pas :
 
-👉 **[🌟 Guide des Fonctionnalités Coach (FONCTIONNALITES.md)](FONCTIONNALITES.md)** : Présentation visuelle et facile à lire de toutes les fonctionnalités disponibles.  
+👉 **[🌟 Guide des Fonctionnalités Coach (FONCTIONNALITES.md)](FONCTIONNALITES.md)** : Présentation visuelle et complète de toutes les fonctionnalités.  
 👉 **[📖 Guide d'Installation Pas à Pas (GUIDE_INSTALLATION.md)](GUIDE_INSTALLATION.md)** : Installation initiale en 15 minutes.  
-👉 **[🤾 Guide d'Utilisation au Quotidien (GUIDE_UTILISATION.md)](GUIDE_UTILISATION.md)** : Fonctionnement hebdomadaire pour les coachs (matchs, entraînements, mode Tinder) et joueurs.
+👉 **[🤾 Guide d'Utilisation au Quotidien (GUIDE_UTILISATION.md)](GUIDE_UTILISATION.md)** : Guide de terrain hebdomadaire pour coachs, joueurs et trésoriers.
 
 ### Résumé des 5 étapes d'installation :
 1. **Créer votre dépôt** : Cliquez sur **« Use this template »** (visibilité **Privée** requise).
@@ -72,12 +91,21 @@ Pour installer le bot dans votre club en moins de 15 minutes, consultez le guide
 │   └── workflows/
 │       └── whatsapp.yml           # Pipeline GitHub Actions (cron, dispatch, setup)
 ├── auth_info/                     # Session chiffrée WhatsApp (sauvegardée automatiquement)
+├── docs/                          # Frontend WebApp PWA GitHub Pages
+│   ├── index.html                 # Interface HTML 5 onglets Carnet de Coach
+│   ├── manifest.json              # Configuration PWA & icônes
+│   ├── sw.js                      # Service Worker hors-ligne (cache Stale-While-Revalidate)
+│   ├── css/
+│   │   └── style.css              # Thèmes Carnet de Coach, Clair & Sombre
+│   └── js/
+│       ├── api.js                 # Client API Google Apps Script & gestion réseau
+│       ├── app.js                 # Logique applicative (compo, tinder, caisse noire, vacances)
+│       └── spakta-data.json       # Snapshot de secours des statistiques Spakta
 ├── Handball_Bot_Template.xlsx     # Classeur modèle prêt à l'emploi (formats, styles, formules)
-├── code.gs                        # Backend Google Apps Script, scraper FFHB & WebApp coach
+├── code.gs                        # Backend Google Apps Script & scraper officiel FFHB
 ├── send-poll.js                   # Moteur WhatsApp Baileys (envoi sondage, déchiffrement votes)
 ├── package.json                   # Dépendances Node.js (@whiskeysockets/baileys, pino)
-├── .env.example                   # Exemple de variables d'environnement pour tests locaux
-├── FONCTIONNALITES.md             # Guide visuel et complet de toutes les fonctionnalités coach
+├── FONCTIONNALITES.md             # Guide visuel complet de toutes les fonctionnalités
 ├── GUIDE_INSTALLATION.md          # Guide pas à pas illustré pour les clubs (15 min)
 ├── GUIDE_UTILISATION.md           # Guide d'utilisation au quotidien pour coachs et joueurs
 └── README.md                      # Présentation du projet
@@ -87,11 +115,11 @@ Pour installer le bot dans votre club en moins de 15 minutes, consultez le guide
 
 ## ⚙️ Personnalisation pour votre club
 
-Tous les réglages s'effectuent sans coder, directement depuis l'onglet **Configuration** de votre Google Sheet :
-- **Nom et blason du club** : Nom officiel et URL du logo pour la WebApp.
-- **Couleurs du club et des équipes** : Palette personnalisée (`#HEX`) avec aperçu en temps réel et nuanciers intégrés.
-- **Équipes gérées** : Nom des équipes (ex: `SG1`, `SG2`, `N2`, `-18M`), mots-clés FFHB et URLs de poules.
-- **Créneaux d'entraînement (1 à 5 séances / semaine)** : Volume hebdomadaire modulable (1 à 5 entraînements), jours et horaires configurables directement depuis la WebApp coach ou Google Sheets.
+Tous les réglages s'effectuent sans coder, directement depuis l'onglet **Configuration** de votre Google Sheet ou depuis la WebApp :
+- **Nom et blason du club** : Nom officiel et URL du logo pour la WebApp (ou import 1 clic FFHB).
+- **Couleurs du club et des équipes** : Palette personnalisée (`#HEX`) avec aperçu en temps réel.
+- **Équipes gérées** : Nom des équipes (ex: `1B`, `1C`), mots-clés FFHB et URLs de poules.
+- **Créneaux d'entraînement (1 à 5 séances / semaine)** : Volume hebdomadaire modulable, jours et horaires configurables.
 - **Délai de rendez-vous** : Décalage en heures avant le coup d'envoi (ex: 1h pour domicile, 1h30 pour extérieur).
 - **Numéros administrateurs** : Numéros de téléphone des entraîneurs ayant accès à l'espace coach.
 
@@ -102,16 +130,16 @@ Tous les réglages s'effectuent sans coder, directement depuis l'onglet **Config
 * Le projet ne fait appel à **aucun service tiers payant** ni serveur externe non contrôlé.
 * Toutes les données d'effectif et de votes restent stockées dans **votre** compte Google Drive et dans **votre** dépôt GitHub privé.
 * La session WhatsApp est chiffrée de bout en bout et conservée uniquement dans votre dépôt privé.
+* Chiffrement des numéros de téléphone au repos dans le tableur.
 
 ---
 
 ## 🤝 Contribution & Support
 
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une *Issue* ou une *Pull Request* pour proposer des améliorations (support de 3+ équipes dans le tableau interactif, export PDF des feuilles de match, etc.).
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une *Issue* ou une *Pull Request* pour proposer des améliorations.
 
 ---
 
 ## 📄 Licence
 
 Ce projet est distribué sous licence [MIT](LICENSE). Vous êtes libre de l'utiliser, le modifier et le déployer pour votre club de handball.
-
