@@ -8,6 +8,7 @@
     "Dictionnaire de correspondance officiel pour l'effectif ACBB (32 joueurs pré-associés à 100%) et algorithme flou (nom inversé, prénom + initiale, prénom unique)",
     "Sélecteur d'ID Spakta interactif dans la modale joueur avec <datalist> (affichage du maillot, poste et équipe officielle Spakta), badge de liaison dynamique et bouton '🔍 Auto'",
     "Possibilité de définir un ID Spakta dès la création d'un joueur dans l'effectif",
+    "Organisation optimisée de l'Espace Joueur : le module Vie d'Équipe (MVP, Chèvre, Covoiturage, Caisse Noire) est désormais exclusivement réservé à son onglet dédié 'Vie d'Équipe' pour épurer et aérer l'onglet 'Mon Profil'",
     "Fallback résilient dans api.js pour garantir une expérience fluide sans messages d'avertissement en cas d'appels API Spakta asynchrones"
   ]
 }
