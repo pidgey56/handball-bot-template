@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ==============================================================================
  * HANDBALL BOT - MODÈLE UNIVERSEL POUR CLUBS DE HANDBALL
  * ==============================================================================
@@ -5472,7 +5472,7 @@ function doGet(e) {
 
 /**
  * HANDBALL BOT 2.0 - ROUTEUR UNIVERSEL API (doPost)
- * ExÃ©cute les mÃ©thodes du backend appelÃ©es par la WebApp PWA
+ * Exécute les méthodes du backend appelées par la WebApp PWA
  */
 function doPost(e) {
   try {
@@ -5485,14 +5485,14 @@ function doPost(e) {
     const action = payload.action;
     const args = payload.args || [];
 
-    // Support rÃ©trocompatible pour la synchro des votes WhatsApp
+    // Support rétrocompatible pour la synchro des votes WhatsApp
     if (action === 'save_votes' && Array.isArray(payload.votes)) {
       const nb = enregistrerVotesDansSheet(payload.votes);
       return ContentService.createTextOutput(JSON.stringify({ status: 'ok', count: nb }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Table de routage universelle des mÃ©thodes backend
+    // Table de routage universelle des méthodes backend
     const router = {
       'getDonneesCoach': getDonneesCoach,
       'authentifierUtilisateur': authentifierUtilisateur,
@@ -5541,7 +5541,7 @@ function doPost(e) {
 
     if (typeof router[action] === 'function') {
       const result = router[action].apply(null, args);
-      // Invalidation automatique du cache si c'est une Ã©criture
+      // Invalidation automatique du cache si c'est une écriture
       if (action.indexOf('enregistrer') === 0 || action.indexOf('supprimer') === 0 || action.indexOf('reinitialiser') === 0 || action.indexOf('ajouter') === 0) {
         try { CacheService.getScriptCache().remove('COACH_DATA_CACHE'); } catch (ce) {}
       }
@@ -6249,7 +6249,7 @@ function declencherLectureVotes() {
  */
 /**
  * HANDBALL BOT 2.0 - PASSERELLE WEBAPP PWA
- * Redirige instantanÃ©ment vers l'application PWA ultra-rapide sur GitHub Pages
+ * Redirige instantanément vers l'application PWA ultra-rapide sur GitHub Pages
  */
 function construireHtmlWebApp() {
   const cfg = getClubConfig();
@@ -6277,8 +6277,8 @@ function construireHtmlWebApp() {
     'a.btn:hover{background:#2563eb;}' +
     '</style></head><body>' +
     '<div class="card">' +
-    '<h2>ðŸ¤¾ ' + (cfg.nomClub || 'Handball') + ' Manager 2.0</h2>' +
-    '<p>Chargement de votre application nouvelle gÃ©nÃ©ration (PWA instantanÃ©e)...</p>' +
+    '<h2>🤾 ' + (cfg.nomClub || 'Handball') + ' Manager 2.0</h2>' +
+    '<p>Chargement de votre application nouvelle génération (PWA instantanée)...</p>' +
     '<a class="btn" href="' + webAppUrl + '">Ouvrir l\'application</a>' +
     '</div>' +
     '<script>window.location.replace("' + webAppUrl + '");</script>' +

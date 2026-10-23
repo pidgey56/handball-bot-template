@@ -10,9 +10,9 @@ var CLUB_CONFIG = window.CLUB_CONFIG || {
   chevre: '',
   nbEquipes: 2,
   equipes: [],
-  nomEquipe1: 'Ã‰quipe 1',
-  nomEquipe2: 'Ã‰quipe 2',
-  nomEquipe3: 'Ã‰quipe 3',
+  nomEquipe1: 'Équipe 1',
+  nomEquipe2: 'Équipe 2',
+  nomEquipe3: 'Équipe 3',
   couleurPrimaire: '#1e293b',
   couleurSecondaire: '#f59e0b',
   couleurEquipe1: '#3b82f6',
@@ -1680,9 +1680,9 @@ if(!silencieux){
   var btnLogin = document.getElementById("btnLogin");
   if(btnLogin) {
     btnLogin.disabled = true;
-    btnLogin.textContent = "VÃ©rification...";
+    btnLogin.textContent = "Vérification...";
   }
-  afficherLoading("Connexion...", "VÃ©rification de vos identifiants...");
+  afficherLoading("Connexion...", "Vérification de vos identifiants...");
   setTimeout(function(){
     if(btnLogin) { btnLogin.disabled = false; btnLogin.textContent = "Se connecter"; }
     masquerLoading();
@@ -4494,7 +4494,7 @@ setTimeout(function(){ if(item.parentNode) item.parentNode.removeChild(item); },
 var APP_DEMARREE = false;
 // ============================================================================
 // GESTION DES 3 MODES DE FONCTIONNEMENT (FLAVORS)
-// FFHB_ONLY (ZÃ©ro WhatsApp) | PRESENCES_ONLY (Loisir) | COMPLET (WhatsApp Bot)
+// FFHB_ONLY (Zéro WhatsApp) | PRESENCES_ONLY (Loisir) | COMPLET (WhatsApp Bot)
 // ============================================================================
 var MODE_FONCTIONNEMENT = localStorage.getItem("hb_mode") || (typeof CLUB_CONFIG !== "undefined" && CLUB_CONFIG.modeFonctionnement) || "FFHB_ONLY";
 
@@ -4510,18 +4510,18 @@ function changerModeFonctionnement(mode) {
 
   if (window.google && google.script && google.script.run) {
     google.script.run.withSuccessHandler(function() {
-      afficherToast("Mode " + getNomMode(mode) + " enregistrÃ© !", "succes");
+      afficherToast("Mode " + getNomMode(mode) + " enregistré !", "succes");
     }).withFailureHandler(function(err) {
       console.warn("Synchronisation mode sheet :", err);
     }).enregistrerModeFonctionnement(mode);
   } else {
-    afficherToast("Mode " + getNomMode(mode) + " activÃ© !", "succes");
+    afficherToast("Mode " + getNomMode(mode) + " activé !", "succes");
   }
 }
 
 function getNomMode(mode) {
-  if (mode === "FFHB_ONLY") return "FFHB Seul (ZÃ©ro WhatsApp)";
-  if (mode === "PRESENCES_ONLY") return "Loisir / PrÃ©sences Seules";
+  if (mode === "FFHB_ONLY") return "FFHB Seul (Zéro WhatsApp)";
+  if (mode === "PRESENCES_ONLY") return "Loisir / Présences Seules";
   return "Complet Automatique";
 }
 
@@ -4545,21 +4545,21 @@ function appliquerModeFonctionnementVisuel(mode) {
 
   if (m === "FFHB_ONLY") {
     if (btnF) { btnF.style.background = "#1e3a8a"; btnF.style.color = "#fff"; btnF.style.borderColor = "#3b82f6"; }
-    if (lbl) lbl.textContent = "ðŸ† Mode FFHB Uniquement";
+    if (lbl) lbl.textContent = "🏆 Mode FFHB Uniquement";
     if (bDesc) { bDesc.textContent = "Scraping FFHB + Convocation manuelle (0 WhatsApp)"; bDesc.style.color = "#60a5fa"; }
     if (bWhatsApp) bWhatsApp.style.display = "none";
     if (matchHub) matchHub.style.display = "block";
     var btnPub = document.getElementById("btnPublishPreview");
-    if (btnPub) { btnPub.textContent = "ðŸ“¢ Partager la Convocation"; btnPub.style.background = "#0284c7"; }
+    if (btnPub) { btnPub.textContent = "📢 Partager la Convocation"; btnPub.style.background = "#0284c7"; }
   } else if (m === "PRESENCES_ONLY") {
     if (btnL) { btnL.style.background = "#065f46"; btnL.style.color = "#fff"; btnL.style.borderColor = "#10b981"; }
-    if (lbl) lbl.textContent = "ðŸ“‹ Mode Loisir / PrÃ©sences";
-    if (bDesc) { bDesc.textContent = "Trombinoscope + PrÃ©sences entraÃ®nements"; bDesc.style.color = "#34d399"; }
+    if (lbl) lbl.textContent = "📋 Mode Loisir / Présences";
+    if (bDesc) { bDesc.textContent = "Trombinoscope + Présences entraînements"; bDesc.style.color = "#34d399"; }
     if (bWhatsApp) bWhatsApp.style.display = "none";
     if (matchHub) matchHub.style.display = "none";
   } else {
     if (btnC) { btnC.style.background = "#4338ca"; btnC.style.color = "#fff"; btnC.style.borderColor = "#6366f1"; }
-    if (lbl) lbl.textContent = "âš¡ Mode Complet Automatique";
+    if (lbl) lbl.textContent = "⚡ Mode Complet Automatique";
     if (bDesc) { bDesc.textContent = "FFHB + Bot WhatsApp + Sondages auto"; bDesc.style.color = "#a5b4fc"; }
     if (bWhatsApp) bWhatsApp.style.display = "inline-flex";
     if (matchHub) matchHub.style.display = "block";
@@ -4577,7 +4577,7 @@ async function partagerTexteConvocation(texte) {
         title: "Convocation Match",
         text: texte
       });
-      afficherToast("Convocation partagÃ©e avec succÃ¨s !", "succes");
+      afficherToast("Convocation partagée avec succès !", "succes");
       return;
     } catch (e) {
       if (e.name !== "AbortError") console.warn("Erreur navigator.share :", e);
@@ -4588,7 +4588,7 @@ async function partagerTexteConvocation(texte) {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(texte);
-      afficherToast("ðŸ“‹ Convocation copiÃ©e dans le presse-papier !", "succes");
+      afficherToast("📋 Convocation copiée dans le presse-papier !", "succes");
     } else {
       afficherToast("Veuillez copier le texte ci-dessous", "info");
     }
