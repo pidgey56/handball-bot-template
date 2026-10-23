@@ -37,7 +37,7 @@ function doGet(e) {
   // Redirection automatique vers la WebApp PWA sur GitHub Pages avec le lien API prÃ©-configurÃ©
   const cfg = getClubConfig();
   const defaultPwa = 'https://pidgey56.github.io/handball-bot-template/';
-  const basePwa = (cfg && cfg.webappUrl && cfg.webappUrl.indexOf('http') === 0) ? cfg.webappUrl : defaultPwa;
+  const basePwa = (cfg && cfg.webappUrl && cfg.webappUrl.indexOf('http') === 0 && cfg.webappUrl.indexOf('script.google.com') === -1) ? cfg.webappUrl : defaultPwa;
   const cleanBase = basePwa.split('?')[0].replace(/\/+$/, '') + '/';
   let serviceUrl = '';
   try { serviceUrl = ScriptApp.getService().getUrl(); } catch (err) {}
@@ -132,7 +132,8 @@ function doPost(e) {
       'enregistrerConfigCaisseNoire': enregistrerConfigCaisseNoire,
       'changerStatutCaisseNoire': changerStatutCaisseNoire,
       'reinitialiserCaisseNoire': reinitialiserCaisseNoire,
-      'scraperMatchsFFHB': scraperMatchsFFHB,
+      'importerInfosClubFFHB': importerInfosClubFFHB,
+      'extraireMatchFFHB': extraireMatchFFHB,
       'verifierMiseAJour': verifierMiseAJour,
       'enregistrerModeFonctionnement': enregistrerModeFonctionnement
     };
