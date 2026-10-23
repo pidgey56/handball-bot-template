@@ -15,8 +15,8 @@
   <link rel="apple-touch-icon" href="images/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.0.7">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=2.0.8">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -38,12 +38,17 @@
     <span class="status-dot-wrap"><span class="status-dot-pulse"></span><span id="apiStatusDot" class="status-dot-core" style="background:#22c55e;"></span></span>
     <span id="apiStatusText" class="status-pill-text">Google Sheet Connecté</span>
   </div>
+  <div id="btnThemeToggle" class="status-pill" onclick="basculerThemeCarnet()" title="Changer le style (Carnet Papier / Ardoise Vestiaire)">
+    <span id="iconTheme">📄</span>
+    <span id="txtTheme" class="status-pill-text">Carnet</span>
+  </div>
   <div id="badgeStatusWhatsApp" class="status-pill" style="display:none;" title="WhatsApp Connecté & Synchronisé" onclick="if(typeof afficherToast==='function') afficherToast('WhatsApp Connecté & Synchronisé', 'succes');">
     <span class="status-dot-wrap"><span class="status-dot-pulse"></span><span class="status-dot-core"></span></span>
     <span id="txtStatusWhatsApp" class="status-pill-text">WhatsApp</span>
   </div>
 </div>
 <div class="home-logo-wrap">
+<div class="masking-tape masking-tape-orange"></div>
 <div class="home-logo"><img id="homeLogoImg" src="images/logo.png" alt="Club"></div>
 <button type="button" id="btnEditClubLogoBadge" class="btn-logo-edit-badge" title="Changer le blason du club" onclick="ouvrirModalCouleurs()" style="display:none;">Logo</button>
 </div>
@@ -60,6 +65,7 @@
 <div id="playerBox" style="display:none;flex-direction:column;align-items:center;gap:12px;width:100%;">
 <div class="player-box-left">
 <div id="playerPreviewCard" class="player-athlete-card">
+<div class="masking-tape masking-tape-orange"></div>
 <img id="playerCardLogo" class="card-logo-watermark" src="images/logo.png" alt="Club">
 <img id="playerImgPreview" class="tbg-photo" style="display:none;">
 <div class="tbg-overlay"></div>
@@ -1371,12 +1377,12 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/api.js?v=2.0.7"></script>
-  <script src="js/app.js?v=2.0.7"></script>
+  <script src="js/api.js?v=2.0.8"></script>
+  <script src="js/app.js?v=2.0.8"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.0.7').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.0.8').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

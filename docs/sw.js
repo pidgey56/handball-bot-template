@@ -3,7 +3,7 @@
 // Gestion du cache hors-ligne et fonctionnement PWA
 // ============================================================================
 
-const CACHE_NAME = 'handball-app-v2.0.7';
+const CACHE_NAME = 'handball-app-v2.0.8';
 const STATIC_ASSETS = [
   './',
   './index.html',

@@ -4549,7 +4549,46 @@ function appliquerClubConfigPublique(cfg){
   }
 }
 
+
+window.basculerThemeCarnet = function() {
+  var isSlate = document.body.classList.contains('theme-slate');
+  var ic = document.getElementById('iconTheme');
+  var tx = document.getElementById('txtTheme');
+  if (isSlate) {
+    document.body.classList.remove('theme-slate');
+    try { localStorage.setItem('hb_da_theme', 'paper'); } catch(e){}
+    if (ic) ic.textContent = '📄';
+    if (tx) tx.textContent = 'Carnet';
+    if (typeof afficherToast === 'function') afficherToast('Mode Carnet Moleskine activé 📄', 'info');
+  } else {
+    document.body.classList.add('theme-slate');
+    try { localStorage.setItem('hb_da_theme', 'slate'); } catch(e){}
+    if (ic) ic.textContent = '📋';
+    if (tx) tx.textContent = 'Ardoise';
+    if (typeof afficherToast === 'function') afficherToast('Mode Ardoise Vestiaire activé 📋', 'info');
+  }
+};
+
+function initialiserThemeCarnet() {
+  try {
+    var savedTheme = localStorage.getItem('hb_da_theme') || 'paper';
+    var ic = document.getElementById('iconTheme');
+    var tx = document.getElementById('txtTheme');
+    if (savedTheme === 'slate') {
+      document.body.classList.add('theme-slate');
+      if (ic) ic.textContent = '📋';
+      if (tx) tx.textContent = 'Ardoise';
+    } else {
+      document.body.classList.remove('theme-slate');
+      if (ic) ic.textContent = '📄';
+      if (tx) tx.textContent = 'Carnet';
+    }
+  } catch(e) {}
+}
+
 function demarrerApp(){
+  try { initialiserThemeCarnet(); } catch(eTheme){}
+
   try {
     var rawClubCfg = localStorage.getItem("hb_club_config");
     if(rawClubCfg){
