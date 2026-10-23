@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
 var APP_VERSION = '2.0.0';
@@ -1615,6 +1615,37 @@ var tinder = (demarrerEnTinder !== undefined && demarrerEnTinder !== null) ? !!d
 choisirModeTrain(tinder);
 }
 function entrerEffectif(){ basculerVue("rosterView"); }
+// Gestion des onglets / intercalaires du Carnet de Coach
+window.basculerOngletCarnet = function(idOnglet) {
+  var tabs = document.querySelectorAll(".carnet-tab");
+  tabs.forEach(function(t) {
+    t.classList.toggle("active", t.getAttribute("data-tab") === idOnglet);
+  });
+  var panels = ["panelProfil", "panelMatchs", "panelTrain", "panelClub", "panelCoach"];
+  var targetId = "panel" + idOnglet.charAt(0).toUpperCase() + idOnglet.slice(1);
+  panels.forEach(function(pid) {
+    var p = document.getElementById(pid);
+    if (!p) return;
+    if (pid === targetId) {
+      p.style.display = "flex";
+      p.classList.add("active");
+    } else {
+      p.style.display = "none";
+      p.classList.remove("active");
+    }
+  });
+};
+
+function initialiserNavigationCarnet() {
+  var navTabs = document.getElementById("carnetNavTabs");
+  if (navTabs) navTabs.style.display = "flex";
+  var bTabCoach = document.getElementById("btnTabCoach");
+  if (bTabCoach) bTabCoach.style.display = (EST_COACH || EST_TRESORIER) ? "flex" : "none";
+  var coachBox = document.getElementById("coachMenuBox");
+  if (coachBox) coachBox.style.display = (EST_COACH || EST_TRESORIER) ? "block" : "none";
+  basculerOngletCarnet("profil");
+}
+
 function seConnecter(silencieux){
 var tel = document.getElementById("inpTel").value, pin = document.getElementById("inpPin").value;
 if(!silencieux){
@@ -1633,11 +1664,7 @@ document.body.classList.add("user-logged-in");
 document.getElementById("loginBox").style.display = "none";
 document.getElementById("playerBox").style.display = "flex";
 majEspaceJoueur(res.nom);
-if(EST_COACH || EST_TRESORIER){
-document.getElementById("coachMenuBox").style.display = "block";
-} else {
-document.getElementById("coachMenuBox").style.display = "none";
-}
+initialiserNavigationCarnet();
 if(EST_COACH){
 var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "flex";
 majAffichageModesParDefaut();
@@ -1664,6 +1691,7 @@ try { localStorage.removeItem("hb_pin"); localStorage.removeItem("hb_session"); 
 SESSION_TEL = ""; SESSION_PIN = ""; SESSION_NOM = ""; EST_COACH = false; EST_TRESORIER = false;
 document.body.classList.remove("user-logged-in");
 var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "none";
+var navTabs = document.getElementById("carnetNavTabs"); if(navTabs) navTabs.style.display = "none";
 document.getElementById("coachMenuBox").style.display = "none";
 document.getElementById("playerBox").style.display = "none";
 document.getElementById("loginBox").style.display = "flex";
@@ -4623,11 +4651,7 @@ function demarrerApp(){
       document.getElementById("loginBox").style.display = "none";
       document.getElementById("playerBox").style.display = "flex";
       majEspaceJoueur(SESSION_NOM);
-      if(EST_COACH || EST_TRESORIER){
-        document.getElementById("coachMenuBox").style.display = "block";
-      } else {
-        document.getElementById("coachMenuBox").style.display = "none";
-      }
+      initialiserNavigationCarnet();
       if(EST_COACH){
         var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "flex";
       }

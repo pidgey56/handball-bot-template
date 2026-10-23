@@ -1131,15 +1131,133 @@ body.theme-slate .handball-field-wrapper {
 .toast-erreur { background: #dc2626; }
 .toast-info { background: #0284c7; }
 
-/* Responsive Grid pour le Dashboard */
-@media(min-width: 1024px) {
-  body.user-logged-in #playerBox {
-    display: grid!important;
-    grid-template-columns: 340px 1fr!important;
-    gap: 32px!important;
-    align-items: start;
+/* ==============================================================================
+ * NAVIGATION PAR ONGLETS DU CARNET (INTERCALAIRES)
+ * ============================================================================== */
+.carnet-nav-tabs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 680px;
+  margin: 10px auto 16px auto;
+  padding: 6px;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 16px;
+  box-shadow: 2.5px 3px 0px var(--card-border);
+  box-sizing: border-box;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.carnet-nav-tabs::-webkit-scrollbar {
+  display: none;
+}
+.carnet-tab {
+  flex: 1;
+  min-width: 68px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  padding: 8px 6px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  user-select: none;
+}
+.carnet-tab-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: transform 0.18s ease;
+}
+.carnet-tab-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.carnet-tab:hover {
+  color: var(--text-main);
+  background: rgba(234, 88, 12, 0.08);
+}
+.carnet-tab.active {
+  background: var(--postit-orange);
+  border-color: var(--card-border);
+  color: var(--color-primary);
+  box-shadow: 1.5px 2px 0px var(--card-border);
+}
+.carnet-tab.active .carnet-tab-icon {
+  transform: scale(1.15);
+}
+body.theme-slate .carnet-tab.active {
+  background: #2a241e;
+  border-color: var(--card-border);
+  color: #fb923c;
+}
+
+/* Panneaux des intercalaires */
+.carnet-panel {
+  display: none;
+  width: 100%;
+  box-sizing: border-box;
+  animation: carnetPanelFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.carnet-panel.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+@keyframes carnetPanelFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mode mobile pour la barre d'onglets : sticky en bas de l'écran façon App mobile native */
+@media(max-width: 640px) {
+  .carnet-nav-tabs {
+    position: fixed;
+    bottom: 8px;
+    left: 10px;
+    right: 10px;
+    width: calc(100% - 20px);
+    max-width: none;
+    margin: 0;
+    z-index: 95;
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4), 2.5px 3.5px 0px var(--card-border);
+    padding: 4px;
+    border-radius: 18px;
   }
-  .player-box-left { display: flex; flex-direction: column; gap: 14px; width: 100%; }
-  .player-box-right { display: flex; flex-direction: column; gap: 16px; width: 100%; }
-  #coachMenuBox, #btnDeconnexion { grid-column: 1/-1; width: 100%; }
+  .carnet-tab {
+    padding: 6px 4px;
+    min-width: 58px;
+  }
+  .carnet-tab-icon {
+    font-size: 1.05rem;
+  }
+  .carnet-tab-label {
+    font-size: 0.65rem;
+  }
+  body.user-logged-in {
+    padding-bottom: 78px !important;
+  }
+}
+
+/* Desktop layout pour les panneaux du carnet */
+@media(min-width: 1024px) {
+  #playerBox {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  .carnet-panel {
+    max-width: 880px;
+  }
 }

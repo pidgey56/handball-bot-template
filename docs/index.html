@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.0.9">
+  <link rel="stylesheet" href="css/style.css?v=2.1.0">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -62,181 +62,253 @@
 <div class="home-status" id="loginError" style="color:#f87171;text-align:center;"></div>
 <button class="btn-enter" id="btnLogin" onclick="seConnecter()">Se connecter</button>
 </div>
-<div id="playerBox" style="display:none;flex-direction:column;align-items:center;gap:12px;width:100%;">
-<div class="player-box-left">
-<div id="playerPreviewCard" class="player-athlete-card">
-<div class="masking-tape masking-tape-orange"></div>
-<img id="playerCardLogo" class="card-logo-watermark" src="images/logo.png" alt="Club">
-<img id="playerImgPreview" class="tbg-photo" style="display:none;">
-<div class="tbg-overlay"></div>
-<div id="playerInitialPreview" class="tavatar" style="position:absolute;top:38px;left:50%;transform:translateX(-50%);margin:0;">J</div>
-<div style="position:relative;z-index:2;text-align:center;width:100%;">
-<div id="playerChouchouBadgeCard" style="display:none;margin-bottom:4px;"><span class="chouchou-badge" style="font-size:0.75rem;padding:3px 10px;">❤️ Chouchou du coach</span></div>
-<div id="playerNomPreview" style="font-weight:900;font-size:1.35rem;letter-spacing:0.3px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.8);">Joueur</div>
-<div id="playerPostePreview" style="font-size:0.84rem;color:var(--color-secondary);font-weight:700;margin-top:2px;text-shadow:0 2px 4px rgba(0,0,0,0.8);">Poste</div>
-<div style="display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
-<span id="playerAssiduiteBadge" style="font-size:0.7rem;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);padding:3px 8px;border-radius:99px;border:1px solid rgba(255,255,255,0.15);color:#e2e8f0;font-weight:700;">⚡ Assiduité : --</span>
-<span id="playerStatutPresenceBadge" style="font-size:0.7rem;background:rgba(34,197,94,0.2);backdrop-filter:blur(6px);padding:3px 8px;border-radius:99px;border:1px solid rgba(34,197,94,0.4);color:#86efac;font-weight:700;">✓ Actif</span>
-</div>
-</div>
-</div>
-<div style="display:flex;gap:6px;width:100%;margin-top:2px;">
-<button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(30,41,59,0.8);" onclick="togglePhotoSelect()">📸 Photo ▾</button>
-<button type="button" class="btn-reset" style="flex:1;padding:7px 10px;font-size:0.78rem;background:rgba(30,41,59,0.8);" onclick="togglePosteSelect()">🎯 Poste ▾</button>
-</div>
-<div id="photoSelectBox" style="width:100%;text-align:left;display:none;background:rgba(15,23,42,0.85);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);margin-top:4px;">
-<div style="font-size:0.78rem;color:#94a3b8;font-weight:700;margin-bottom:6px;">Photo de profil :</div>
-<div style="display:flex;gap:6px;margin-bottom:8px;">
-<button type="button" class="btn-wa" style="flex:1;font-size:0.76rem;padding:7px 10px;" onclick="ouvrirSelecteurPhotoJoueur()">📁 Parcourir un fichier / Appareil</button>
-</div>
-<label for="inpPhotoUrlJoueur" style="font-size:0.73rem;color:#cbd5e1;display:block;margin-bottom:4px;">Ou coller une URL d'image (https://...) :</label>
-<div style="display:flex;gap:6px;">
-<input type="url" id="inpPhotoUrlJoueur" class="inp-field" style="font-size:0.78rem;padding:5px 8px;" placeholder="https://site.com/photo.jpg">
-<button type="button" class="btn-save" style="padding:5px 12px;font-size:0.76rem;white-space:nowrap;" onclick="enregistrerPhotoUrlJoueur()">Valider</button>
-</div>
-<div style="display:flex;justify-content:flex-end;margin-top:6px;">
-<button type="button" class="btn-reset" style="font-size:0.72rem;padding:3px 8px;color:#f87171;border-color:rgba(239,68,68,0.25);" onclick="supprimerMaPhotoJoueur()">Retirer ma photo</button>
-</div>
-</div>
-<div id="posteSelectBox" style="width:100%;text-align:left;display:none;background:rgba(15,23,42,0.7);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);">
-<label style="font-size:0.78rem;color:#94a3b8;font-weight:600;display:block;margin-bottom:6px;">Mon poste préféré sur le terrain :</label>
-<select id="selPosteJoueur" class="inp-field" onchange="changerMonPoste()">
-<option value="Gardien">Gardien</option>
-<option value="Ailier Gauche">Ailier Gauche</option>
-<option value="Arrière Gauche">Arrière Gauche</option>
-<option value="Demi-Centre">Demi-Centre</option>
-<option value="Pivot">Pivot</option>
-<option value="Arrière Droit">Arrière Droit</option>
-<option value="Ailier Droit">Ailier Droit</option>
-</select>
-</div>
-<input type="file" id="filePhoto" accept="image/*" style="display:none;" onchange="chargerFichierPhoto(event)">
-<div class="home-status" id="photoStatus"></div>
-</div>
-<div class="player-box-right">
-<div id="matchHubBanner" class="match-hub-banner" onclick="ouvrirApercuCompoJoueur()">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-<span id="matchHubStatutBadge" style="font-size:0.76rem;font-weight:800;padding:3px 9px;border-radius:99px;background:rgba(234,179,8,0.2);color:#facc15;border:1px solid rgba(234,179,8,0.3);">⏳ MATCH DU WEEK-END</span>
-<span id="matchHubEquipeBadge" style="font-size:0.75rem;font-weight:700;color:#94a3b8;"></span>
-</div>
-<div id="matchHubAdversaire" style="font-weight:900;font-size:1.05rem;color:#fff;margin-bottom:3px;">Consultez vos convocations</div>
-<div id="matchHubDetails" style="font-size:0.8rem;color:#cbd5e1;line-height:1.4;margin-bottom:8px;">Détails des matchs et convocations officiels du club.</div>
-<div id="matchHubActions" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-<button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.76rem;background:rgba(30,41,59,0.8);" onclick="event.stopPropagation();ouvrirGpsGymnase('waze')">🚗 Waze</button>
-<button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.76rem;background:rgba(30,41,59,0.8);" onclick="event.stopPropagation();ouvrirGpsGymnase('maps')">📍 Maps</button>
-<button type="button" class="btn-wa" style="padding:6px 12px;font-size:0.76rem;flex:1;" onclick="event.stopPropagation();ouvrirApercuCompoJoueur()">📐 Voir Terrain Tactique</button>
-</div>
-<div style="font-size:0.72rem;color:#38bdf8;font-weight:700;display:flex;align-items:center;gap:4px;">📐 Toucher pour ouvrir le terrain tactique & compositions →</div>
-</div>
-<div class="player-hub-grid">
-<div class="player-tile tile-mvp" onclick="ouvrirModalMvp()">
-<div class="player-tile-top"><span class="player-tile-icon">🏆</span><span id="tileBadgeMvp" class="player-tile-badge badge-mvp">Vote ouvert</span></div>
-<div><div class="player-tile-title">Élection MVP</div><div id="tileSubMvp" class="player-tile-sub">Élisez le joueur du match</div></div>
-</div>
-<div class="player-tile tile-chevre" onclick="ouvrirModalChevre()">
-<div class="player-tile-top"><span class="player-tile-icon">🐐</span><span id="tileBadgeChevre" class="player-tile-badge badge-chevre">Bêtisier</span></div>
-<div><div class="player-tile-title">Trophée Chèvre</div><div id="tileSubChevre" class="player-tile-sub">Proposez & votez les casseroles</div></div>
-</div>
-<div class="player-tile tile-covoit" onclick="ouvrirModalCovoiturage()">
-<div class="player-tile-top"><span class="player-tile-icon">🚗</span><span id="tileBadgeCovoit" class="player-tile-badge badge-covoit">Trajets</span></div>
-<div><div class="player-tile-title">Covoiturage</div><div id="tileSubCovoit" class="player-tile-sub">Proposer ou trouver 1 place</div></div>
-</div>
-<div class="player-tile tile-absence" onclick="ouvrirModalAbsence()">
-<div class="player-tile-top"><span class="player-tile-icon">📅</span><span id="tileBadgeAbsence" class="player-tile-badge badge-absence">Prévenir</span></div>
-<div><div class="player-tile-title">Déclarer Absence</div><div id="tileSubAbsence" class="player-tile-sub">Indiquer vos indispos</div></div>
-</div>
-<div class="player-tile tile-caisse" id="playerTileCaisse" style="grid-column:1/-1;" onclick="ouvrirModalCaisseNoire()">
-<div class="player-tile-top"><span class="player-tile-icon">💰</span><span id="tileBadgeCaisse" class="player-tile-badge" style="background:rgba(234,179,8,0.2);color:#fef08a;border-color:rgba(234,179,8,0.35);">Cagnotte</span></div>
-<div><div class="player-tile-title">Caisse Noire & Amendes</div><div id="tileSubCaisse" class="player-tile-sub">Ardoise, cagnotte & barème</div></div>
-</div>
-</div>
-</div>
-<div id="coachMenuBox" style="display:none;width:100%;border-top:1px solid rgba(148,163,184,0.18);padding-top:14px;margin-top:6px;">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-<span style="font-size:0.85rem;color:var(--color-secondary);font-weight:900;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">ESPACE COACH</span>
-<span class="badge-mode" style="background:rgba(148,163,184,0.15);color:#94a3b8;">Tableau de bord</span>
-</div>
-<div id="modeSelectorBar" style="background:rgba(30,41,59,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-    <div>
-      <span style="font-size:0.72rem;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Mode de fonctionnement du club</span>
-      <div id="lblModeActif" style="font-size:0.95rem;font-weight:900;color:#fff;margin-top:2px;">🏆 Mode FFHB Uniquement</div>
+<!-- BARRE D'ONGLETS INTERCALAIRES DU CARNET (affichée une fois connecté) -->
+<nav id="carnetNavTabs" class="carnet-nav-tabs" style="display:none;">
+  <button type="button" class="carnet-tab active" data-tab="profil" onclick="basculerOngletCarnet('profil')">
+    <span class="carnet-tab-icon">👤</span>
+    <span class="carnet-tab-label">Mon Profil</span>
+  </button>
+  <button type="button" class="carnet-tab" data-tab="matchs" onclick="basculerOngletCarnet('matchs')">
+    <span class="carnet-tab-icon">🤾</span>
+    <span class="carnet-tab-label">Matchs</span>
+  </button>
+  <button type="button" class="carnet-tab" data-tab="train" onclick="basculerOngletCarnet('train')">
+    <span class="carnet-tab-icon">🏃</span>
+    <span class="carnet-tab-label">Entraînements</span>
+  </button>
+  <button type="button" class="carnet-tab" data-tab="club" onclick="basculerOngletCarnet('club')">
+    <span class="carnet-tab-icon">🏆</span>
+    <span class="carnet-tab-label">Vie d'Équipe</span>
+  </button>
+  <button type="button" class="carnet-tab" data-tab="coach" id="btnTabCoach" style="display:none;" onclick="basculerOngletCarnet('coach')">
+    <span class="carnet-tab-icon">⚙️</span>
+    <span class="carnet-tab-label">Coach</span>
+  </button>
+</nav>
+
+<div id="playerBox" style="display:none;flex-direction:column;align-items:center;gap:14px;width:100%;">
+
+  <!-- ONGLET 1 : MON PROFIL -->
+  <div id="panelProfil" class="carnet-panel active" style="display:flex;width:100%;max-width:360px;">
+    <div class="player-box-left" style="width:100%;">
+      <div id="playerPreviewCard" class="player-athlete-card">
+        <div class="masking-tape masking-tape-orange"></div>
+        <img id="playerCardLogo" class="card-logo-watermark" src="images/logo.png" alt="Club">
+        <img id="playerImgPreview" class="tbg-photo" style="display:none;">
+        <div class="tbg-overlay"></div>
+        <div id="playerInitialPreview" class="tavatar" style="position:absolute;top:38px;left:50%;transform:translateX(-50%);margin:0;">J</div>
+        <div style="position:relative;z-index:2;text-align:center;width:100%;">
+          <div id="playerChouchouBadgeCard" style="display:none;margin-bottom:4px;"><span class="chouchou-badge" style="font-size:0.75rem;padding:3px 10px;">❤️ Chouchou du coach</span></div>
+          <div id="playerNomPreview" style="font-weight:900;font-size:1.35rem;letter-spacing:0.3px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.8);">Joueur</div>
+          <div id="playerPostePreview" style="font-size:0.84rem;color:var(--color-secondary);font-weight:700;margin-top:2px;text-shadow:0 2px 4px rgba(0,0,0,0.8);">Poste</div>
+          <div style="display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
+            <span id="playerAssiduiteBadge" style="font-size:0.7rem;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);padding:3px 8px;border-radius:99px;border:1px solid rgba(255,255,255,0.15);color:#e2e8f0;font-weight:700;">⚡ Assiduité : --</span>
+            <span id="playerStatutPresenceBadge" style="font-size:0.7rem;background:rgba(34,197,94,0.2);backdrop-filter:blur(6px);padding:3px 8px;border-radius:99px;border:1px solid rgba(34,197,94,0.4);color:#86efac;font-weight:700;">✓ Actif</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;width:100%;margin-top:4px;">
+        <button type="button" class="btn-reset" style="flex:1;padding:8px 10px;font-size:0.78rem;background:var(--card-bg);border:1.5px solid var(--card-border);box-shadow:1.5px 1.5px 0px var(--card-border);font-weight:700;" onclick="togglePhotoSelect()">📸 Photo ▾</button>
+        <button type="button" class="btn-reset" style="flex:1;padding:8px 10px;font-size:0.78rem;background:var(--card-bg);border:1.5px solid var(--card-border);box-shadow:1.5px 1.5px 0px var(--card-border);font-weight:700;" onclick="togglePosteSelect()">🎯 Poste ▾</button>
+      </div>
+      <div id="photoSelectBox" style="width:100%;text-align:left;display:none;background:var(--card-bg);padding:12px;border-radius:12px;border:2px solid var(--card-border);box-shadow:2px 2px 0px var(--card-border);margin-top:6px;">
+        <div style="font-size:0.78rem;color:var(--text-main);font-weight:700;margin-bottom:6px;">Photo de profil :</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button type="button" class="btn-wa" style="flex:1;font-size:0.76rem;padding:7px 10px;" onclick="ouvrirSelecteurPhotoJoueur()">📁 Parcourir un fichier / Appareil</button>
+        </div>
+        <label for="inpPhotoUrlJoueur" style="font-size:0.73rem;color:var(--text-muted);display:block;margin-bottom:4px;">Ou coller une URL d'image (https://...) :</label>
+        <div style="display:flex;gap:6px;">
+          <input type="url" id="inpPhotoUrlJoueur" class="inp-field" style="font-size:0.78rem;padding:5px 8px;" placeholder="https://site.com/photo.jpg">
+          <button type="button" class="btn-save" style="padding:5px 12px;font-size:0.76rem;white-space:nowrap;" onclick="enregistrerPhotoUrlJoueur()">Valider</button>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+          <button type="button" class="btn-reset" style="font-size:0.72rem;padding:3px 8px;color:#f87171;border-color:rgba(239,68,68,0.25);" onclick="supprimerMaPhotoJoueur()">Retirer ma photo</button>
+        </div>
+      </div>
+      <div id="posteSelectBox" style="width:100%;text-align:left;display:none;background:var(--card-bg);padding:12px;border-radius:12px;border:2px solid var(--card-border);box-shadow:2px 2px 0px var(--card-border);margin-top:6px;">
+        <label style="font-size:0.78rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px;">Mon poste préféré sur le terrain :</label>
+        <select id="selPosteJoueur" class="inp-field" onchange="changerMonPoste()">
+          <option value="Gardien">Gardien</option>
+          <option value="Ailier Gauche">Ailier Gauche</option>
+          <option value="Arrière Gauche">Arrière Gauche</option>
+          <option value="Demi-Centre">Demi-Centre</option>
+          <option value="Pivot">Pivot</option>
+          <option value="Arrière Droit">Arrière Droit</option>
+          <option value="Ailier Droit">Ailier Droit</option>
+        </select>
+      </div>
+      <input type="file" id="filePhoto" accept="image/*" style="display:none;" onchange="chargerFichierPhoto(event)">
+      <div class="home-status" id="photoStatus"></div>
+      
+      <div style="display:flex;flex-direction:column;gap:8px;width:100%;margin-top:12px;">
+        <button type="button" class="btn-reset" style="width:100%;padding:10px;font-size:0.8rem;background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:1.5px 1.5px 0px var(--card-border);" onclick="ouvrirModalAbsence()">📅 Signaler une absence / Indisponibilité</button>
+        <button type="button" class="btn-reset" style="width:100%;padding:9px;font-size:0.76rem;color:var(--text-muted);border:1px dashed var(--card-border);border-radius:12px;font-weight:700;" onclick="ouvrirModalPwa()">📲 Ajouter à l'écran d'accueil (PWA)</button>
+        <button id="btnDeconnexion" class="btn-reset btn-deconnexion" style="width:100%;padding:9px;font-size:0.82rem;font-weight:800;border-radius:12px;margin-top:4px;" onclick="seDeconnecter()">🚪 Déconnexion</button>
+      </div>
     </div>
-    <span id="badgeModeDesc" style="font-size:0.75rem;padding:3px 10px;border-radius:99px;background:rgba(59,130,246,0.15);color:#60a5fa;font-weight:700;">Zéro WhatsApp requis</span>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;">
-    <button type="button" class="btn-tab-mode" id="btnModeFFHB" onclick="changerModeFonctionnement('FFHB_ONLY')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid #3b82f6;background:#1e3a8a;color:#fff;cursor:pointer;">🏆 FFHB Pur</button>
-    <button type="button" class="btn-tab-mode" id="btnModeLoisir" onclick="changerModeFonctionnement('PRESENCES_ONLY')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.8);color:#94a3b8;cursor:pointer;">📋 Présences Seules</button>
-    <button type="button" class="btn-tab-mode" id="btnModeComplet" onclick="changerModeFonctionnement('COMPLET')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.8);color:#94a3b8;cursor:pointer;">⚡ Complet</button>
+
+  <!-- ONGLET 2 : MATCHS & COMPOSITIONS -->
+  <div id="panelMatchs" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
+    <div id="matchHubBanner" class="match-hub-banner" onclick="ouvrirApercuCompoJoueur()" style="width:100%;box-sizing:border-box;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span id="matchHubStatutBadge" style="font-size:0.76rem;font-weight:800;padding:3px 9px;border-radius:99px;background:rgba(234,179,8,0.2);color:#facc15;border:1px solid rgba(234,179,8,0.3);">⏳ MATCH DU WEEK-END</span>
+        <span id="matchHubEquipeBadge" style="font-size:0.75rem;font-weight:700;color:#94a3b8;"></span>
+      </div>
+      <div id="matchHubAdversaire" style="font-weight:900;font-size:1.05rem;color:#fff;margin-bottom:3px;">Consultez vos convocations</div>
+      <div id="matchHubDetails" style="font-size:0.8rem;color:#cbd5e1;line-height:1.4;margin-bottom:8px;">Détails des matchs et convocations officiels du club.</div>
+      <div id="matchHubActions" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+        <button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.76rem;background:rgba(30,41,59,0.8);" onclick="event.stopPropagation();ouvrirGpsGymnase('waze')">🚗 Waze</button>
+        <button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.76rem;background:rgba(30,41,59,0.8);" onclick="event.stopPropagation();ouvrirGpsGymnase('maps')">📍 Maps</button>
+        <button type="button" class="btn-wa" style="padding:6px 12px;font-size:0.76rem;flex:1;" onclick="event.stopPropagation();ouvrirApercuCompoJoueur()">📐 Voir Terrain Tactique</button>
+      </div>
+      <div style="font-size:0.72rem;color:#38bdf8;font-weight:700;display:flex;align-items:center;gap:4px;">📐 Toucher pour ouvrir le terrain tactique & compositions →</div>
+    </div>
+    
+    <div class="dash-tile" style="width:100%;box-sizing:border-box;margin-top:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div class="dash-tile-title">Feuilles de Match & Convocations</div>
+        <span class="badge-mode" style="font-size:0.7rem;">1 à 3 équipes</span>
+      </div>
+      <div class="dash-tile-desc">Gérez la sélection des joueurs convoqués, le banc et les postes tactiques.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+        <button type="button" class="btn-enter" style="margin:0;padding:10px 6px;font-size:0.82rem;" onclick="entrer(false)">📐 Mode Tactique</button>
+        <button type="button" class="btn-enter btn-enter-tinder" style="margin:0;padding:10px 6px;font-size:0.82rem;" onclick="entrer(true)">⚡ Mode Tinder</button>
+      </div>
+      <button type="button" class="btn-enter btn-enter-alt" style="margin-top:8px;padding:8px;font-size:0.8rem;width:100%;" onclick="ouvrirApercuCompoJoueur()">👀 Aperçu Terrain & Convocations</button>
+    </div>
   </div>
+
+  <!-- ONGLET 3 : ENTRAÎNEMENTS -->
+  <div id="panelTrain" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
+    <div class="dash-tile" style="width:100%;box-sizing:border-box;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div class="dash-tile-title">🏃 Séances d'Entraînement de la Semaine</div>
+        <span class="badge-mode" style="font-size:0.7rem;">Présences & Assiduité</span>
+      </div>
+      <div class="dash-tile-desc">Consultez les réponses aux sondages, répartissez les groupes et notez les présences.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+        <button type="button" class="btn-enter" style="margin:0;padding:10px 6px;font-size:0.82rem;" onclick="entrerEntrainement(false)">📋 Feuille d'Entraînement</button>
+        <button type="button" class="btn-enter btn-enter-tinder" style="margin:0;padding:10px 6px;font-size:0.82rem;" onclick="entrerEntrainement(true)">⚡ Sélection Tinder Rapide</button>
+      </div>
+      <button type="button" class="btn-enter btn-enter-alt" style="margin-top:8px;padding:8px;font-size:0.8rem;width:100%;" onclick="ouvrirModalConfigEntrainements()">⚙️ Horaires & Créneaux des Séances</button>
+    </div>
+  </div>
+
+  <!-- ONGLET 4 : VIE D'ÉQUIPE -->
+  <div id="panelClub" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
+    <div class="player-hub-grid" style="width:100%;">
+      <div class="player-tile tile-mvp" onclick="ouvrirModalMvp()">
+        <div class="player-tile-top"><span class="player-tile-icon">🏆</span><span id="tileBadgeMvp" class="player-tile-badge badge-mvp">Vote ouvert</span></div>
+        <div><div class="player-tile-title">Élection MVP</div><div id="tileSubMvp" class="player-tile-sub">Élisez le joueur du match</div></div>
+      </div>
+      <div class="player-tile tile-chevre" onclick="ouvrirModalChevre()">
+        <div class="player-tile-top"><span class="player-tile-icon">🐐</span><span id="tileBadgeChevre" class="player-tile-badge badge-chevre">Bêtisier</span></div>
+        <div><div class="player-tile-title">Trophée Chèvre</div><div id="tileSubChevre" class="player-tile-sub">Proposez & votez les casseroles</div></div>
+      </div>
+      <div class="player-tile tile-covoit" onclick="ouvrirModalCovoiturage()">
+        <div class="player-tile-top"><span class="player-tile-icon">🚗</span><span id="tileBadgeCovoit" class="player-tile-badge badge-covoit">Trajets</span></div>
+        <div><div class="player-tile-title">Covoiturage</div><div id="tileSubCovoit" class="player-tile-sub">Proposer ou trouver 1 place</div></div>
+      </div>
+      <div class="player-tile tile-absence" onclick="ouvrirModalAbsence()">
+        <div class="player-tile-top"><span class="player-tile-icon">📅</span><span id="tileBadgeAbsence" class="player-tile-badge badge-absence">Prévenir</span></div>
+        <div><div class="player-tile-title">Déclarer Absence</div><div id="tileSubAbsence" class="player-tile-sub">Indiquer vos indispos</div></div>
+      </div>
+      <div class="player-tile tile-caisse" id="playerTileCaisse" style="grid-column:1/-1;" onclick="ouvrirModalCaisseNoire()">
+        <div class="player-tile-top"><span class="player-tile-icon">💰</span><span id="tileBadgeCaisse" class="player-tile-badge" style="background:rgba(234,179,8,0.2);color:#fef08a;border-color:rgba(234,179,8,0.35);">Cagnotte</span></div>
+        <div><div class="player-tile-title">Caisse Noire & Amendes</div><div id="tileSubCaisse" class="player-tile-sub">Ardoise, cagnotte & barème</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONGLET 5 : GESTION COACH -->
+  <div id="panelCoach" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
+    <div id="coachMenuBox" style="width:100%;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-size:0.85rem;color:var(--color-secondary);font-weight:900;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">ESPACE COACH</span>
+        <span class="badge-mode" style="background:rgba(148,163,184,0.15);color:#94a3b8;">Tableau de bord</span>
+      </div>
+      <div id="modeSelectorBar" style="background:rgba(30,41,59,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <span style="font-size:0.72rem;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Mode de fonctionnement du club</span>
+            <div id="lblModeActif" style="font-size:0.95rem;font-weight:900;color:#fff;margin-top:2px;">🏆 Mode FFHB Uniquement</div>
+          </div>
+          <span id="badgeModeDesc" style="font-size:0.75rem;padding:3px 10px;border-radius:99px;background:rgba(59,130,246,0.15);color:#60a5fa;font-weight:700;">Zéro WhatsApp requis</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;">
+          <button type="button" class="btn-tab-mode" id="btnModeFFHB" onclick="changerModeFonctionnement('FFHB_ONLY')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid #3b82f6;background:#1e3a8a;color:#fff;cursor:pointer;">🏆 FFHB Pur</button>
+          <button type="button" class="btn-tab-mode" id="btnModeLoisir" onclick="changerModeFonctionnement('PRESENCES_ONLY')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.8);color:#94a3b8;cursor:pointer;">📋 Présences Seules</button>
+          <button type="button" class="btn-tab-mode" id="btnModeComplet" onclick="changerModeFonctionnement('COMPLET')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.8);color:#94a3b8;cursor:pointer;">⚡ Complet</button>
+        </div>
+      </div>
+      <div class="coach-dashboard-grid">
+        <div class="dash-tile" onclick="gererClicDashCompo(event)" style="cursor:pointer;" title="Entrer dans la composition">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+            <div class="dash-tile-title">Convocations Matchs</div>
+            <span id="badgeModeDefautCompo" style="font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.08);color:#94a3b8;font-weight:700;">Mode auto</span>
+          </div>
+          <div class="dash-tile-desc">Feuilles de matchs 1 à 3 équipes</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
+            <button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterClassic" onclick="entrer(false)">Mode Tactique</button>
+            <button type="button" class="btn-enter btn-enter-tinder" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTinder" onclick="entrer(true)">Mode Tinder</button>
+          </div>
+        </div>
+        <div class="dash-tile" onclick="gererClicDashTrain(event)" style="cursor:pointer;" title="Entrer dans les entraînements">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+            <div class="dash-tile-title">Séances Entraînement</div>
+            <span id="badgeModeDefautTrain" style="font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.08);color:#94a3b8;font-weight:700;">Mode auto</span>
+          </div>
+          <div class="dash-tile-desc">Séparé / Réduit / Complet</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
+            <button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTr" onclick="entrerEntrainement(false)">Mode Tactique</button>
+            <button type="button" class="btn-enter btn-enter-tinder" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTrTinder" onclick="entrerEntrainement(true)">Mode Tinder</button>
+          </div>
+          <button type="button" class="btn-enter btn-enter-alt" style="margin-top:6px;padding:6px;font-size:0.75rem;width:100%;" onclick="event.stopPropagation();ouvrirModalConfigEntrainements()">Configurer créneaux</button>
+        </div>
+        <div class="dash-tile">
+          <div class="dash-tile-title">Effectif du Club</div>
+          <div class="dash-tile-desc">Photos, postes et notes privées coach</div>
+          <button type="button" class="btn-enter btn-enter-alt" style="margin:6px 0 0 0;padding:8px;font-size:0.8rem;width:100%;" onclick="entrerEffectif()">Ouvrir l'effectif</button>
+        </div>
+        <div class="dash-tile">
+          <div class="dash-tile-title">Identité & Blason</div>
+          <div class="dash-tile-desc">Photo de blason, couleurs & thèmes</div>
+          <button type="button" class="btn-enter btn-enter-alt" style="margin:6px 0 0 0;padding:8px;font-size:0.8rem;width:100%;" onclick="ouvrirModalCouleurs()">Personnaliser</button>
+        </div>
+        <div class="dash-tile" id="dashTileCaisseNoireCoach" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95));border:1px solid rgba(234,179,8,0.3);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div class="dash-tile-title" style="color:#fde047;">💰 Caisse Noire & Amendes</div>
+            <span id="badgeCoachCaisseStats" style="font-size:0.75rem;padding:2px 8px;border-radius:99px;background:rgba(234,179,8,0.2);color:#fef08a;font-weight:800;">0 € en caisse</span>
+          </div>
+          <div id="dashDescCaisseNoire" class="dash-tile-desc">Gérer les amendes, encaissements, dépenses d'équipe et barème</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
+            <button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;background:rgba(234,179,8,0.25);border:1px solid #eab308;color:#fef08a;font-weight:700;" onclick="ouvrirModalAdminCaisseNoire()">⚙️ Administrer</button>
+            <button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalCaisseNoire()">👀 Vue Joueurs</button>
+          </div>
+        </div>
+        <div class="dash-tile" id="dashTileVacancesCoach" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(14,116,144,0.35),rgba(15,23,42,0.95));border:1px solid rgba(14,165,233,0.35);" onclick="ouvrirModalVacances()">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div class="dash-tile-title" style="color:#38bdf8;">🏖️ Vacances & Trêves Scolaires</div>
+            <span id="badgeCoachVacances" style="font-size:0.75rem;padding:2px 8px;border-radius:99px;background:rgba(14,165,233,0.2);color:#7dd3fc;font-weight:800;">0 en cours</span>
+          </div>
+          <div id="dashDescVacances" class="dash-tile-desc">Gérer les congés et trêves scolaires (suspension auto des sondages et entraînements)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
+            <button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;background:rgba(14,165,233,0.25);border:1px solid #0ea5e9;color:#e0f2fe;font-weight:700;" onclick="ouvrirModalVacances()">⚙️ Gérer les vacances</button>
+            <button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalConfigEntrainements()">🏃 Horaires Entraînement</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
+        <button type="button" class="btn-enter btn-enter-alt" onclick="ouvrirModalCollectifs()" style="font-size:0.75rem;padding:7px;margin:0;">👥 Multi-Collectifs</button>
+        <button type="button" class="btn-enter btn-enter-alt" onclick="ouvrirModalPwa()" style="font-size:0.75rem;padding:7px;margin:0;">📲 Installer App</button>
+      </div>
+      <button type="button" class="btn-enter" onclick="ouvrirModalGuideCoach()" style="font-size:0.78rem;padding:8px;margin-top:6px;background:rgba(99,102,241,0.22);border:1px solid #6366f1;color:#e0e7ff;font-weight:700;width:100%;">📖 Guide des Fonctionnalités Coach</button>
+    </div>
+  </div>
+
 </div>
-<div class="coach-dashboard-grid">
-<div class="dash-tile" onclick="gererClicDashCompo(event)" style="cursor:pointer;" title="Entrer dans la composition">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
-<div class="dash-tile-title">Convocations Matchs</div>
-<span id="badgeModeDefautCompo" style="font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.08);color:#94a3b8;font-weight:700;">Mode auto</span>
-</div>
-<div class="dash-tile-desc">Feuilles de matchs 1 à 3 équipes</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
-<button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterClassic" onclick="entrer(false)">Mode Tactique</button>
-<button type="button" class="btn-enter btn-enter-tinder" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTinder" onclick="entrer(true)">Mode Tinder</button>
-</div>
-</div>
-<div class="dash-tile" onclick="gererClicDashTrain(event)" style="cursor:pointer;" title="Entrer dans les entraînements">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
-<div class="dash-tile-title">Séances Entraînement</div>
-<span id="badgeModeDefautTrain" style="font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.08);color:#94a3b8;font-weight:700;">Mode auto</span>
-</div>
-<div class="dash-tile-desc">Séparé / Réduit / Complet</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
-<button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTr" onclick="entrerEntrainement(false)">Mode Tactique</button>
-<button type="button" class="btn-enter btn-enter-tinder" style="margin:0;padding:8px 4px;font-size:0.78rem;" id="btnEnterTrTinder" onclick="entrerEntrainement(true)">Mode Tinder</button>
-</div>
-<button type="button" class="btn-enter btn-enter-alt" style="margin-top:6px;padding:6px;font-size:0.75rem;width:100%;" onclick="event.stopPropagation();ouvrirModalConfigEntrainements()">Configurer créneaux</button>
-</div>
-<div class="dash-tile">
-<div class="dash-tile-title">Effectif du Club</div>
-<div class="dash-tile-desc">Photos, postes et notes privées coach</div>
-<button type="button" class="btn-enter btn-enter-alt" style="margin:6px 0 0 0;padding:8px;font-size:0.8rem;width:100%;" onclick="entrerEffectif()">Ouvrir l'effectif</button>
-</div>
-<div class="dash-tile">
-<div class="dash-tile-title">Identité & Blason</div>
-<div class="dash-tile-desc">Photo de blason, couleurs & thèmes</div>
-<button type="button" class="btn-enter btn-enter-alt" style="margin:6px 0 0 0;padding:8px;font-size:0.8rem;width:100%;" onclick="ouvrirModalCouleurs()">Personnaliser</button>
-</div>
-<div class="dash-tile" id="dashTileCaisseNoireCoach" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95));border:1px solid rgba(234,179,8,0.3);">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-<div class="dash-tile-title" style="color:#fde047;">💰 Caisse Noire & Amendes</div>
-<span id="badgeCoachCaisseStats" style="font-size:0.75rem;padding:2px 8px;border-radius:99px;background:rgba(234,179,8,0.2);color:#fef08a;font-weight:800;">0 € en caisse</span>
-</div>
-<div id="dashDescCaisseNoire" class="dash-tile-desc">Gérer les amendes, encaissements, dépenses d'équipe et barème</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
-<button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;background:rgba(234,179,8,0.25);border:1px solid #eab308;color:#fef08a;font-weight:700;" onclick="ouvrirModalAdminCaisseNoire()">⚙️ Administrer</button>
-<button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalCaisseNoire()">👀 Vue Joueurs</button>
-</div>
-</div>
-<div class="dash-tile" id="dashTileVacancesCoach" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(14,116,144,0.35),rgba(15,23,42,0.95));border:1px solid rgba(14,165,233,0.35);" onclick="ouvrirModalVacances()">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-<div class="dash-tile-title" style="color:#38bdf8;">🏖️ Vacances & Trêves Scolaires</div>
-<span id="badgeCoachVacances" style="font-size:0.75rem;padding:2px 8px;border-radius:99px;background:rgba(14,165,233,0.2);color:#7dd3fc;font-weight:800;">0 en cours</span>
-</div>
-<div id="dashDescVacances" class="dash-tile-desc">Gérer les congés et trêves scolaires (suspension auto des sondages et entraînements)</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
-<button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;background:rgba(14,165,233,0.25);border:1px solid #0ea5e9;color:#e0f2fe;font-weight:700;" onclick="ouvrirModalVacances()">⚙️ Gérer les vacances</button>
-<button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalConfigEntrainements()">🏃 Horaires Entraînement</button>
-</div>
-</div>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
-<button type="button" class="btn-enter btn-enter-alt" onclick="ouvrirModalCollectifs()" style="font-size:0.75rem;padding:7px;margin:0;">👥 Multi-Collectifs</button>
-<button type="button" class="btn-enter btn-enter-alt" onclick="ouvrirModalPwa()" style="font-size:0.75rem;padding:7px;margin:0;">📲 Installer App</button>
-</div>
-<button type="button" class="btn-enter" onclick="ouvrirModalGuideCoach()" style="font-size:0.78rem;padding:8px;margin-top:6px;background:rgba(99,102,241,0.22);border:1px solid #6366f1;color:#e0e7ff;font-weight:700;width:100%;">📖 Guide des Fonctionnalités Coach</button>
-</div>
-<button id="btnDeconnexion" class="btn-reset btn-deconnexion" style="width:100%;grid-column:1/-1;margin-top:8px;padding:9px;font-size:0.82rem;font-weight:700;" onclick="seDeconnecter()">Déconnexion</button>
-</div>
-<button type="button" class="btn-reset" style="font-size:0.74rem;color:#94a3b8;margin-top:12px;width:100%;" onclick="ouvrirModalPwa()">📲 Ajouter sur l'écran d'accueil mobile (PWA)</button>
-</div>
+
 </div>
 <div id="appView">
 <header>
@@ -1377,12 +1449,12 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/api.js?v=2.0.9"></script>
-  <script src="js/app.js?v=2.0.9"></script>
+  <script src="js/api.js?v=2.1.0"></script>
+  <script src="js/app.js?v=2.1.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.0.9').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.1.0').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>
