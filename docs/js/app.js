@@ -791,7 +791,11 @@ if(tabC) tabC.className = "view-mode-tab" + (MODE_TINDER ? "" : " active");
 if(tabT) tabT.className = "view-mode-tab" + (MODE_TINDER ? " active" : "");
 var btnSwitch = document.getElementById("btnSwitchMode");
 if(btnSwitch) btnSwitch.textContent = MODE_TINDER ? "Mode Tactique" : "Mode Tinder";
-if(MODE_TINDER) afficherCarteTinder();
+if(MODE_TINDER){
+  var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
+  rendreControlesTinder(nbEq);
+  afficherCarteTinder();
+}
 }
 function basculerMode(){ choisirMode(!MODE_TINDER); }
 function afficherCarteTinder(){
