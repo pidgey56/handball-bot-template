@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '2.2.8';
+const APP_VERSION = '2.2.9';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 const LOGO_OFFICIEL_ACBB = 'https://media-logos-clubs.ffhandball.fr/256/2023-06-03-e7b37b0d-abbc-4623-9d38-ce7840be40f7.webp';
@@ -794,7 +794,7 @@ function initialiserOngletsWebApp(nbEquipesForce) {
   let shEff = ss.getSheetByName('Effectif');
   if (!shEff) {
     shEff = ss.insertSheet('Effectif');
-    shEff.getRange('A1:I1').setValues([['Nom / Surnom', 'Téléphone (format 336...)', 'Poste', 'Équipe habituelle', 'Photo (URL ou lien Drive)', 'Code PIN (Auto)', 'Notes Coach', 'Trésorier', 'Chouchou']]).setFontWeight('bold');
+    shEff.getRange('A1:J1').setValues([['Nom / Surnom', 'Téléphone (format 336...)', 'Poste', 'Équipe habituelle', 'Photo (URL ou lien Drive)', 'Code PIN (Auto)', 'Notes Coach', 'Trésorier', 'Chouchou', 'ID Spakta']]).setFontWeight('bold');
   } else {
     try {
       const hVal = shEff.getRange('H1').getValue();
@@ -804,6 +804,10 @@ function initialiserOngletsWebApp(nbEquipesForce) {
       const iVal = shEff.getRange('I1').getValue();
       if (!iVal) {
         shEff.getRange('I1').setValue('Chouchou').setFontWeight('bold');
+      }
+      const jVal = shEff.getRange('J1').getValue();
+      if (!jVal) {
+        shEff.getRange('J1').setValue('ID Spakta').setFontWeight('bold');
       }
     } catch (e) {}
   }
@@ -1864,8 +1868,8 @@ function embellirEtReorganiserClasseur(ss) {
   const shEff = ss.getSheetByName('Effectif');
   if (shEff) {
     try {
-      shEff.getRange('A1:I1').setValues([[
-        'Nom et Prénom', 'Téléphone (format 336...)', 'Poste', 'Équipe habituelle', 'Photo (URL ou lien Drive)', 'Code PIN (Auto)', 'Notes du Coach (Privé)', 'Trésorier', 'Chouchou'
+      shEff.getRange('A1:J1').setValues([[
+        'Nom et Prénom', 'Téléphone (format 336...)', 'Poste', 'Équipe habituelle', 'Photo (URL ou lien Drive)', 'Code PIN (Auto)', 'Notes du Coach (Privé)', 'Trésorier', 'Chouchou', 'ID Spakta'
       ]])
       .setBackground('#0f172a')
       .setFontColor('#ffffff')
@@ -1884,11 +1888,12 @@ function embellirEtReorganiserClasseur(ss) {
       shEff.setColumnWidth(7, 260); // Notes
       shEff.setColumnWidth(8, 100); // Trésorier
       shEff.setColumnWidth(9, 100); // Chouchou
+      shEff.setColumnWidth(10, 240); // ID Spakta
 
       const lastRowEff = shEff.getLastRow();
       if (lastRowEff >= 2) {
         const nbLignes = lastRowEff - 1;
-        shEff.getRange(2, 1, nbLignes, 9).setVerticalAlignment('middle');
+        shEff.getRange(2, 1, nbLignes, 10).setVerticalAlignment('middle');
 
         // Validation Postes
         const rulePostes = SpreadsheetApp.newDataValidation()
@@ -1914,7 +1919,7 @@ function embellirEtReorganiserClasseur(ss) {
         for (let r = 2; r <= lastRowEff; r++) {
           shEff.setRowHeight(r, 26);
           const bg = (r % 2 === 0) ? '#ffffff' : '#f8fafc';
-          shEff.getRange(r, 1, 1, 9).setBackground(bg);
+          shEff.getRange(r, 1, 1, 10).setBackground(bg);
           shEff.getRange(r, 1).setFontWeight('bold');
 
           // Badges Trésorier et Chouchou
@@ -1926,8 +1931,13 @@ function embellirEtReorganiserClasseur(ss) {
           if (String(cChou.getValue() || '').toUpperCase() === 'OUI') {
             cChou.setBackground('#ffe4e6').setFontColor('#be123c').setFontWeight('bold');
           }
+          const cSpakta = shEff.getRange(r, 10);
+          cSpakta.setFontFamily('Roboto Mono, Consolas, monospace').setFontSize(9).setHorizontalAlignment('center');
         }
-        shEff.getRange(1, 1, lastRowEff, 9).setBorder(true, true, true, true, true, true, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
+        shEff.getRange(1, 1, lastRowEff, 10).setBorder(true, true, true, true, true, true, '#cbd5e1', SpreadsheetApp.BorderStyle.SOLID);
+
+        // Auto-préremplissage des IDs Spakta si la colonne est vide
+        try { preRemplirIdsSpaktaEffectif(ss, false); } catch (ePre) {}
       }
       shEff.setHiddenGridlines(false);
     } catch (eEff) {}
@@ -2349,6 +2359,7 @@ function authentifierUtilisateur(telephoneSaisi, pinSaisi, inclureDonnees) {
   const valTresorier = joueurRow ? joueurRow[7] : false;
   const estTresorier = Boolean(valTresorier === true || /oui|true|tr[eé]sorier/i.test(String(valTresorier || '').trim()));
   const estCoach = estAdmin || /coach|entraineur|entraîneur|responsable/i.test(posteJoueur);
+  const idSpaktaJoueur = joueurRow ? String(joueurRow[9] || '').trim() : '';
 
   let donneesInitiales = null;
   if (inclureDonnees) {
@@ -2366,6 +2377,7 @@ function authentifierUtilisateur(telephoneSaisi, pinSaisi, inclureDonnees) {
     nom: nomJoueur,
     poste: posteJoueur,
     photo: photoJoueur,
+    idSpakta: idSpaktaJoueur,
     estCoach: estCoach,
     estTresorier: estTresorier,
     donnees: donneesInitiales
@@ -2475,6 +2487,14 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
         shEff.getRange(i + 1, 8).setValue(joueurCible.estTresorier ? 'OUI' : 'NON');
         try { synchroniserTresoriersEtChouchouxSheet(ss, 'effectif'); } catch (e) {}
       }
+      if (joueurCible.idSpakta !== undefined) {
+        try {
+          if (!shEff.getRange('J1').getValue()) {
+            shEff.getRange('J1').setValue('ID Spakta').setFontWeight('bold');
+          }
+        } catch (eH) {}
+        shEff.getRange(i + 1, 10).setValue(String(joueurCible.idSpakta || '').trim());
+      }
 
       if (nouveauPoste) {
         const shVotes = ss.getSheetByName('Votes_Semaine');
@@ -2492,6 +2512,7 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
       const valTresorierActuel = (estVraiCoach && joueurCible.estTresorier !== undefined) ? Boolean(joueurCible.estTresorier) : Boolean(rows[i][7] === true || /oui|true|tr[eé]sorier/i.test(String(rows[i][7] || '')));
 
       const photoStockeeFinale = (nouvellePhoto !== undefined) ? nouvellePhoto : rows[i][4];
+      const idSpaktaFinal = (joueurCible.idSpakta !== undefined) ? String(joueurCible.idSpakta || '').trim() : String(rows[i][9] || '').trim();
 
       return {
         ok: true,
@@ -2502,7 +2523,8 @@ function enregistrerFicheJoueurParCoach(telCoach, pinCoach, joueurCible) {
           equipe: nouvelleEquipe || String(rows[i][3] || ''),
           photo: convertirUrlPhoto(photoStockeeFinale),
           note: nouvelleNote,
-          estTresorier: valTresorierActuel
+          estTresorier: valTresorierActuel,
+          idSpakta: idSpaktaFinal
         }
       };
     }
@@ -5337,8 +5359,15 @@ function ajouterJoueurParCoach(telCoach, pinCoach, joueurData) {
   const note = String(joueurData.note || '').trim();
   const estTresorier = (joueurData.estTresorier && estVraiCoach) ? 'OUI' : 'NON';
   const estChouchou = (joueurData.estChouchou && estVraiCoach) ? 'OUI' : 'NON';
+  const idSpakta = String(joueurData.idSpakta || '').trim();
 
-  shEff.appendRow([nomNettoye, telNormalise ? chiffrerNumero(telNormalise) : '', poste, equipe, photo, pin, note, estTresorier, estChouchou]);
+  try {
+    if (!shEff.getRange('J1').getValue()) {
+      shEff.getRange('J1').setValue('ID Spakta').setFontWeight('bold');
+    }
+  } catch (eH) {}
+
+  shEff.appendRow([nomNettoye, telNormalise ? chiffrerNumero(telNormalise) : '', poste, equipe, photo, pin, note, estTresorier, estChouchou, idSpakta]);
   try { synchroniserTresoriersEtChouchouxSheet(ss, 'effectif'); } catch (e) {}
 
   // Ajouter également dans Votes_Semaine pour qu'il apparaisse dans les disponibilités
@@ -5365,7 +5394,8 @@ function ajouterJoueurParCoach(telCoach, pinCoach, joueurData) {
       pin: pin,
       note: note,
       estTresorier: (estTresorier === 'OUI'),
-      estChouchou: (estChouchou === 'OUI')
+      estChouchou: (estChouchou === 'OUI'),
+      idSpakta: idSpakta
     }
   };
 }
@@ -5473,7 +5503,7 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'ping') {
-      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.8' }))
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.9' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'getDonneesCoach') {
@@ -5573,13 +5603,14 @@ function doPost(e) {
       'extraireMatchFFHB': extraireMatchFFHB,
       'verifierMiseAJour': verifierMiseAJour,
       'enregistrerModeFonctionnement': enregistrerModeFonctionnement,
-      'recupererStatsSpaktaClub': recupererStatsSpaktaClub
+      'recupererStatsSpaktaClub': recupererStatsSpaktaClub,
+      'associerIdsSpakta': function(forcer) { return preRemplirIdsSpaktaEffectif(null, forcer); }
     };
 
     if (typeof router[action] === 'function') {
       const result = router[action].apply(null, args);
       // Invalidation automatique du cache si c'est une écriture
-      if (action.indexOf('enregistrer') === 0 || action.indexOf('supprimer') === 0 || action.indexOf('reinitialiser') === 0 || action.indexOf('ajouter') === 0) {
+      if (action.indexOf('enregistrer') === 0 || action.indexOf('supprimer') === 0 || action.indexOf('reinitialiser') === 0 || action.indexOf('ajouter') === 0 || action.indexOf('associer') === 0) {
         try { CacheService.getScriptCache().remove('COACH_DATA_CACHE'); } catch (ce) {}
       }
       return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: result }))
@@ -5817,7 +5848,8 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
       const nbTr = (mapEntrainements[cle] !== undefined) ? mapEntrainements[cle] : 0;
       const estTresorier = Boolean(r[7] === true || String(r[7] || '').toLowerCase() === 'oui' || String(r[7] || '').toLowerCase() === 'true' || /tr[eé]sorier/i.test(String(r[7] || '')));
       const estChouchou = Boolean(r[8] === true || String(r[8] || '').toLowerCase() === 'oui' || String(r[8] || '').toLowerCase() === 'true' || /chouchou/i.test(String(r[8] || '')));
-      effectifComplet.push({ nom: nomPropre, tel: dechiffrerNumero(r[1]), poste: posteEff, equipe: equipeEff, photo: photo, note: note, entrainements: nbTr, estTresorier: estTresorier, estChouchou: estChouchou });
+      const idSpakta = String(r[9] || '').trim();
+      effectifComplet.push({ nom: nomPropre, tel: dechiffrerNumero(r[1]), poste: posteEff, equipe: equipeEff, photo: photo, note: note, entrainements: nbTr, estTresorier: estTresorier, estChouchou: estChouchou, idSpakta: idSpakta });
     });
   }
   const joueurs = [];
@@ -7122,6 +7154,7 @@ function onOpen() {
       .addItem('💰 17. Actualiser l\'onglet Caisse Noire', 'menuActualiserCaisseNoireSheet')
       .addItem('🚗 18. Actualiser l\'onglet Covoiturage', 'menuActualiserCovoiturageSheet')
       .addItem('🧹 19. Réinitialiser la semaine (Dispos, Entraînements, Compo)', 'menuReinitialiserPourNouvelleSemaine')
+      .addItem('📊 20. Associer automatiquement les IDs Spakta à l\'Effectif', 'menuAssocierIdsSpakta')
       .addSeparator()
       .addItem('🚀 Tout exécuter (Mise à jour + Envoi)', 'executionAutoLundiMatin')
       .addToUi();
@@ -7632,4 +7665,313 @@ function recupererStatsSpaktaClub() {
   } catch (eC) {}
 
   return payload;
+}
+
+/**
+ * HANDBALL BOT 2.0 - LIAISON AUTOMATIQUE DES IDS SPAKTA AVEC L'EFFECTIF
+ * Dictionnaire de référence des identifiants officiels Spakta Scout (ACBB 2026-2027)
+ */
+const ACBB_SPAKTA_MAPPING_DEFAUT = {
+  // Gardiens
+  'pierre j': '01M2MP32GTE7FZ5WRG62DR4ZF2',
+  'pierre jouanno': '01M2MP32GTE7FZ5WRG62DR4ZF2',
+  'jouanno pierre': '01M2MP32GTE7FZ5WRG62DR4ZF2',
+  'arnaud a': '01M2MNT8ETPF2DEPH8QPADVDXW',
+  'arnaud arches': '01M2MNT8ETPF2DEPH8QPADVDXW',
+  'arches arnaud': '01M2MNT8ETPF2DEPH8QPADVDXW',
+  'gaetan p': '01M2X7716Q9TA0RZH9SVNWKVD4',
+  'gaetan pagnat': '01M2X7716Q9TA0RZH9SVNWKVD4',
+  'pagnat gaetan': '01M2X7716Q9TA0RZH9SVNWKVD4',
+  'louis j': '01M2K0C3XQN84E2FRDH0PMGQ4Q',
+  'louis jeissou': '01M2K0C3XQN84E2FRDH0PMGQ4Q',
+  'jeissou louis': '01M2K0C3XQN84E2FRDH0PMGQ4Q',
+
+  // Buteurs & Joueurs de champ
+  'thomas b': '01M2MP32G366W0BN0HFYG0R9H6',
+  'thomas buccellato': '01M2MP32G366W0BN0HFYG0R9H6',
+  'buccellato thomas': '01M2MP32G366W0BN0HFYG0R9H6',
+  'david d': '01M2MP32GF39WYTEGQX0GD60QA',
+  'david di giovani': '01M2MP32GF39WYTEGQX0GD60QA',
+  'di giovani david': '01M2MP32GF39WYTEGQX0GD60QA',
+  'thomas m': '01M2MP32H1JJ33WT7JHEXKCJX4',
+  'thomas mercier': '01M2MP32H1JJ33WT7JHEXKCJX4',
+  'mercier thomas-yves-roger': '01M2MP32H1JJ33WT7JHEXKCJX4',
+  'clement p': '01M2MP32HFCXDY6XC3Z8BPGVQH',
+  'clement paret': '01M2MP32HFCXDY6XC3Z8BPGVQH',
+  'paret clement': '01M2MP32HFCXDY6XC3Z8BPGVQH',
+  'paul-henri': '01M3HTE6FYSEPYR2PA46VZVVQ6',
+  'paul henri': '01M3HTE6FYSEPYR2PA46VZVVQ6',
+  'paul-henri v': '01M3HTE6FYSEPYR2PA46VZVVQ6',
+  'paul-henri van leeuwen': '01M3HTE6FYSEPYR2PA46VZVVQ6',
+  'van leeuwen paul-henri': '01M3HTE6FYSEPYR2PA46VZVVQ6',
+  'kevin': '01M2ZSMVKCABV0WA3NG8FD1V86',
+  'kevin l': '01M2ZSMVKCABV0WA3NG8FD1V86',
+  'kevin le bihan': '01M2ZSMVKCABV0WA3NG8FD1V86',
+  'le bihan kevin': '01M2ZSMVKCABV0WA3NG8FD1V86',
+  'corentin': '01M2ZSMVJP0M9HYZPGNF77TTT0',
+  'corentin d': '01M2ZSMVJP0M9HYZPGNF77TTT0',
+  'corentin denant': '01M2ZSMVJP0M9HYZPGNF77TTT0',
+  'denant corentin': '01M2ZSMVJP0M9HYZPGNF77TTT0',
+  'clement d': '01M2MNT8FR8YW3RMC0TRKA49Y9',
+  'clement deniaux': '01M2MNT8FR8YW3RMC0TRKA49Y9',
+  'deniaux clement': '01M2MNT8FR8YW3RMC0TRKA49Y9',
+  'killian': '01M2MP32GNDFQ9P8CFMAMHCB13',
+  'killian h': '01M2MP32GNDFQ9P8CFMAMHCB13',
+  'killian henry': '01M2MP32GNDFQ9P8CFMAMHCB13',
+  'henry killian': '01M2MP32GNDFQ9P8CFMAMHCB13',
+  'gabriel s': '01M43VYNXT6ZN1XF962WZB5N5H',
+  'gabriel seijas': '01M43VYNXT6ZN1XF962WZB5N5H',
+  'seijas gabriel': '01M43VYNXT6ZN1XF962WZB5N5H',
+  'matthieu': '01M2ZSMVM7CNQFSS2SHST692Q5',
+  'matthieu y': '01M2ZSMVM7CNQFSS2SHST692Q5',
+  'matthieu yaghi': '01M2ZSMVM7CNQFSS2SHST692Q5',
+  'yaghi matthieu': '01M2ZSMVM7CNQFSS2SHST692Q5',
+  'arnaud p': '01M2MP32H7BF0M0RVM78YGKCMS',
+  'arnaud paitier': '01M2MP32H7BF0M0RVM78YGKCMS',
+  'paitier arnaud': '01M2MP32H7BF0M0RVM78YGKCMS',
+  'francois v': '01M2ZSMVM13KAY4VAM0CEEACW1',
+  'francois vivier': '01M2ZSMVM13KAY4VAM0CEEACW1',
+  'vivier francois': '01M2ZSMVM13KAY4VAM0CEEACW1',
+  'benjamin d': '01M2MP32G9GP6AX7ETHXT3RZYK',
+  'benjamin deshayes': '01M2MP32G9GP6AX7ETHXT3RZYK',
+  'deshayes benjamin': '01M2MP32G9GP6AX7ETHXT3RZYK',
+  'docteur louis m': '01M4KR31SKSQVWSS56PTSFR3Q9',
+  'louis m': '01M4KR31SKSQVWSS56PTSFR3Q9',
+  'louis mazaud': '01M4KR31SKSQVWSS56PTSFR3Q9',
+  'mazaud louis': '01M4KR31SKSQVWSS56PTSFR3Q9',
+  'eliott': '01M4KR31TC64EP5906A1259DN8',
+  'eliott s': '01M4KR31TC64EP5906A1259DN8',
+  'eliott settelen': '01M4KR31TC64EP5906A1259DN8',
+  'settelen eliott': '01M4KR31TC64EP5906A1259DN8',
+  'ethan': '01M2MNT8GX6WXSW291TZZVHFCP',
+  'ethan l': '01M2MNT8GX6WXSW291TZZVHFCP',
+  'ethan legay': '01M2MNT8GX6WXSW291TZZVHFCP',
+  'legay ethan': '01M2MNT8GX6WXSW291TZZVHFCP',
+  'remy p': '01M2MNT8HEPWB4GAHNPA3RXC8P',
+  'remy pichery': '01M2MNT8HEPWB4GAHNPA3RXC8P',
+  'pichery remy': '01M2MNT8HEPWB4GAHNPA3RXC8P',
+  'francois b': '01M2MNT8FAVVTZMD5GK8C4K3WP',
+  'francois bastard': '01M2MNT8FAVVTZMD5GK8C4K3WP',
+  'bastard francois': '01M2MNT8FAVVTZMD5GK8C4K3WP',
+  'zine': '01M2XVVGHYH37MAMHJWW8GRJ0K',
+  'zine b': '01M2XVVGHYH37MAMHJWW8GRJ0K',
+  'zine eddine': '01M2XVVGHYH37MAMHJWW8GRJ0K',
+  'zine eddine bouhadda': '01M2XVVGHYH37MAMHJWW8GRJ0K',
+  'bouhadda zine eddine': '01M2XVVGHYH37MAMHJWW8GRJ0K',
+  'theotime': '01M2KJ820MVH1DDK9CX6901ZYM',
+  'theotime d': '01M2KJ820MVH1DDK9CX6901ZYM',
+  'theotime delpeyrat': '01M2KJ820MVH1DDK9CX6901ZYM',
+  'delpeyrat theotime': '01M2KJ820MVH1DDK9CX6901ZYM',
+  'emilien': '01M2MNT8H3FG7VB5YHR2F82FR2',
+  'emilien l': '01M2MNT8H3FG7VB5YHR2F82FR2',
+  'emilien lemonnier': '01M2MNT8H3FG7VB5YHR2F82FR2',
+  'lemonnier emilien': '01M2MNT8H3FG7VB5YHR2F82FR2',
+  'tom c': '01M2MNT8FHVZ8V8DHJ0QBQTBGM',
+  'tom chardon': '01M2MNT8FHVZ8V8DHJ0QBQTBGM',
+  'chardon tom': '01M2MNT8FHVZ8V8DHJ0QBQTBGM',
+  'evra': '01M2MNT8G7Z8QKD25M6PEK61G3',
+  'evra i': '01M2MNT8G7Z8QKD25M6PEK61G3',
+  'evra igouwe': '01M2MNT8G7Z8QKD25M6PEK61G3',
+  'igouwe evra': '01M2MNT8G7Z8QKD25M6PEK61G3',
+  'noha k': '01M2KJ821BN9KFK61N532F0F0Z',
+  'noha kolivai': '01M2KJ821BN9KFK61N532F0F0Z',
+  'kolivai noha': '01M2KJ821BN9KFK61N532F0F0Z',
+  'clement l': '01M2MNT8GP8WWQ49ZHHD8DW3AJ',
+  'clement lecoq': '01M2MNT8GP8WWQ49ZHHD8DW3AJ',
+  'lecoq clement': '01M2MNT8GP8WWQ49ZHHD8DW3AJ',
+  'stephane m': '01M2K9PQ6S2J5G86AY21SC84N6',
+  'stephane miezin': '01M2K9PQ6S2J5G86AY21SC84N6',
+  'miezin stephane': '01M2K9PQ6S2J5G86AY21SC84N6',
+  'gaspard d': '01M2MNT8FZGA3M505EK5TPFDJ1',
+  'gaspard dreano': '01M2MNT8FZGA3M505EK5TPFDJ1',
+  'dreano--hohman gaspard': '01M2MNT8FZGA3M505EK5TPFDJ1'
+};
+
+/**
+ * Normalise une chaîne de caractères pour faciliter la comparaison de noms
+ */
+function normaliserChaineComparaison(str) {
+  if (!str) return '';
+  return String(str)
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*/g, '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Associe et préremplit automatiquement les IDs Spakta pour tous les joueurs de l'onglet Effectif
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} [ssOpt]
+ * @param {boolean} [forcer] - Si true, réécrase même si déjà renseigné
+ */
+function preRemplirIdsSpaktaEffectif(ssOpt, forcer) {
+  const ss = ssOpt || getSpreadsheet();
+  const shEff = ss.getSheetByName('Effectif');
+  if (!shEff) return { ok: false, message: 'Onglet Effectif introuvable' };
+
+  // S'assurer de la présence de l'en-tête Colonne J
+  try {
+    const j1 = shEff.getRange('J1').getValue();
+    if (!j1) {
+      shEff.getRange('J1').setValue('ID Spakta')
+        .setBackground('#0f172a')
+        .setFontColor('#ffffff')
+        .setFontWeight('bold')
+        .setFontSize(10)
+        .setVerticalAlignment('middle')
+        .setHorizontalAlignment('center');
+      shEff.setColumnWidth(10, 240);
+    }
+  } catch (eH) {}
+
+  const lastRow = shEff.getLastRow();
+  if (lastRow < 2) return { ok: true, total: 0, associes: 0, dejaRenseignes: 0, nonTrouves: 0, nonTrouvesNoms: [] };
+
+  const spaktaData = recupererStatsSpaktaClub();
+  const spaktaJoueurs = (spaktaData && Array.isArray(spaktaData.joueurs)) ? spaktaData.joueurs : [];
+
+  // Lecture de toutes les lignes de l'effectif (cols A à J)
+  const range = shEff.getRange(2, 1, lastRow - 1, 10);
+  const rows = range.getValues();
+
+  let associes = 0;
+  let dejaRenseignes = 0;
+  let nonTrouves = 0;
+  const nonTrouvesNoms = [];
+  const idsCol = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const nomBrut = String(row[0] || '').trim();
+    const idExistant = String(row[9] || '').trim();
+
+    if (!nomBrut) {
+      idsCol.push([idExistant]);
+      continue;
+    }
+
+    if (idExistant && !forcer) {
+      dejaRenseignes++;
+      idsCol.push([idExistant]);
+      continue;
+    }
+
+    let idTrouve = '';
+    const nomPropre = nomBrut.replace(/\s*\([^)]*\)\s*/g, '').trim();
+    const nomNorm = normaliserChaineComparaison(nomPropre);
+    const nomMots = String(nomPropre).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/).filter(Boolean);
+
+    // 1. Dictionnaire ACBB direct
+    const nomCle = String(nomPropre).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    if (ACBB_SPAKTA_MAPPING_DEFAUT[nomCle]) {
+      idTrouve = ACBB_SPAKTA_MAPPING_DEFAUT[nomCle];
+    }
+
+    // 2. Recherche directe dans la liste Spakta
+    if (!idTrouve && spaktaJoueurs.length > 0) {
+      // 2a. Match exact ou inversé ("NOM Prénom" vs "Prénom Nom")
+      for (let j = 0; j < spaktaJoueurs.length; j++) {
+        const pj = spaktaJoueurs[j];
+        const pjNorm = normaliserChaineComparaison(pj.name);
+        const pjMots = String(pj.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/).filter(Boolean);
+        const pjInverse = normaliserChaineComparaison(pjMots.slice().reverse().join(''));
+        if (nomNorm === pjNorm || nomNorm === pjInverse) {
+          idTrouve = pj.id;
+          break;
+        }
+      }
+
+      // 2b. Match prénom + initiale (ex: "Clément D" vs "DENIAUX Clement")
+      if (!idTrouve && nomMots.length >= 2) {
+        const prenom = nomMots[0].replace(/^docteur/i, '').trim();
+        const init = nomMots[nomMots.length - 1];
+        for (let j = 0; j < spaktaJoueurs.length; j++) {
+          const pj = spaktaJoueurs[j];
+          const pjMots = String(pj.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/).filter(Boolean);
+          const pNom = pjMots[0];
+          const pPrenom = pjMots[1] || '';
+          if (normaliserChaineComparaison(pPrenom).startsWith(prenom) && normaliserChaineComparaison(pNom).startsWith(init.charAt(0))) {
+            idTrouve = pj.id;
+            break;
+          }
+          if (normaliserChaineComparaison(pNom).startsWith(prenom) && normaliserChaineComparaison(pPrenom).startsWith(init.charAt(0))) {
+            idTrouve = pj.id;
+            break;
+          }
+        }
+      }
+
+      // 2c. Match prénom unique (si un seul joueur porte ce prénom)
+      if (!idTrouve && nomMots.length === 1) {
+        const prenomSeul = nomMots[0];
+        const candidats = spaktaJoueurs.filter(function(pj) {
+          const pjMots = String(pj.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/).filter(Boolean);
+          return pjMots.some(function(w) { return normaliserChaineComparaison(w) === prenomSeul; });
+        });
+        if (candidats.length === 1) {
+          idTrouve = candidats[0].id;
+        }
+      }
+    }
+
+    if (idTrouve) {
+      associes++;
+      idsCol.push([idTrouve]);
+    } else {
+      nonTrouves++;
+      nonTrouvesNoms.push(nomPropre);
+      idsCol.push([idExistant || '']);
+    }
+  }
+
+  // Écriture par lot dans la colonne J
+  shEff.getRange(2, 10, idsCol.length, 1).setValues(idsCol)
+    .setFontFamily('Roboto Mono, Consolas, monospace')
+    .setFontSize(9)
+    .setHorizontalAlignment('center');
+
+  try { CacheService.getScriptCache().remove('COACH_DATA_CACHE'); } catch (ce) {}
+
+  return {
+    ok: true,
+    total: rows.length,
+    associes: associes,
+    dejaRenseignes: dejaRenseignes,
+    nonTrouves: nonTrouves,
+    nonTrouvesNoms: nonTrouvesNoms
+  };
+}
+
+/**
+ * Menu UI Google Sheets pour lancer l'association Spakta
+ */
+function menuAssocierIdsSpakta() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ui = SpreadsheetApp.getUi();
+    const rep = ui.alert(
+      '📊 Association automatique des IDs Spakta (Scout 2026-2027)',
+      'Handball Bot va analyser les joueurs de l\'onglet Effectif et associer automatiquement leurs identifiants officiels Spakta Scout en colonne J.\n\n' +
+      'Voulez-vous aussi mettre à jour les joueurs qui ont déjà un ID renseigné ?\n' +
+      '• OUI : Tout recalculer et écraser.\n' +
+      '• NON : Préremplir uniquement les cases vides.',
+      ui.ButtonSet.YES_NO_CANCEL
+    );
+    if (rep === ui.Button.CANCEL) return;
+    const forcer = (rep === ui.Button.YES);
+    const res = preRemplirIdsSpaktaEffectif(ss, forcer);
+    ui.alert(
+      '✅ Association Spakta terminée !',
+      'Résultat :\n' +
+      '• Joueurs analysés : ' + res.total + '\n' +
+      '• Joueurs associés : ' + res.associes + '\n' +
+      '• Déjà renseignés (conservés) : ' + res.dejaRenseignes + '\n' +
+      '• Non trouvés dans Spakta : ' + res.nonTrouves + '\n\n' +
+      (res.nonTrouvesNoms.length > 0 ? 'Joueurs sans correspondance Spakta :\n' + res.nonTrouvesNoms.join(', ') : 'Tous les joueurs sont parfaitement associés !'),
+      ui.ButtonSet.OK
+    );
+  } catch (e) {
+    SpreadsheetApp.getUi().alert('Erreur lors de l\'association Spakta : ' + e.message);
+  }
 }

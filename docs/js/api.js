@@ -174,12 +174,23 @@ const ApiClient = {
         : (err.message || "Erreur réseau inconnue");
 
       const isNetworkFailure = isTimeout || !navigator.onLine || err.name === 'TypeError' || (err.message && err.message.includes('fetch'));
-      if (isNetworkFailure) {
-        console.warn("[ApiClient] Appel réseau non disponible (" + errorMsg + ").");
-        this.majBadgeStatut('offline');
-      } else {
-        console.warn("[ApiClient] Erreur Google Sheets reçue (" + errorMsg + ").");
-        this.majBadgeStatut('online');
+      if (action !== 'recupererStatsSpaktaClub') {
+        if (isNetworkFailure) {
+          console.warn("[ApiClient] Appel réseau non disponible (" + errorMsg + ").");
+          this.majBadgeStatut('offline');
+        } else {
+          console.warn("[ApiClient] Erreur Google Sheets reçue (" + errorMsg + ").");
+          this.majBadgeStatut('online');
+        }
+      }
+
+      // Fallback Spakta silencieux si le backend n'a pas encore redéployé l'action
+      if (action === 'recupererStatsSpaktaClub') {
+        const cached = localStorage.getItem('hb_spakta_stats');
+        if (cached) {
+          try { return JSON.parse(cached); } catch(e) {}
+        }
+        return (typeof window !== 'undefined' && window.SPAKTA_INITIAL_DATA) || { ok: true, joueurs: [] };
       }
 
       // Fallback cache local en cas de coupure réseau
