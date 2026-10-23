@@ -30,16 +30,28 @@ jobs:
           UPSTREAM_RAW="https://raw.githubusercontent.com/pidgey56/handball-bot-template/main"
           echo "Téléchargement des derniers scripts depuis $UPSTREAM_RAW..."
           
+          curl -sSL "$UPSTREAM_RAW/code.gs" -o code.gs
           curl -sSL "$UPSTREAM_RAW/send-poll.js" -o send-poll.js
           curl -sSL "$UPSTREAM_RAW/package.json" -o package.json
           curl -sSL "$UPSTREAM_RAW/version.json" -o version.json
+          curl -sSL "$UPSTREAM_RAW/FONCTIONNALITES.md" -o FONCTIONNALITES.md
           curl -sSL "$UPSTREAM_RAW/GUIDE_INSTALLATION.md" -o GUIDE_INSTALLATION.md
           curl -sSL "$UPSTREAM_RAW/GUIDE_UTILISATION.md" -o GUIDE_UTILISATION.md
           curl -sSL "$UPSTREAM_RAW/README.md" -o README.md
+          
+          mkdir -p docs/css docs/js
+          curl -sSL "$UPSTREAM_RAW/docs/index.html" -o docs/index.html
+          curl -sSL "$UPSTREAM_RAW/docs/manifest.json" -o docs/manifest.json
+          curl -sSL "$UPSTREAM_RAW/docs/sw.js" -o docs/sw.js
+          curl -sSL "$UPSTREAM_RAW/docs/css/style.css" -o docs/css/style.css
+          curl -sSL "$UPSTREAM_RAW/docs/js/api.js" -o docs/js/api.js
+          curl -sSL "$UPSTREAM_RAW/docs/js/app.js" -o docs/js/app.js
+          curl -sSL "$UPSTREAM_RAW/docs/js/spakta-data.js" -o docs/js/spakta-data.js
+          curl -sSL "$UPSTREAM_RAW/docs/js/spakta-data.json" -o docs/js/spakta-data.json
 
       - name: Application des modifications
         run: |
-          git add send-poll.js package.json version.json GUIDE_INSTALLATION.md GUIDE_UTILISATION.md README.md
+          git add code.gs send-poll.js package.json version.json FONCTIONNALITES.md GUIDE_INSTALLATION.md GUIDE_UTILISATION.md README.md docs/
           if git diff --staged --quiet; then
             echo "Votre dépôt est déjà à jour avec le modèle officiel !"
           else
@@ -48,4 +60,3 @@ jobs:
             git push
             echo "Mise à jour réussie vers la version $VERSION !"
           fi
-

@@ -1,23 +1,17 @@
 {
-  "version": "2.0.0",
+  "version": "2.2.6",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.0 — Architecture PWA GitHub Pages, Zéro Moulinette & 3 Modes Modulaires (FFHB Pur, Loisir, Complet)",
+  "title": "Handball Manager 2.2.6 — Statistiques Spakta Scout 2026-2027, DA Carnet de Coach, Vie d'Équipe & Optimisations Backend",
   "changelog": [
-    "Refonte architecturale majeure en Version 2.0 : dissociation du frontend Web et du backend Google Sheets pour des performances instantanées (< 50ms) et un hébergement statique gratuit via GitHub Pages",
-    "Application Progressive Web App (PWA) installable en natif : installation en 1 clic sur l'écran d'accueil iOS (Safari) et Android (Chrome) avec mode plein écran, splash screen, thème sombre (#090d16) et manifest PWA",
-    "Fin définitive de la 'moulinette' sur smartphone : suppression du chargeur bloquant par défaut, timer de sécurité automatique de 3.5s anti-blocage, et architecture Stale-While-Revalidate affichant les données locales immédiatement sans attente réseau",
-    "Allègement massif du code Google Apps Script : extraction des ~7 400 lignes de chaîne HTML de code.gs vers de vrais fichiers web modernes dans docs/ (index.html, style.css, app.js)",
-    "Micro-backend API Google Sheets (api.gs) : routeur universel JSON (doGet et doPost) et accélération serveur via CacheService avec temps de réponse divisé par 50 (~20ms)",
-    "Redirection automatique intelligente : toute ouverture de l'ancienne URL WebApp Apps Script redirige automatiquement vers la PWA GitHub Pages ultra-rapide avec l'URL API pré-remplie",
-    "Polyfill transparent pour google.script.run : compatibilité ascendante totale garantissant le bon fonctionnement des 52 méthodes clientes sans aucune régression",
-    "Nouveau Mode 1 'FFHB Uniquement' : scraping officiel FFHB et composition tactique d'équipe 100% autonomes, sans aucun compte GitHub, sans bot Baileys et sans dépendance WhatsApp",
-    "Nouveau Mode 2 'Loisir / Présences' : gestion simplifiée pour les collectifs sans championnat FFHB (trombinoscope, pointage des présences entraînements, absences, caisse noire)",
-    "Mode 3 'Complet Automatique' : écosystème intégral actuel avec le bot WhatsApp Baileys et GitHub Actions",
-    "Sélecteur de mode interactif dans l'Espace Coach : bascule dynamique en 1 clic entre les 3 modes avec persistance locale et synchronisation dans Google Sheets (Configuration C35)",
-    "Partage natif smartphone en 1 clic (navigator.share) : diffusion immédiate de la convocation de match vers WhatsApp, Messenger, SMS, Signal ou Email",
-    "Agrandissement et aération des vues : passage de 5 colonnes tassées à 2-3 colonnes lisibles (390px) dans l'Effectif, carte athlète agrandie à 380px, terrain 2D élargi à 640px avec grosses pastilles tactiles",
-    "Mode Tinder rehaussé pour smartphone : cartes agrandies à 400px avec avatars généreux (78px) et boutons au pouce élargis (60px)",
-    "Fonctionnement hors-ligne garanti : Service Worker (sw.js) avec mise en cache des assets statiques et fallback local complet en cas de perte de réseau au gymnase",
-    "Mode Démo immédiat : permet à tout utilisateur d'explorer et tester l'application WebApp complète sans même avoir encore relié de Google Sheet"
+    "Intégration officielle des statistiques Spakta Scout 2026-2027 : tuiles de statistiques personnalisées par poste (buteurs et gardiens), % aux tirs, 7m, 2 min, arrêts totaux et arrêts par match",
+    "Historique déroulant match par match avec attribution officielle FFHB et Spakta, scores des rencontres et performances individuelles",
+    "Consolidation automatique multi-effectifs : cumul des statistiques pour les joueurs évoluant sur plusieurs équipes (ex: badge officiel ÉQUIPE 1C & 1B)",
+    "Direction Artistique « Carnet de Coach » : interface organisée en 5 onglets (Mon Profil, Matchs, Entraînements, Vie d'Équipe, Coach) et thèmes interchangeables (Carnet papier Moleskine, Mode Clair, Mode Sombre ardoise)",
+    "Module Vie d'Équipe complet : Caisse Noire & Amendes de vestiaire, ardoise personnelle, jauge de cagnotte, barème officiel, rôle Trésorier dédié et bouton 1 clic pour copier les modalités de paiement",
+    "Module Covoiturage & Déclarations d'absence pour l'organisation fluide des déplacements du week-end",
+    "Gestion intelligente des vacances scolaires : détection automatique des trêves et calendrier national pour adapter les sondages",
+    "Correction de l'étanchéité des photos de profil dans les modales et fiches joueurs (suppression du style !important qui provoquait des fuites d'image)",
+    "Résilience réseau renforcée : maintien du statut en ligne sur réponses HTTP 200 et fallback silencieux vers le snapshot Spakta local sans bloquer l'interface",
+    "Nettoyage et unification des scripts backend : code.gs autonome haute performance avec routeur universel et suppression des scripts redondants"
   ]
 }
