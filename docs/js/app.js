@@ -1,7 +1,7 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
-var APP_VERSION = '2.2.3';
+var APP_VERSION = '2.2.4';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -229,6 +229,7 @@ document.getElementById("modalLogoStatus").textContent = "Erreur : " + err.messa
 }).reinitialiserLogoClub(SESSION_TEL, SESSION_PIN);
 }
 function majClubLogoClient(nouvelleUrl){
+  if(!nouvelleUrl || (nouvelleUrl.indexOf("data:image/svg+xml") === 0 && (nouvelleUrl.indexOf("1e293b") !== -1 || nouvelleUrl.indexOf("cbd5e1") !== -1))){ nouvelleUrl = "images/logo.svg"; }
   CLUB_CONFIG.logoUrl = nouvelleUrl;
   ["homeLogoImg", "appHeaderLogoImg", "trainHeaderLogoImg", "rosterHeaderLogoImg", "modalClubLogoPreview"].forEach(function(id){
     var img = document.getElementById(id);
@@ -2061,7 +2062,7 @@ function synchroniserStatsSpakta(callback) {
   // Si pas encore de données, charger le snapshot local statique
   if (!STATS_SPAKTA) {
     try {
-      fetch('js/spakta-data.json?v=2.2.3')
+      fetch('js/spakta-data.json?v=2.2.4')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (!STATS_SPAKTA && data && data.joueurs) {
@@ -2842,7 +2843,7 @@ if(elInit) elInit.textContent = jInitial;
 if(jObj.photo){
 if(elImg){ elImg.src = jObj.photo; elImg.style.display = "block"; }
 if(elInit) elInit.style.display = "none";
-if(elBdrop){ elBdrop.style.backgroundImage = "url('" + jObj.photo + "')"; elBdrop.style.display = "block"; }
+if(elBdrop){ elBdrop.style.display = "none"; }
 } else {
 if(elImg) elImg.style.display = "none";
 if(elInit) elInit.style.display = "flex";
@@ -4012,11 +4013,11 @@ function ouvrirModalJoueur(nom){
   mInit.textContent = pInit;
   if(p.photo){
     mImg.src = p.photo; mImg.style.display = "block"; mInit.style.display = "none";
-    if(bdrop){ bdrop.style.backgroundImage = "url('" + p.photo + "')"; setTimeout(function(){ if(bdrop) bdrop.style.opacity = "0.55"; }, 50); }
-    mImg.onerror = function(){ mImg.style.display = "none"; mInit.style.display = "flex"; if(bdrop){ bdrop.style.opacity = "0"; bdrop.style.backgroundImage = "none"; } };
+    if(bdrop){ bdrop.style.display = "none"; }
+    mImg.onerror = function(){ mImg.style.display = "none"; mInit.style.display = "flex"; };
   } else {
     mImg.style.display = "none"; mInit.style.display = "flex";
-    if(bdrop){ bdrop.style.opacity = "0"; bdrop.style.backgroundImage = "none"; }
+    if(bdrop){ bdrop.style.display = "none"; }
   }
   var isChou = estJoueurChouchou(nom);
   majBoutonChouchouModal(isChou);
@@ -4086,9 +4087,9 @@ function majBoutonChouchouModal(isChou){
     btn.style.boxShadow = "0 0 12px rgba(225,29,72,0.6)";
   } else {
     btn.innerHTML = "🤍 Choisir comme Chouchou";
-    btn.style.background = "rgba(244,63,94,0.12)";
-    btn.style.color = "#fda4af";
-    btn.style.borderColor = "#f43f5e";
+    btn.style.background = "#fff1f2";
+    btn.style.color = "#e11d48";
+    btn.style.borderColor = "#fecdd3";
     btn.style.boxShadow = "none";
   }
 }
@@ -4200,9 +4201,9 @@ function majBoutonMvpModal(isMvp){
     btn.style.boxShadow = "0 0 12px rgba(245,158,11,0.6)";
   } else {
     btn.innerHTML = "🏆 Désigner MVP";
-    btn.style.background = "rgba(245,158,11,0.12)";
-    btn.style.color = "#fde68a";
-    btn.style.borderColor = "#f59e0b";
+    btn.style.background = "#fffbeb";
+    btn.style.color = "#b45309";
+    btn.style.borderColor = "#fde68a";
     btn.style.boxShadow = "none";
   }
 }
@@ -4216,9 +4217,9 @@ function majBoutonChevreModal(isCh){
     btn.style.boxShadow = "0 0 12px rgba(234,88,12,0.6)";
   } else {
     btn.innerHTML = "🐐 Désigner Chèvre";
-    btn.style.background = "rgba(234,88,12,0.12)";
-    btn.style.color = "#fed7aa";
-    btn.style.borderColor = "#ea580c";
+    btn.style.background = "#fff7ed";
+    btn.style.color = "#c2410c";
+    btn.style.borderColor = "#fed7aa";
     btn.style.boxShadow = "none";
   }
 }
@@ -4285,7 +4286,7 @@ mImg.src = PHOTO_MODAL_DATA;
 mImg.style.display = "block";
 mInit.style.display = "none";
 var bdrop = document.getElementById("modalJoueurBackdrop");
-if(bdrop){ bdrop.style.backgroundImage = "url('" + PHOTO_MODAL_DATA + "')"; bdrop.style.opacity = "0.55"; }
+if(bdrop){ bdrop.style.display = "none"; }
 document.getElementById("modalJoueurStatus").textContent = "Photo prête à être enregistrée.";
 };
 r.readAsDataURL(f);
@@ -4300,7 +4301,7 @@ PHOTO_MODAL_DATA = u;
 mImg.src = u;
 mImg.style.display = "block";
 mInit.style.display = "none";
-if(bdrop){ bdrop.style.backgroundImage = "url('" + u + "')"; bdrop.style.opacity = "0.55"; }
+if(bdrop){ bdrop.style.display = "none"; }
 mImg.onerror = function(){
 mImg.style.display = "none";
 mInit.style.display = "flex";

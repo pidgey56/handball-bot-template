@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ==============================================================================
  * HANDBALL BOT - MODÈLE UNIVERSEL POUR CLUBS DE HANDBALL
  * ==============================================================================
@@ -25,7 +25,7 @@ const LOGO_OFFICIEL_ACBB = 'https://media-logos-clubs.ffhandball.fr/256/2023-06-
 function genererLogoDefaut(couleur) {
   const c = couleur || '#f97316';
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="' + c + '"><circle cx="12" cy="12" r="10" stroke="#cbd5e1" stroke-width="1.5" fill="#1e293b"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 0 20 0M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14" stroke="#cbd5e1" stroke-width="1.2" fill="none"/></svg>';
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  return LOGO_OFFICIEL_ACBB;
 }
 
 const LOGO_DEFAULT = genererLogoDefaut('#f97316');

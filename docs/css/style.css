@@ -2511,3 +2511,22 @@ body.theme-slate .modal-list-card {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* Boîte trésorier dans la fiche joueur */
+.coach-treasurer-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fefce8;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #fde047;
+  margin-top: 2px;
+}
+body.theme-slate .coach-treasurer-box {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(253, 224, 71, 0.35);
+}
+body.theme-slate .coach-treasurer-box label {
+  color: #fde047 !important;
+}
