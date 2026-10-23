@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.18">
+  <link rel="stylesheet" href="css/style.css?v=2.2.19">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -468,20 +468,44 @@
 <span class="badge-mode js-statut" id="statutTrain"></span>
 </div>
 </header>
-<div class="tabs" id="trainTabsContainer"></div>
-<div class="train-config-bar">
-<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-<span style="font-size:0.8rem;color:var(--text-muted);font-weight:700;">Séance :</span>
-<div class="train-type-pills">
-<button type="button" class="train-type-pill active" id="pillSepare" onclick="changerTypeSeance('separe')">2 Groupes</button>
-<button type="button" class="train-type-pill" id="pillReduit" onclick="changerTypeSeance('reduit')">Effectif réduit</button>
-<button type="button" class="train-type-pill" id="pillComplet" onclick="changerTypeSeance('complet')">Effectif complet</button>
-</div>
-</div>
-<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-<span id="trainExplication" style="font-size:0.8rem;color:var(--text-muted);">Répartissez les joueurs disponibles</span>
-<label id="lblMaxJoueurs" style="font-size:0.8rem;color:var(--text-muted);display:none;">Max retenus : <input type="number" id="inpMaxJoueurs" value="20" min="5" max="35" onchange="majMaxRetenus(this.value)"></label>
-</div>
+<div class="train-dashboard-card">
+  <div class="train-card-section">
+    <div class="train-section-label">
+      <span class="train-section-icon">📅</span>
+      <span>Créneau d'entraînement</span>
+    </div>
+    <div class="train-tabs-container tabs" id="trainTabsContainer"></div>
+  </div>
+
+  <div class="train-card-divider"></div>
+
+  <div class="train-card-section">
+    <div class="train-section-label">
+      <span class="train-section-icon">🎯</span>
+      <span>Format de la séance</span>
+    </div>
+    <div class="train-type-pills">
+      <button type="button" class="train-type-pill active" id="pillSepare" onclick="changerTypeSeance('separe')">
+        <span class="pill-icon">👥</span><span>2 Groupes</span>
+      </button>
+      <button type="button" class="train-type-pill" id="pillReduit" onclick="changerTypeSeance('reduit')">
+        <span class="pill-icon">⚡</span><span>Effectif réduit</span>
+      </button>
+      <button type="button" class="train-type-pill" id="pillComplet" onclick="changerTypeSeance('complet')">
+        <span class="pill-icon">🤾</span><span>Effectif complet</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="train-hint-row">
+    <span class="train-hint-icon">💡</span>
+    <span id="trainExplication" class="train-hint-text">Séance séparée : 2 groupes de travail + repos</span>
+    <label id="lblMaxJoueurs" class="train-max-label" style="display:none;">
+      <span>Limite :</span>
+      <input type="number" id="inpMaxJoueurs" class="train-max-input" value="20" min="5" max="35" onchange="majMaxRetenus(this.value)">
+      <span>joueurs</span>
+    </label>
+  </div>
 </div>
 <div class="view-mode-tabs">
 <button type="button" class="view-mode-tab active" id="tabTrainClassicMode" onclick="choisirModeTrain(false)">Mode Tactique</button>
@@ -1593,13 +1617,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.18"></script>
-  <script src="js/api.js?v=2.2.18"></script>
-  <script src="js/app.js?v=2.2.18"></script>
+  <script src="js/spakta-data.js?v=2.2.19"></script>
+  <script src="js/api.js?v=2.2.19"></script>
+  <script src="js/app.js?v=2.2.19"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.18').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.19').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

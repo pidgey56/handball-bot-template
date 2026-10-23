@@ -1,11 +1,12 @@
 {
-  "version": "2.2.18",
+  "version": "2.2.19",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.18 — Recentrage et Harmonisation des Boutons d'Action du Mode Tactique",
+  "title": "Handball Manager 2.2.19 — Refonte Graphique du Tableau de Bord Entraînements",
   "changelog": [
-    "Recentrage parfait de la barre de boutons d'action (Réinitialiser, Brouillon, Charger compo, Sauvegarder, Aperçu) sous le tableau tactique",
-    "Harmonisation visuelle et tactile avec dégradés sportifs modernes et icônes d'action claires",
-    "Recentrage et adaptation responsive sous le tableau des entraînements",
-    "Support mobile optimisé avec boutons pleine largeur faciles d'accès au pouce"
+    "Refonte complète de l'en-tête d'entraînement avec carte unifiée moderne (.train-dashboard-card)",
+    "Créneaux d'entraînement transformés en badges sportifs interactifs avec état actif bleu éclatant et icônes",
+    "Format de séance (2 Groupes, Effectif réduit, Effectif complet) avec pills stylisées et surbrillance orange ACBB",
+    "Encadré d'explication et réglage du quota de joueurs fluide et parfaitement intégré",
+    "Harmonisation totale en thèmes Clair et Sombre (Ardoise Vestiaire) et responsive mobile"
   ]
 }

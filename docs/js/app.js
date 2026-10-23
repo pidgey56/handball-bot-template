@@ -1620,9 +1620,10 @@ function rendreOngletsTrain(){
   SEANCES_TRAIN.forEach(function(s, idx){
     var btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "tab-btn" + (s.id === SEANCE_COURANTE ? " tab-active" : "");
+    btn.className = "train-tab-btn tab-btn" + (s.id === SEANCE_COURANTE ? " active tab-active" : "");
     btn.id = "tab_" + s.id;
-    btn.textContent = (s.jour || ("Séance " + (idx + 1))) + (s.horaire ? (" " + s.horaire) : "");
+    var icon = (s.jour && /samedi|dimanche/i.test(s.jour)) ? "🏃 " : "🏐 ";
+    btn.innerHTML = '<span class="train-tab-icon">' + icon + '</span><span class="train-tab-label">' + (s.jour || ("Séance " + (idx + 1))) + (s.horaire ? (" " + s.horaire) : "") + '</span>';
     btn.onclick = function(){ changerSeance(s.id); };
     cont.appendChild(btn);
   });
@@ -4068,7 +4069,7 @@ SEANCE_COURANTE = seanceKey;
 if(SEANCES_TRAIN && SEANCES_TRAIN.length){
 SEANCES_TRAIN.forEach(function(s){
 var btn = document.getElementById("tab_" + s.id);
-if(btn){ btn.className = (s.id === seanceKey) ? "tab-btn tab-active" : "tab-btn"; }
+if(btn){ btn.className = (s.id === seanceKey) ? "train-tab-btn tab-btn active tab-active" : "train-tab-btn tab-btn"; }
 });
 }
 majVueEntrainement();
