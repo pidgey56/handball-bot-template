@@ -2191,7 +2191,7 @@ function remplirSelectsMvp(){
 var selM = document.getElementById("selVoteMvp");
 if(!selM) return;
 selM.innerHTML = "<option value=''>-- Choisir le joueur du match --</option>";
-var effectifTrie = (EFFECTIF_COMPLET || []).slice().sort(function(a,b){ return String(a.nom||\"\").localeCompare(String(b.nom||\"\")); });
+var effectifTrie = (EFFECTIF_COMPLET || []).slice().sort(function(a,b){ return String(a.nom||"").localeCompare(String(b.nom||"")); });
 effectifTrie.forEach(function(j){
 var o = document.createElement("option"); o.value = j.nom; o.textContent = j.nom + " (" + (j.poste || "Joueur") + ")";
 if(VOTES_MVP_DATA && VOTES_MVP_DATA.monVoteMvp === j.nom) o.selected = true;
@@ -2276,7 +2276,7 @@ function remplirSelectsChevre(){
 var sel = document.getElementById("selChevreJoueurConcerne");
 if(!sel) return;
 sel.innerHTML = "<option value=''>-- Joueur concerné (ou laisser vide si collectif) --</option>";
-var effectifTrie = (EFFECTIF_COMPLET || []).slice().sort(function(a,b){ return String(a.nom||\"\").localeCompare(String(b.nom||\"\")); });
+var effectifTrie = (EFFECTIF_COMPLET || []).slice().sort(function(a,b){ return String(a.nom||"").localeCompare(String(b.nom||"")); });
 effectifTrie.forEach(function(j){
 var o = document.createElement("option"); o.value = j.nom; o.textContent = j.nom + " (" + (j.poste || "Joueur") + ")";
 sel.appendChild(o);
@@ -2377,7 +2377,7 @@ html += "</div>";
 html += "</div>";
 cont.innerHTML = html;
 }
-function normaliserTelClient(t){ return String(t||\"\").replace(/[^0-9]/g,\"\"); }
+function normaliserTelClient(t){ return String(t||"").replace(/[^0-9]/g,""); }
 function reinitialiserChevreParCoach(){
 if(!confirm("Réinitialiser toutes les propositions et votes du Trophée Chèvre pour le prochain match ?")) return;
 afficherLoading("Réinitialisation...", "Remise à zéro du trophée Chèvre...");
