@@ -6253,16 +6253,15 @@ function declencherLectureVotes() {
  */
 function construireHtmlWebApp() {
   const cfg = getClubConfig();
-  const githubRepo = cfg.githubRepo || 'votre-compte/handball-bot-template';
-  const parts = githubRepo.split('/');
-  const user = parts[0] || 'handball';
-  const repo = parts[1] || 'handball-bot-template';
+  const defaultPwa = 'https://pidgey56.github.io/handball-bot-template/';
+  const basePwa = (cfg && cfg.webappUrl && cfg.webappUrl.indexOf('http') === 0) ? cfg.webappUrl : defaultPwa;
+  const cleanBase = basePwa.split('?')[0].replace(/\/+$/, '') + '/';
   let serviceUrl = '';
   try {
     serviceUrl = ScriptApp.getService().getUrl();
   } catch (e) {}
 
-  const webAppUrl = 'https://' + user + '.github.io/' + repo + '/?api=' + encodeURIComponent(serviceUrl);
+  const webAppUrl = cleanBase + '?api=' + encodeURIComponent(serviceUrl);
 
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +

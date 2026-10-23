@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================================
  * HANDBALL BOT 2.0 - MICRO-BACKEND API GOOGLE SHEETS (`api.gs`)
  * ============================================================================
@@ -34,15 +34,14 @@ function doGet(e) {
     }
   }
 
-  // Redirection automatique vers la WebApp PWA sur GitHub Pages avec le lien API pré-configuré
+  // Redirection automatique vers la WebApp PWA sur GitHub Pages avec le lien API prÃ©-configurÃ©
   const cfg = getClubConfig();
-  const githubRepo = cfg.githubRepo || 'votre-compte/handball-bot-template';
-  const parts = githubRepo.split('/');
-  const user = parts[0] || 'handball';
-  const repo = parts[1] || 'handball-bot-template';
+  const defaultPwa = 'https://pidgey56.github.io/handball-bot-template/';
+  const basePwa = (cfg && cfg.webappUrl && cfg.webappUrl.indexOf('http') === 0) ? cfg.webappUrl : defaultPwa;
+  const cleanBase = basePwa.split('?')[0].replace(/\/+$/, '') + '/';
   let serviceUrl = '';
   try { serviceUrl = ScriptApp.getService().getUrl(); } catch (err) {}
-  const webAppUrl = 'https://' + user + '.github.io/' + repo + '/?api=' + encodeURIComponent(serviceUrl);
+  const webAppUrl = cleanBase + '?api=' + encodeURIComponent(serviceUrl);
 
   const htmlRedirect = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +
