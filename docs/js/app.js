@@ -2365,12 +2365,12 @@ html += "<div style='display:flex;align-items:center;gap:6px;'>";
 if(isLeader) html += "<span style='font-size:0.85rem;background:rgba(234,88,12,0.3);color:#fdba74;padding:2px 8px;border-radius:99px;font-weight:900;border:1px solid rgba(234,88,12,0.4);'>👑 #1 Chèvre</span>";
 if(act.joueur) html += "<span class='chevre-action-target'>🎯 " + act.joueur + "</span>";
 html += "</div>";
-if(canDelete) html += "<button type='button' class='btn-reset' style='color:#f87171;font-size:0.72rem;padding:2px 6px;' title='Supprimer cette action' onclick='supprimerActionChevreClient(\\"" + act.id + "\\")'>🗑️</button>";
+if(canDelete) html += "<button type='button' class='btn-reset' style='color:#f87171;font-size:0.72rem;padding:2px 6px;' title='Supprimer cette action' onclick=\"supprimerActionChevreClient('" + act.id + "')\">🗑️</button>";
 html += "</div>";
 html += "<div class='chevre-action-desc'>« " + act.description + " »</div>";
 html += "<div class='chevre-action-bottom'>";
 html += "<div class='chevre-action-meta'>Proposé par " + (act.auteur || "un coéquipier") + "</div>";
-html += "<button type='button' class='btn-reset " + (isVoted ? "btn-vote-chevre-active" : "btn-vote-chevre") + "' onclick='voterActionChevreClient(\\"" + act.id + "\\")'>" + (isVoted ? "✔️ Voté (" + act.voix + "v)" : "🐐 Voter (" + act.voix + ")") + "</button>";
+html += "<button type='button' class='btn-reset " + (isVoted ? "btn-vote-chevre-active" : "btn-vote-chevre") + "' onclick=\"voterActionChevreClient('" + act.id + "')\">" + (isVoted ? "✔️ Voté (" + act.voix + "v)" : "🐐 Voter (" + act.voix + ")") + "</button>";
 html += "</div>";
 html += "</div>";
 });
@@ -2617,8 +2617,8 @@ html += "<div class='absence-chip' style='display:flex;justify-content:space-bet
 html += "<div><div>" + nomTxt + dStr + "</div><div style='font-size:0.72rem;color:#fecaca;margin-top:2px;'>Motif : " + a.motif + "</div></div>";
 if(estMoi || EST_COACH){
 html += "<div style='display:flex;gap:4px;flex-shrink:0;margin-left:8px;'>";
-html += "<button type='button' class='btn-reset' style='padding:3px 7px;font-size:0.75rem;color:#38bdf8;border-color:rgba(56,189,248,0.3);' onclick='editerAbsenceClient(\\"" + safeId + "\\")' title='Modifier'>✏️</button>";
-html += "<button type='button' class='btn-reset' style='padding:3px 7px;font-size:0.75rem;color:#f87171;border-color:rgba(239,68,68,0.3);' onclick='supprimerAbsenceClient(\\"" + safeId + "\\", \\"" + nomEnc + "\\", \\"" + dDebVal + "\\", \\"" + dFinVal + "\\")' title='Supprimer'>🗑️</button>";
+html += "<button type='button' class='btn-reset' style='padding:3px 7px;font-size:0.75rem;color:#38bdf8;border-color:rgba(56,189,248,0.3);' onclick=\"editerAbsenceClient('" + safeId + "')\" title='Modifier'>✏️</button>";
+html += "<button type='button' class='btn-reset' style='padding:3px 7px;font-size:0.75rem;color:#f87171;border-color:rgba(239,68,68,0.3);' onclick=\"supprimerAbsenceClient('" + safeId + "', '" + nomEnc + "', '" + dDebVal + "', '" + dFinVal + "')\" title='Supprimer'>🗑️</button>";
 html += "</div>";
 }
 html += "</div>";
@@ -2951,7 +2951,7 @@ htmlAtt += "<div style='display:flex;justify-content:space-between;align-items:f
 htmlAtt += "<div style='font-size:0.78rem;color:#e2e8f0;margin-bottom:2px;'>" + a.motif + "</div>";
 if(a.commentaire) htmlAtt += "<div style='font-size:0.72rem;color:#cbd5e1;font-style:italic;margin-bottom:4px;'>« " + a.commentaire + " »</div>";
 htmlAtt += "<div style='font-size:0.68rem;color:#94a3b8;margin-bottom:8px;'>Signalé par : " + (a.signalePar || "Coéquipier") + "</div>";
-htmlAtt += "<div style='display:flex;gap:6px;'><button type='button' class='btn-save' style='flex:1;padding:5px 8px;font-size:0.75rem;background:#15803d;' onclick='validerSignalementAdmin(\\"" + a.id + "\\", \\"valider\\")'>✅ Valider (Ajouter dette)</button><button type='button' class='btn-reset' style='padding:5px 8px;font-size:0.75rem;color:#f87171;' onclick='validerSignalementAdmin(\\"" + a.id + "\\", \\"rejeter\\")'>❌ Rejeter</button></div>";
+htmlAtt += "<div style='display:flex;gap:6px;'><button type='button' class='btn-save' style='flex:1;padding:5px 8px;font-size:0.75rem;background:#15803d;' onclick=\"validerSignalementAdmin('" + a.id + "', 'valider')\">✅ Valider (Ajouter dette)</button><button type='button' class='btn-reset' style='padding:5px 8px;font-size:0.75rem;color:#f87171;' onclick=\"validerSignalementAdmin('" + a.id + "', 'rejeter')\">❌ Rejeter</button></div>";
 htmlAtt += "</div>";
 });
 attList.innerHTML = htmlAtt;
@@ -2967,7 +2967,7 @@ var htmlDeb = "";
 lead.forEach(function(j){
 htmlDeb += "<div style='background:#090d16;border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;'>";
 htmlDeb += "<div><div style='font-weight:800;font-size:0.86rem;color:#f8fafc;'>" + j.nom + "</div><div style='font-size:0.72rem;color:#f87171;'>Dette en cours : <b>" + j.totalDu + " €</b> (" + j.nbAmendes + " amende(s))</div></div>";
-htmlDeb += "<button type='button' class='btn-enter' style='margin:0;padding:6px 10px;font-size:0.75rem;background:#16a34a;color:#fff;font-weight:800;' onclick='encaisserToutPourJoueur(\\"" + j.nom + "\\")'>💵 Encaisser " + j.totalDu + " €</button>";
+htmlDeb += "<button type='button' class='btn-enter' style='margin:0;padding:6px 10px;font-size:0.75rem;background:#16a34a;color:#fff;font-weight:800;' onclick=\"encaisserToutPourJoueur('" + encodeURIComponent(j.nom) + "')\">💵 Encaisser " + j.totalDu + " €</button>";
 htmlDeb += "</div>";
 });
 debList.innerHTML = htmlDeb;
@@ -2996,7 +2996,7 @@ var htmlB = "";
 bar.forEach(function(b){
 htmlB += "<div style='background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;'>";
 htmlB += "<div><span style='font-size:0.78rem;color:#f8fafc;'>" + b.titre + "</span> <span style='color:var(--color-secondary);font-size:0.68rem;'>[" + (b.categorie||"") + "]</span></div>";
-htmlB += "<div style='display:flex;align-items:center;gap:8px;'><b style='color:#fde047;font-size:0.82rem;'>" + b.montant + " €</b><button type='button' class='btn-reset' style='padding:2px 6px;font-size:0.7rem;color:#f87171;' onclick='supprimerLigneBaremeAdmin(\\"" + b.id + "\\")'>✕</button></div>";
+htmlB += "<div style='display:flex;align-items:center;gap:8px;'><b style='color:#fde047;font-size:0.82rem;'>" + b.montant + " €</b><button type='button' class='btn-reset' style='padding:2px 6px;font-size:0.7rem;color:#f87171;' onclick=\"supprimerLigneBaremeAdmin('" + b.id + "')\">✕</button></div>";
 htmlB += "</div>";
 });
 barEditList.innerHTML = htmlB;
@@ -4652,4 +4652,3 @@ if(document.readyState === "complete" || document.readyState === "interactive"){
   window.addEventListener("load", demarrerApp);
 }
 setTimeout(function(){ demarrerApp(); masquerLoading(); }, 4000);
-</script></body></html>
