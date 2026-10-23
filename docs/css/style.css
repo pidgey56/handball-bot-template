@@ -1010,50 +1010,8 @@ body.theme-slate .handball-field-wrapper {
   overflow: hidden;
 }
 
-/* Tinder Swipe Mode */
-.tcard {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 380px;
-  background: var(--card-bg);
-  border: 2px solid var(--card-border);
-  border-radius: 24px;
-  padding: 18px 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: var(--card-shadow);
-  touch-action: none;
-  cursor: grab;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-.tcard .tavatar {
-  width: 80px;
-  height: 80px;
-  min-width: 80px;
-  min-height: 80px;
-  border-radius: 20px;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 2rem;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--card-border);
-  margin-top: 10px;
-  overflow: hidden;
-}
-.tavatar img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  border-radius: 18px !important;
-}
+/* Mode Tinder defini en section specifique */
+
 
 /* Avatars dans les Modales */
 .modal-avatar-preview, #modalJoueurAvatarWrap, #profilPublicAvatarWrap {
@@ -1715,21 +1673,24 @@ body.user-logged-in .carnet-tab-label {
 }
 
 .tdeck {
-  position: relative;
-  height: 440px;
-  width: 100%;
-  max-width: 360px;
+  position: relative !important;
+  height: 440px !important;
+  width: 100% !important;
+  max-width: 360px !important;
   perspective: 1000px;
-  margin: 12px auto;
+  margin: 12px auto !important;
+  box-sizing: border-box !important;
 }
 
 .tcard {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 430px;
-  width: 100%;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 430px !important;
+  width: 100% !important;
+  max-width: 360px !important;
+  margin: 0 auto !important;
   background: var(--card-bg);
   border: 2px solid var(--card-border);
   border-radius: 24px;
@@ -2265,9 +2226,9 @@ body.train-tinder-mode-active #trainFooter {
 }
 
 .banner-vacances-text {
-  color: #0369a1!important;
-  font-weight: 700!important;
-  font-size: 0.85rem!important;
+  color: #075985!important;
+  font-weight: 800!important;
+  font-size: 0.88rem!important;
   line-height: 1.35;
 }
 
@@ -2339,4 +2300,178 @@ body.theme-slate .banner-vacances-btn {
   background: rgba(14, 165, 233, 0.25)!important;
   color: #e0f2fe!important;
   border-color: #38bdf8!important;
+}
+
+/* ==============================================================================
+ * ONGLET ET VUES SÃ‰LECTION COMPOSITION (TACTIQUE VS TINDER)
+ * ============================================================================== */
+.view-mode-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px auto 16px auto;
+  max-width: 420px;
+  width: 95%;
+}
+
+.view-mode-tab {
+  flex: 1;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-mode-tab.active {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+}
+
+/* ==============================================================================
+ * DESIGN MODALES MODERNES "CARNET DU COACH" (LIGHT PAR DÃ‰FAUT / SLATE EN DARK)
+ * ============================================================================== */
+.modal-header-modern {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+body.theme-slate .modal-header-modern {
+  border-bottom-color: #334155;
+}
+
+.modal-title-modern {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-desc-modern {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0 0 16px 0;
+  text-align: left;
+  line-height: 1.45;
+}
+body.theme-slate .modal-desc-modern {
+  color: #94a3b8;
+}
+
+/* Cartes de sections dans les modales */
+.modal-section-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  text-align: left;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+body.theme-slate .modal-section-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.modal-section-card-accent {
+  background: #fff7ed;
+  border: 1.5px solid #fed7aa;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.06);
+}
+body.theme-slate .modal-section-card-accent {
+  background: rgba(234, 88, 12, 0.12);
+  border-color: rgba(251, 146, 60, 0.35);
+}
+
+.modal-section-card-blue {
+  background: #f0f9ff;
+  border: 1.5px solid #bae6fd;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.06);
+}
+body.theme-slate .modal-section-card-blue {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.modal-section-card-yellow {
+  background: #fefce8;
+  border: 1.5px solid #fef08a;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(234, 179, 8, 0.06);
+}
+body.theme-slate .modal-section-card-yellow {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(253, 224, 71, 0.35);
+}
+
+.modal-section-card-red {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.06);
+}
+body.theme-slate .modal-section-card-red {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+/* Carte sous-Ã©lÃ©ment ou item de liste */
+.modal-list-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  color: var(--text-main, #0f172a);
+}
+body.theme-slate .modal-list-card {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+/* Stat card pour la trÃ©sorerie et bilans */
+.modal-stat-card {
+  border-radius: 14px;
+  padding: 12px 10px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.modal-stat-val {
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin-top: 2px;
+}
+.modal-stat-lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }

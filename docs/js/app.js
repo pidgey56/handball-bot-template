@@ -1,7 +1,7 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
-var APP_VERSION = '2.2.0';
+var APP_VERSION = '2.2.2';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -2061,7 +2061,7 @@ function synchroniserStatsSpakta(callback) {
   // Si pas encore de données, charger le snapshot local statique
   if (!STATS_SPAKTA) {
     try {
-      fetch('js/spakta-data.json?v=2.2.0')
+      fetch('js/spakta-data.json?v=2.2.2')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (!STATS_SPAKTA && data && data.joueurs) {
@@ -2417,7 +2417,7 @@ var totEl = document.getElementById("mvpTotalVotesCount");
 if(totEl) totEl.textContent = (VOTES_MVP_DATA.totalVotes || 0) + " vote(s)";
 var podMvp = (VOTES_MVP_DATA && VOTES_MVP_DATA.podiumMvp) || [];
 if(podMvp.length === 0){
-cont.innerHTML = "<div style='font-size:0.8rem;color:#64748b;text-align:center;padding:18px;background:#090d16;border-radius:12px;border:1px dashed rgba(255,255,255,0.1);'>Aucun vote pour le moment.<br><span style='font-size:0.75rem;color:#94a3b8;'>Soyez le premier à élire le MVP du match !</span></div>";
+cont.innerHTML = "<div class='modal-list-card' style='font-size:0.8rem;color:var(--text-muted);text-align:center;padding:18px;border-style:dashed;'>Aucun vote pour le moment.<br><span style='font-size:0.75rem;color:#64748b;'>Soyez le premier à élire le MVP du match !</span></div>";
 return;
 }
 var html = "<div style='display:flex;flex-direction:column;gap:6px;'>";
@@ -2427,11 +2427,11 @@ var medal = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : "�
 var vCount = (item.votes !== undefined && item.votes !== null) ? item.votes : ((item.voix !== undefined && item.voix !== null) ? item.voix : 0);
 var isMonVote = (VOTES_MVP_DATA && VOTES_MVP_DATA.monVoteMvp === item.nom);
 var pct = Math.max(8, Math.round((vCount / maxVoix) * 100));
-html += "<div style='background:#090d16;border:1px solid " + (isMonVote ? "rgba(245,158,11,0.5)" : "rgba(255,255,255,0.08)") + ";border-radius:10px;padding:8px 12px;position:relative;overflow:hidden;'>";
+html += "<div class='modal-list-card' style='border:1.5px solid " + (isMonVote ? "#f59e0b" : "var(--card-border)") + ";padding:8px 12px;position:relative;overflow:hidden;'>";
 html += "<div style='position:absolute;left:0;top:0;bottom:0;width:" + pct + "%;background:rgba(245,158,11,0.08);pointer-events:none;'></div>";
 html += "<div style='display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;font-size:0.82rem;'>";
-html += "<div style='display:flex;align-items:center;gap:8px;'><span>" + medal + "</span><span style='font-weight:700;color:#fff;'>" + item.nom + "</span>" + (isMonVote ? " <span style='font-size:0.68rem;background:rgba(245,158,11,0.2);color:#fbbf24;padding:1px 6px;border-radius:99px;font-weight:700;'>Votre vote</span>" : "") + "</div>";
-html += "<span style='color:#fcd34d;font-weight:800;font-size:0.85rem;'>" + vCount + " vote(s)</span>";
+html += "<div style='display:flex;align-items:center;gap:8px;'><span>" + medal + "</span><span style='font-weight:700;color:var(--text-main);'>" + item.nom + "</span>" + (isMonVote ? " <span style='font-size:0.68rem;background:#fef3c7;color:#b45309;padding:1px 6px;border-radius:99px;font-weight:700;'>Votre vote</span>" : "") + "</div>";
+html += "<span style='color:#b45309;font-weight:800;font-size:0.85rem;'>" + vCount + " vote(s)</span>";
 html += "</div></div>";
 });
 html += "</div>";
@@ -2538,7 +2538,7 @@ var nbVotes = (CHEVRE_DATA && CHEVRE_DATA.totalVotes) ? CHEVRE_DATA.totalVotes :
 if(badge) badge.textContent = nbActs + " action(s) • " + nbVotes + " vote(s)";
 var acts = (CHEVRE_DATA && CHEVRE_DATA.actions) || [];
 if(acts.length === 0){
-cont.innerHTML = "<div style='text-align:center;padding:24px 12px;background:#090d16;border-radius:12px;border:1px dashed rgba(234,88,12,0.25);color:#94a3b8;font-size:0.8rem;line-height:1.5;'>🐐 <b>Aucune action proposée pour le moment.</b><br><span style='font-size:0.75rem;color:#64748b;'>Un tir dans les nuages ? Une passe à l'arbitre ? Remplissez le formulaire ci-dessus pour ouvrir le bal !</span></div>";
+cont.innerHTML = "<div class='modal-list-card' style='text-align:center;padding:24px 12px;border:1px dashed #fed7aa;color:var(--text-muted);font-size:0.8rem;line-height:1.5;'>🐐 <b style='color:var(--text-main);'>Aucune action proposée pour le moment.</b><br><span style='font-size:0.75rem;color:#64748b;'>Un tir dans les nuages ? Une passe à l'arbitre ? Remplissez le formulaire ci-dessus pour ouvrir le bal !</span></div>";
 return;
 }
 var html = "<div style='display:flex;flex-direction:column;gap:10px;'>";
@@ -2549,7 +2549,7 @@ var canDelete = EST_COACH || (act.auteurTel && normaliserTelClient(act.auteurTel
 html += "<div class='chevre-action-card" + (isLeader ? " chevre-action-leader" : "") + (isVoted ? " chevre-action-voted" : "") + "'>";
 html += "<div class='chevre-action-top'>";
 html += "<div style='display:flex;align-items:center;gap:6px;'>";
-if(isLeader) html += "<span style='font-size:0.85rem;background:rgba(234,88,12,0.3);color:#fdba74;padding:2px 8px;border-radius:99px;font-weight:900;border:1px solid rgba(234,88,12,0.4);'>👑 #1 Chèvre</span>";
+if(isLeader) html += "<span style='font-size:0.85rem;background:#ffedd5;color:#c2410c;padding:2px 8px;border-radius:99px;font-weight:900;border:1px solid #fed7aa;'>👑 #1 Chèvre</span>";
 if(act.joueur) html += "<span class='chevre-action-target'>🎯 " + act.joueur + "</span>";
 html += "</div>";
 if(canDelete) html += "<button type='button' class='btn-reset' style='color:#f87171;font-size:0.72rem;padding:2px 6px;' title='Supprimer cette action' onclick=\"supprimerActionChevreClient('" + act.id + "')\">🗑️</button>";
@@ -2668,10 +2668,10 @@ html += "</div>";
 });
 }
 if(pass.length > 0){
-html += "<div style='font-size:0.75rem;font-weight:700;color:#fcd34d;margin:10px 0 6px 0;'>🙋 Cherchent une place :</div>";
+html += "<div style='font-size:0.75rem;font-weight:700;color:#b45309;margin:10px 0 6px 0;'>🙋 Cherchent une place :</div>";
 html += "<div style='display:flex;gap:4px;flex-wrap:wrap;'>";
 pass.forEach(function(p){
-html += "<span style='font-size:0.72rem;background:#0e1626;border:1px solid rgba(255,255,255,0.1);padding:4px 8px;border-radius:8px;color:#e2e8f0;'>👤 " + p.nom + "</span>";
+html += "<span style='font-size:0.75rem;background:#f0f9ff;border:1px solid #bae6fd;padding:4px 8px;border-radius:8px;color:#0369a1;font-weight:700;'>👤 " + p.nom + "</span>";
 });
 html += "</div>";
 }
@@ -2972,9 +2972,9 @@ mesAmendes.forEach(function(a){
 var isPaye = a.statut === "paye";
 var isAttente = a.statut === "en_attente";
 var stBadge = isPaye ? "<span style='font-size:0.68rem;background:rgba(34,197,94,0.2);color:#86efac;padding:2px 7px;border-radius:99px;font-weight:700;'>Payé ✅</span>" : (isAttente ? "<span style='font-size:0.68rem;background:rgba(234,179,8,0.2);color:#fde047;padding:2px 7px;border-radius:99px;font-weight:700;'>En attente ⏳</span>" : "<span style='font-size:0.68rem;background:rgba(239,68,68,0.2);color:#fca5a5;padding:2px 7px;border-radius:99px;font-weight:700;'>À régler 🚨</span>");
-htmlA += "<div style='background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;text-align:left;'>";
-htmlA += "<div><div style='font-weight:700;font-size:0.8rem;color:#f8fafc;'>" + a.motif + "</div><div style='font-size:0.7rem;color:#94a3b8;'>" + (a.date || "") + (a.commentaire ? (" • " + a.commentaire) : "") + "</div></div>";
-htmlA += "<div style='text-align:right;'><div style='font-weight:800;font-size:0.9rem;color:#fde047;'>" + a.montant + " €</div>" + stBadge + "</div>";
+htmlA += "<div class='modal-list-card' style='display:flex;justify-content:space-between;align-items:center;text-align:left;margin-bottom:6px;'>";
+htmlA += "<div><div style='font-weight:700;font-size:0.82rem;color:var(--text-main);'>" + a.motif + "</div><div style='font-size:0.7rem;color:#64748b;'>" + (a.date || "") + (a.commentaire ? (" • " + a.commentaire) : "") + "</div></div>";
+htmlA += "<div style='text-align:right;'><div style='font-weight:800;font-size:0.9rem;color:#b45309;'>" + a.montant + " €</div>" + stBadge + "</div>";
 htmlA += "</div>";
 });
 mesList.innerHTML = htmlA;
@@ -2990,9 +2990,9 @@ var htmlL = "";
 lead.forEach(function(j, idx){
 var med = idx === 0 ? "🥇" : (idx === 1 ? "🥈" : (idx === 2 ? "🥉" : ("#" + (idx + 1))));
 var isMoi = String(j.nom || "").toLowerCase() === (SESSION_NOM || "").toLowerCase();
-htmlL += "<div onclick=\"ouvrirProfilJoueurPublic('" + encodeURIComponent(j.nom).replace(/'/g, "%27") + "')\" title=\"Cliquer pour voir le profil\" style='cursor:pointer;background:" + (isMoi ? "rgba(234,179,8,0.12)" : "#090d16") + ";border:1px solid " + (isMoi ? "#eab308" : "rgba(255,255,255,0.08)") + ";border-radius:12px;padding:8px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;text-align:left;transition:transform 0.15s,border-color 0.15s;' onmouseenter=\"this.style.borderColor='var(--color-primary)';\" onmouseleave=\"this.style.borderColor='" + (isMoi ? "#eab308" : "rgba(255,255,255,0.08)") + "';\">";
-htmlL += "<div style='display:flex;align-items:center;gap:8px;'><span style='font-size:1.1rem;'>" + med + "</span><div><div style='font-weight:800;font-size:0.84rem;color:#f8fafc;'>" + j.nom + (isMoi ? " <span style='color:#fde047;font-size:0.7rem;'>[Moi]</span>" : "") + " <span style='font-size:0.7rem;color:var(--color-secondary);opacity:0.85;'>👁️ Profil</span></div><div style='font-size:0.7rem;color:#94a3b8;'>" + j.nbAmendes + " amende(s) • " + (j.totalPaye || 0) + " € réglés</div></div></div>";
-htmlL += "<div style='text-align:right;'><div style='font-weight:900;font-size:0.95rem;color:#fde047;'>" + j.totalAmendes + " €</div><div style='font-size:0.68rem;color:" + (j.totalDu > 0 ? "#f87171" : "#86efac") + ";'>" + (j.totalDu > 0 ? ("Dû : " + j.totalDu + " €") : "À jour ✅") + "</div></div>";
+htmlL += "<div onclick=\"ouvrirProfilJoueurPublic('" + encodeURIComponent(j.nom).replace(/'/g, "%27") + "')\" title=\"Cliquer pour voir le profil\" style='cursor:pointer;background:" + (isMoi ? "#fef3c7" : "var(--bg-card)") + ";border:1.5px solid " + (isMoi ? "#f59e0b" : "var(--card-border)") + ";border-radius:12px;padding:8px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;text-align:left;transition:transform 0.15s,border-color 0.15s;' onmouseenter=\"this.style.borderColor='var(--color-primary)';\" onmouseleave=\"this.style.borderColor='" + (isMoi ? "#f59e0b" : "var(--card-border)") + "';\">";
+htmlL += "<div style='display:flex;align-items:center;gap:8px;'><span style='font-size:1.1rem;'>" + med + "</span><div><div style='font-weight:800;font-size:0.84rem;color:var(--text-main);'>" + j.nom + (isMoi ? " <span style='color:#b45309;font-size:0.7rem;font-weight:800;'>[Moi]</span>" : "") + " <span style='font-size:0.7rem;color:var(--color-primary);font-weight:700;'>👁️ Profil</span></div><div style='font-size:0.7rem;color:#64748b;'>" + j.nbAmendes + " amende(s) • " + (j.totalPaye || 0) + " € réglés</div></div></div>";
+htmlL += "<div style='text-align:right;'><div style='font-weight:900;font-size:0.95rem;color:#b45309;'>" + j.totalAmendes + " €</div><div style='font-size:0.68rem;font-weight:700;color:" + (j.totalDu > 0 ? "#dc2626" : "#16a34a") + ";'>" + (j.totalDu > 0 ? ("Dû : " + j.totalDu + " €") : "À jour ✅") + "</div></div>";
 htmlL += "</div>";
 });
 lList.innerHTML = htmlL;
@@ -3017,9 +3017,9 @@ return;
 }
 var html = "";
 filtres.forEach(function(b){
-html += "<div style='background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;'>";
-html += "<div><div style='font-weight:700;font-size:0.82rem;color:#f8fafc;'>" + b.titre + "</div><div style='font-size:0.68rem;color:var(--color-secondary);'>" + (b.categorie || "Amende") + "</div></div>";
-html += "<div style='font-weight:900;font-size:0.95rem;color:#fde047;background:rgba(234,179,8,0.15);padding:3px 9px;border-radius:99px;border:1px solid rgba(234,179,8,0.3);'>" + b.montant + " €</div>";
+html += "<div class='modal-list-card' style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>";
+html += "<div><div style='font-weight:700;font-size:0.82rem;color:var(--text-main);'>" + b.titre + "</div><div style='font-size:0.68rem;color:var(--color-primary);font-weight:700;'>" + (b.categorie || "Amende") + "</div></div>";
+html += "<div style='font-weight:900;font-size:0.95rem;color:#b45309;background:#fef3c7;padding:3px 9px;border-radius:99px;border:1px solid #fde68a;'>" + b.montant + " €</div>";
 html += "</div>";
 });
 cont.innerHTML = html;
@@ -3133,10 +3133,10 @@ attList.innerHTML = "<div style='text-align:center;color:#64748b;font-size:0.75r
 } else {
 var htmlAtt = "";
 enAtt.forEach(function(a){
-htmlAtt += "<div style='background:#090d16;border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:10px;margin-bottom:8px;'>";
-htmlAtt += "<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;'><div><b style='color:#fde047;font-size:0.88rem;'>" + a.nomJoueur + "</b> <span style='color:#94a3b8;font-size:0.7rem;'>(" + (a.date||"") + ")</span></div><span style='font-weight:900;font-size:1rem;color:#fde047;'>" + a.montant + " €</span></div>";
-htmlAtt += "<div style='font-size:0.78rem;color:#e2e8f0;margin-bottom:2px;'>" + a.motif + "</div>";
-if(a.commentaire) htmlAtt += "<div style='font-size:0.72rem;color:#cbd5e1;font-style:italic;margin-bottom:4px;'>« " + a.commentaire + " »</div>";
+htmlAtt += "<div class='modal-section-card-yellow' style='margin-bottom:8px;'>";
+htmlAtt += "<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;'><div><b style='color:#b45309;font-size:0.88rem;'>" + a.nomJoueur + "</b> <span style='color:#64748b;font-size:0.7rem;'>(" + (a.date||"") + ")</span></div><span style='font-weight:900;font-size:1rem;color:#b45309;'>" + a.montant + " €</span></div>";
+htmlAtt += "<div style='font-size:0.78rem;color:var(--text-main);margin-bottom:2px;'>" + a.motif + "</div>";
+if(a.commentaire) htmlAtt += "<div style='font-size:0.72rem;color:#64748b;font-style:italic;margin-bottom:4px;'>« " + a.commentaire + " »</div>";
 htmlAtt += "<div style='font-size:0.68rem;color:#94a3b8;margin-bottom:8px;'>Signalé par : " + (a.signalePar || "Coéquipier") + "</div>";
 htmlAtt += "<div style='display:flex;gap:6px;'><button type='button' class='btn-save' style='flex:1;padding:5px 8px;font-size:0.75rem;background:#15803d;' onclick=\"validerSignalementAdmin('" + a.id + "', 'valider')\">✅ Valider (Ajouter dette)</button><button type='button' class='btn-reset' style='padding:5px 8px;font-size:0.75rem;color:#f87171;' onclick=\"validerSignalementAdmin('" + a.id + "', 'rejeter')\">❌ Rejeter</button></div>";
 htmlAtt += "</div>";
@@ -3152,8 +3152,8 @@ debList.innerHTML = "<div style='text-align:center;color:#64748b;font-size:0.75r
 } else {
 var htmlDeb = "";
 lead.forEach(function(j){
-htmlDeb += "<div style='background:#090d16;border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;'>";
-htmlDeb += "<div><div style='font-weight:800;font-size:0.86rem;color:#f8fafc;'>" + j.nom + "</div><div style='font-size:0.72rem;color:#f87171;'>Dette en cours : <b>" + j.totalDu + " €</b> (" + j.nbAmendes + " amende(s))</div></div>";
+htmlDeb += "<div class='modal-section-card-red' style='margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;'>";
+htmlDeb += "<div><div style='font-weight:800;font-size:0.86rem;color:var(--text-main);'>" + j.nom + "</div><div style='font-size:0.72rem;color:#dc2626;'>Dette en cours : <b>" + j.totalDu + " €</b> (" + j.nbAmendes + " amende(s))</div></div>";
 htmlDeb += "<button type='button' class='btn-enter' style='margin:0;padding:6px 10px;font-size:0.75rem;background:#16a34a;color:#fff;font-weight:800;' onclick=\"encaisserToutPourJoueur('" + encodeURIComponent(j.nom) + "')\">💵 Encaisser " + j.totalDu + " €</button>";
 htmlDeb += "</div>";
 });
@@ -3168,9 +3168,9 @@ depList.innerHTML = "<div style='text-align:center;color:#64748b;font-size:0.75r
 } else {
 var htmlDep = "";
 deps.forEach(function(d){
-htmlDep += "<div style='background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;'>";
-htmlDep += "<div><span style='font-weight:700;font-size:0.8rem;color:#f8fafc;'>" + d.motif + "</span> <span style='color:#94a3b8;font-size:0.68rem;'>(" + (d.date||"") + ")</span></div>";
-htmlDep += "<span style='font-weight:800;font-size:0.85rem;color:#f87171;'>-" + d.montant + " €</span>";
+htmlDep += "<div class='modal-list-card' style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:6px 10px;'>";
+htmlDep += "<div><span style='font-weight:700;font-size:0.8rem;color:var(--text-main);'>" + d.motif + "</span> <span style='color:#64748b;font-size:0.68rem;'>(" + (d.date||"") + ")</span></div>";
+htmlDep += "<span style='font-weight:800;font-size:0.85rem;color:#dc2626;'>-" + d.montant + " €</span>";
 htmlDep += "</div>";
 });
 depList.innerHTML = htmlDep;
@@ -3181,9 +3181,9 @@ if(barEditList){
 var bar = (CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.config && CAISSE_NOIRE_DATA.config.bareme) || [];
 var htmlB = "";
 bar.forEach(function(b){
-htmlB += "<div style='background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;'>";
-htmlB += "<div><span style='font-size:0.78rem;color:#f8fafc;'>" + b.titre + "</span> <span style='color:var(--color-secondary);font-size:0.68rem;'>[" + (b.categorie||"") + "]</span></div>";
-htmlB += "<div style='display:flex;align-items:center;gap:8px;'><b style='color:#fde047;font-size:0.82rem;'>" + b.montant + " €</b><button type='button' class='btn-reset' style='padding:2px 6px;font-size:0.7rem;color:#f87171;' onclick=\"supprimerLigneBaremeAdmin('" + b.id + "')\">✕</button></div>";
+htmlB += "<div class='modal-list-card' style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:6px 10px;'>";
+htmlB += "<div><span style='font-size:0.78rem;color:var(--text-main);font-weight:700;'>" + b.titre + "</span> <span style='color:var(--color-primary);font-size:0.68rem;font-weight:700;'>[" + (b.categorie||"") + "]</span></div>";
+htmlB += "<div style='display:flex;align-items:center;gap:8px;'><b style='color:#b45309;font-size:0.84rem;'>" + b.montant + " €</b><button type='button' class='btn-reset' style='padding:2px 6px;font-size:0.7rem;color:#ef4444;font-weight:700;' onclick=\"supprimerLigneBaremeAdmin('" + b.id + "')\">✕</button></div>";
 htmlB += "</div>";
 });
 barEditList.innerHTML = htmlB;
@@ -3496,16 +3496,16 @@ var fin = v.dateFin || deb;
 var debFr = formaterDateFrClient(deb);
 var finFr = formaterDateFrClient(fin);
 var stBadge = "";
-var cardBg = "background:#090d16;";
-var cardBorder = "border:1px solid rgba(255,255,255,0.08);";
+var cardBg = "background:var(--bg-card);";
+var cardBorder = "border:1px solid var(--card-border);";
 if(!isActif){
 stBadge = "<span style='font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(148,163,184,0.15);color:#94a3b8;font-weight:700;'>⚪ Désactivée</span>";
 } else if(deb <= todayIso && fin >= todayIso){
-stBadge = "<span style='font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(14,165,233,0.25);color:#38bdf8;border:1px solid #0ea5e9;font-weight:800;'>🏖️ En cours</span>";
-cardBg = "background:linear-gradient(135deg,rgba(14,116,144,0.25),rgba(15,23,42,0.95));";
-cardBorder = "border:1px solid rgba(14,165,233,0.35);";
+stBadge = "<span style='font-size:0.7rem;padding:2px 8px;border-radius:99px;background:#e0f2fe;color:#0284c7;border:1px solid #7dd3fc;font-weight:800;'>🏖️ En cours</span>";
+cardBg = "background:#f0f9ff;";
+cardBorder = "border:1.5px solid #38bdf8;";
 } else if(deb > todayIso){
-stBadge = "<span style='font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(234,179,8,0.18);color:#facc15;font-weight:700;'>⏳ À venir</span>";
+stBadge = "<span style='font-size:0.7rem;padding:2px 8px;border-radius:99px;background:#fef3c7;color:#b45309;font-weight:700;'>⏳ À venir</span>";
 } else {
 stBadge = "<span style='font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(148,163,184,0.15);color:#94a3b8;font-weight:700;'>✔️ Passée</span>";
 }
@@ -3513,12 +3513,12 @@ var card = document.createElement("div");
 card.style.cssText = cardBg + cardBorder + "border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;";
 var left = document.createElement("div");
 left.style.cssText = "flex:1;min-width:0;";
-left.innerHTML = "<div style='display:flex;align-items:center;gap:6px;margin-bottom:2px;'><span style='font-weight:800;font-size:0.85rem;color:" + (isActif ? "#f8fafc" : "#94a3b8") + ";'>" + (v.nom || "Vacances") + "</span>" + stBadge + "</div><div style='font-size:0.75rem;color:#cbd5e1;margin-bottom:2px;'>📅 Du " + debFr + " au " + finFr + "</div>" + (v.commentaire ? "<div style='font-size:0.72rem;color:#94a3b8;font-style:italic;'>" + v.commentaire + "</div>" : "");
+left.innerHTML = "<div style='display:flex;align-items:center;gap:6px;margin-bottom:2px;'><span style='font-weight:800;font-size:0.86rem;color:" + (isActif ? "var(--text-main)" : "#94a3b8") + ";'>" + (v.nom || "Vacances") + "</span>" + stBadge + "</div><div style='font-size:0.75rem;color:#64748b;margin-bottom:2px;'>📅 Du " + debFr + " au " + finFr + "</div>" + (v.commentaire ? "<div style='font-size:0.72rem;color:#94a3b8;font-style:italic;'>" + v.commentaire + "</div>" : "");
 var right = document.createElement("div");
 right.style.cssText = "display:flex;gap:4px;align-items:center;";
 var btnToggle = document.createElement("button");
 btnToggle.type = "button"; btnToggle.className = "btn-reset";
-btnToggle.style.cssText = "font-size:0.72rem;padding:4px 8px;border-radius:6px;background:" + (isActif ? "rgba(14,165,233,0.18)" : "rgba(148,163,184,0.12)") + ";color:" + (isActif ? "#7dd3fc" : "#94a3b8") + ";";
+btnToggle.style.cssText = "font-size:0.72rem;padding:4px 8px;border-radius:6px;font-weight:700;background:" + (isActif ? "#e0f2fe" : "#f1f5f9") + ";color:" + (isActif ? "#0284c7" : "#64748b") + ";border:1px solid " + (isActif ? "#bae6fd" : "#cbd5e1") + ";";
 btnToggle.textContent = isActif ? "Activée" : "Désactivée";
 btnToggle.onclick = function(){ basculerActifVacanceClient(v.id); };
 var btnEdit = document.createElement("button");
@@ -4454,9 +4454,9 @@ return;
 dispoAjout.forEach(function(j){
 var row = document.createElement("div");
 row.style.display = "flex"; row.style.alignItems = "center"; row.style.justifyContent = "space-between";
-row.style.background = "#090d16"; row.style.padding = "8px 10px"; row.style.borderRadius = "8px"; row.style.border = "1px solid rgba(148,163,184,0.12)";
+row.className = "modal-list-card"; row.style.display = "flex"; row.style.alignItems = "center"; row.style.justifyContent = "space-between"; row.style.marginBottom = "4px";
 var info = document.createElement("div");
-info.innerHTML = "<div style='font-weight:700;font-size:0.82rem;color:#f8fafc;'>" + j.nom + "</div><div style='font-size:0.7rem;color:#94a3b8;'>" + (j.poste || "Demi-Centre") + (j.equipe ? (" • " + j.equipe) : "") + "</div>";
+info.innerHTML = "<div style='font-weight:700;font-size:0.82rem;color:var(--text-main);'>" + j.nom + "</div><div style='font-size:0.7rem;color:#64748b;'>" + (j.poste || "Demi-Centre") + (j.equipe ? (" • " + j.equipe) : "") + "</div>";
 var btn = document.createElement("button");
 btn.className = "btn-enter"; btn.style.padding = "5px 10px"; btn.style.fontSize = "0.75rem"; btn.style.width = "auto"; btn.style.margin = "0";
 btn.textContent = "+ Sélectionner";
@@ -4526,14 +4526,14 @@ var container = document.getElementById("listeCollectifs"); if(!container) retur
 container.innerHTML = "";
 var colls = getCollectifsSauvegardes();
 var itemCur = document.createElement("div");
-itemCur.style.display = "flex"; itemCur.style.alignItems = "center"; itemCur.style.justifyContent = "space-between"; itemCur.style.background = "#0e1626"; itemCur.style.padding = "10px 12px"; itemCur.style.borderRadius = "10px"; itemCur.style.border = "1px solid var(--color-primary)";
-itemCur.innerHTML = "<div><div style='font-weight:800;font-size:0.85rem;color:#f8fafc;'>" + (CLUB_CONFIG.nomClub || "Collectif Actuel") + "</div><div style='font-size:0.7rem;color:#94a3b8;'>Collectif en cours d'utilisation</div></div><span style='font-size:0.72rem;background:var(--color-primary);color:#fff;padding:3px 8px;border-radius:12px;font-weight:700;'>Actif</span>";
+itemCur.className = "modal-section-card-accent"; itemCur.style.display = "flex"; itemCur.style.alignItems = "center"; itemCur.style.justifyContent = "space-between"; itemCur.style.marginBottom = "6px";
+itemCur.innerHTML = "<div><div style='font-weight:800;font-size:0.85rem;color:var(--text-main);'>" + (CLUB_CONFIG.nomClub || "Collectif Actuel") + "</div><div style='font-size:0.7rem;color:#64748b;'>Collectif en cours d'utilisation</div></div><span style='font-size:0.72rem;background:var(--color-primary);color:#fff;padding:3px 8px;border-radius:12px;font-weight:700;'>Actif</span>";
 container.appendChild(itemCur);
 colls.forEach(function(c, idx){
 var row = document.createElement("div");
-row.style.display = "flex"; row.style.alignItems = "center"; row.style.justifyContent = "space-between"; row.style.background = "#090d16"; row.style.padding = "10px 12px"; row.style.borderRadius = "10px"; row.style.border = "1px solid rgba(148,163,184,0.15)";
+row.className = "modal-list-card"; row.style.display = "flex"; row.style.alignItems = "center"; row.style.justifyContent = "space-between"; row.style.marginBottom = "6px";
 var info = document.createElement("div");
-info.innerHTML = "<div style='font-weight:700;font-size:0.85rem;color:#e2e8f0;'>" + c.nom + "</div><div style='font-size:0.68rem;color:#94a3b8;word-break:break-all;'>" + c.url.substring(0, 40) + "...</div>";
+info.innerHTML = "<div style='font-weight:700;font-size:0.85rem;color:var(--text-main);'>" + c.nom + "</div><div style='font-size:0.68rem;color:#64748b;word-break:break-all;'>" + c.url.substring(0, 40) + "...</div>";
 var acts = document.createElement("div"); acts.style.display = "flex"; acts.style.gap = "6px";
 var btnGo = document.createElement("button"); btnGo.className = "btn-enter"; btnGo.style.padding = "5px 10px"; btnGo.style.fontSize = "0.75rem"; btnGo.style.width = "auto"; btnGo.style.margin = "0"; btnGo.textContent = "Basculer";
 btnGo.onclick = function(){ window.location.href = c.url; };
