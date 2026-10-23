@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.2">
+  <link rel="stylesheet" href="css/style.css?v=2.2.3">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -164,8 +164,11 @@
       <div class="profil-actions-col">
         <!-- 1. Tuile Spakta Stats Officielles -->
         <div id="playerStatsBox" class="profil-side-box" style="display:none;">
-          <div class="profil-side-title" style="display:flex;justify-content:space-between;align-items:center;">
-            <span>📊 Mes Stats Officielles (2026-2027)</span>
+          <div class="profil-side-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span>📊 Mes Stats Officielles (2026-2027)</span>
+              <span class="spakta-brand-tag">Source : Spakta</span>
+            </div>
             <span id="playerStatsTeamsBadge" class="spakta-team-pill">1C</span>
           </div>
           
@@ -183,6 +186,11 @@
           <!-- Liste déroulante des matchs -->
           <div id="playerMatchLog" class="spakta-match-list" style="display:none;">
             <!-- Rempli dynamiquement en JS -->
+          </div>
+
+          <div class="spakta-source-footnote">
+            <span>📡 Données officielles synchronisées via <b>Spakta</b></span>
+            <span style="font-weight:700;color:var(--color-primary);">Saison 2026–2027</span>
           </div>
         </div>
 
@@ -612,8 +620,11 @@
 
 <!-- Section Stats Spakta Coach -->
 <div id="modalJoueurSpaktaBox" class="modal-section-card" style="display:none;padding:10px;margin-top:8px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-    <span style="font-size:0.8rem;font-weight:800;color:var(--text-main);">📊 Stats Spakta 2026-2027</span>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.8rem;font-weight:800;color:var(--text-main);">📊 Stats Officielles (2026-2027)</span>
+      <span class="spakta-brand-tag">Source : Spakta</span>
+    </div>
     <span id="modalJoueurSpaktaTeamBadge" class="spakta-team-pill">--</span>
   </div>
   <div id="modalJoueurSpaktaGrid" class="spakta-stats-grid"></div>
@@ -622,6 +633,10 @@
     <span id="iconModalToggleMatchLog">▾</span>
   </button>
   <div id="modalJoueurMatchLog" class="spakta-match-list" style="display:none;max-height:160px;overflow-y:auto;margin-top:6px;"></div>
+  <div class="spakta-source-footnote">
+    <span>📡 Données officielles synchronisées via <b>Spakta</b></span>
+    <span style="font-weight:700;color:var(--color-primary);">FFHB</span>
+  </div>
 </div>
 <div id="modalJoueurStatus" style="font-size:0.8rem;color:var(--color-secondary);min-height:1.2em;text-align:center;"></div>
 <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;">
@@ -1538,13 +1553,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.2"></script>
-  <script src="js/api.js?v=2.2.2"></script>
-  <script src="js/app.js?v=2.2.2"></script>
+  <script src="js/spakta-data.js?v=2.2.3"></script>
+  <script src="js/api.js?v=2.2.3"></script>
+  <script src="js/app.js?v=2.2.3"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.2').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.3').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

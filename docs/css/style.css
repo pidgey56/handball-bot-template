@@ -2073,6 +2073,42 @@ body.train-tinder-mode-active #trainFooter {
   text-transform: uppercase;
 }
 
+.spakta-brand-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.2px;
+}
+body.theme-slate .spakta-brand-tag {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.spakta-source-footnote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--card-border, #e2e8f0);
+  font-size: 0.68rem;
+  color: var(--text-muted, #64748b);
+}
+.spakta-source-footnote b {
+  color: var(--text-main, #0f172a);
+}
+body.theme-slate .spakta-source-footnote {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
 .spakta-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
