@@ -647,23 +647,211 @@ body.theme-slate .player-athlete-card {
   line-height: 1.3;
 }
 
-/* VUE TACTIQUE & TERRAIN DE HANDBALL */
+/* ==============================================================================
+ * TERRAIN TACTIQUE & TABLEAU DE COMPOSITION (VUE MATCHS & CONVOCATIONS)
+ * ============================================================================== */
+
+.tactical-preview-wrap {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 20px;
+  padding: 20px 22px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-slate .tactical-preview-wrap {
+  background: #1e2530;
+  border-color: #334155;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.35);
+}
+
+.tactical-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.tactical-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tactical-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--text-main);
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tactical-subtitle {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Onglets d'équipes (R1, R2, R3) stylisés */
+.tactical-team-tabs {
+  display: inline-flex;
+  background: rgba(148, 163, 184, 0.12);
+  padding: 4px;
+  border-radius: 14px;
+  gap: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+body.theme-slate .tactical-team-tabs {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+.tactical-team-tab {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.tactical-team-tab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.tactical-team-tab.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+body.theme-slate .tactical-team-tab.active {
+  background: #334155;
+  color: #f8fafc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.tactical-team-tab.team-1b.active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+.tactical-team-tab.team-1c.active {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+}
+
+.tactical-team-tab.team-1d.active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.tactical-team-badge {
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.1);
+  font-weight: 900;
+}
+
+.tactical-team-tab.active .tactical-team-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* Badge d'aide et d'échange */
+.tactical-hint-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+body.theme-slate .tactical-hint-badge {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(71, 85, 105, 0.4);
+  color: #94a3b8;
+}
+
+.tactical-hint-badge.is-selected {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: #0284c7;
+  border-style: solid;
+  color: #0369a1;
+  animation: pulseTacticalHint 1.8s infinite;
+}
+
+body.theme-slate .tactical-hint-badge.is-selected {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: #38bdf8;
+  color: #7dd3fc;
+}
+
+@keyframes pulseTacticalHint {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(14, 165, 233, 0); }
+}
+
+.tactical-hint-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Terrain de handball SVG */
 .handball-field-wrapper {
   position: relative;
   width: 100%;
-  max-width: 640px;
+  max-width: 680px;
   aspect-ratio: 500/400;
   margin: 0 auto;
-  background: #172554; /* Bleu terrain de sport */
+  background: radial-gradient(circle at 50% 100%, #1e3a8a 0%, #0f172a 100%);
   border-radius: 20px;
-  border: 2.5px solid var(--card-border);
-  box-shadow: var(--card-shadow);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5), 0 12px 30px rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
+
 body.theme-slate .handball-field-wrapper {
-  background: #0f172a;
+  background: radial-gradient(circle at 50% 100%, #172554 0%, #090d16 100%);
+  border-color: rgba(71, 85, 105, 0.4);
 }
-.court-nodes-container { position: absolute; inset: 0; pointer-events: none; }
+
+.court-nodes-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .court-node {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -672,32 +860,298 @@ body.theme-slate .handball-field-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.15s ease;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 10;
 }
-.court-node:hover { transform: translate(-50%, -50%) scale(1.1); z-index: 20; }
+
+.court-node:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+  z-index: 30;
+}
+
+/* Carte joueur sur le terrain */
 .court-player-chip {
-  background: #ffffff;
-  border: 2px solid var(--card-border);
-  border-radius: 12px;
-  padding: 5px 10px;
-  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
   font-weight: 800;
-  color: #1e293b;
-  box-shadow: 2px 3px 0px rgba(0,0,0,0.4);
+  color: #0f172a;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28), 0 2px 4px rgba(0, 0, 0, 0.15);
   text-align: center;
-  max-width: 120px;
+  min-width: 80px;
+  max-width: 108px;
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+body.theme-slate .court-player-chip {
+  background: rgba(30, 41, 59, 0.94);
+  border-color: rgba(71, 85, 105, 0.8);
+  color: #f8fafc;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5);
+}
+
+.court-player-chip.empty {
+  background: rgba(255, 255, 255, 0.65);
+  border: 2px dashed rgba(148, 163, 184, 0.6);
+  opacity: 0.75;
+}
+
+body.theme-slate .court-player-chip.empty {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.5);
+  opacity: 0.65;
+}
+
+.court-player-chip.tactical-selected {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+  border-color: #0284c7;
+  transform: translateY(-4px) scale(1.08);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.6), 0 12px 26px rgba(0, 0, 0, 0.4);
+  animation: tacticalPulse 1.4s infinite alternate;
+}
+
+@keyframes tacticalPulse {
+  0% { transform: translateY(-4px) scale(1.08); box-shadow: 0 0 15px rgba(56, 189, 248, 0.5); }
+  100% { transform: translateY(-4px) scale(1.12); box-shadow: 0 0 26px rgba(56, 189, 248, 0.9); }
+}
+
+.court-node.tactical-drop-hover .court-player-chip {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  transform: scale(1.1);
+}
+
+/* Badges de poste (Gardien, Demi-Centre, Arrières, Ailiers, Pivot) */
+.court-pos-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.court-pos-label.badge-pos-gb {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+.court-pos-label.badge-pos-dc {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+.court-pos-label.badge-pos-arg,
+.court-pos-label.badge-pos-ard {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+.court-pos-label.badge-pos-alg,
+.court-pos-label.badge-pos-ald {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.court-pos-label.badge-pos-pvt {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+body.theme-slate .court-pos-label.badge-pos-gb { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); }
+body.theme-slate .court-pos-label.badge-pos-dc { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.4); }
+body.theme-slate .court-pos-label.badge-pos-arg,
+body.theme-slate .court-pos-label.badge-pos-ard { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border-color: rgba(139, 92, 246, 0.4); }
+body.theme-slate .court-pos-label.badge-pos-alg,
+body.theme-slate .court-pos-label.badge-pos-ald { background: rgba(34, 197, 94, 0.2); color: #4ade80; border-color: rgba(34, 197, 94, 0.4); }
+body.theme-slate .court-pos-label.badge-pos-pvt { background: rgba(249, 115, 22, 0.2); color: #fb923c; border-color: rgba(249, 115, 22, 0.4); }
+
+.court-player-name {
+  font-size: 0.74rem;
+  font-weight: 800;
+  max-width: 90px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: inherit;
+  line-height: 1.2;
+}
+
+/* Banc tactique des remplaçants */
+.tactical-bench-wrap {
+  margin-top: 18px;
+  background: var(--bg-page);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+body.theme-slate .tactical-bench-wrap {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: #334155;
+}
+
+.tactical-bench-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.bench-count-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+}
+
+.bench-chips-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 48px;
+}
+
+.bench-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px 12px;
+  background: rgba(148, 163, 184, 0.08);
+  border-radius: 10px;
+  width: 100%;
+}
+
+.bench-chip {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 12px;
+  padding: 6px 12px 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   cursor: grab;
   user-select: none;
+  touch-action: manipulation;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.court-post-badge {
-  font-family: 'Patrick Hand', cursive, sans-serif;
-  font-size: 0.72rem;
-  font-weight: 900;
-  color: #f59e0b;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+
+body.theme-slate .bench-chip {
+  background: #1e2530;
+  border-color: #334155;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.bench-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+  border-color: #0284c7;
+}
+
+body.theme-slate .bench-chip:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.bench-chip.tactical-selected {
+  outline: 2.5px solid #38bdf8;
+  border-color: #0284c7;
+  background: #e0f2fe;
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+}
+
+body.theme-slate .bench-chip.tactical-selected {
+  background: #0f2744;
+  border-color: #38bdf8;
+}
+
+.bench-chip.tactical-drop-hover {
+  border-color: #0284c7;
+  background: #e0f2fe;
+  transform: scale(1.05);
+}
+
+.bench-chip-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.bench-chip-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.bench-chip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.bench-chip-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.bench-chip-poste {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.1;
+}
+
+.bench-chip-swap {
+  margin-left: 2px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.bench-chip:hover .bench-chip-swap {
+  color: #0284c7;
+  opacity: 1;
 }
 
 /* Roster & Cartes Compo */
@@ -982,40 +1436,6 @@ body.theme-slate .handball-field-wrapper {
   border-radius: 50% !important;
 }
 
-/* Banc tactique */
-.tactical-bench-wrap {
-  background: var(--card-bg);
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 2px solid var(--card-border);
-  box-shadow: 2px 2px 0px var(--card-border);
-  margin-top: 12px;
-}
-.bench-chips-list {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.bench-chip {
-  background: var(--bg-page);
-  border: 1.5px solid var(--card-border);
-  border-radius: 10px;
-  padding: 5px 11px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--text-main);
-  cursor: grab;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.15s;
-  user-select: none;
-  touch-action: manipulation;
-}
-.bench-chip:hover {
-  background: var(--color-primary);
-  color: #fff;
-}
 
 /* ==============================================================================
  * ROSTER / EFFECTIF DU CLUB (Trombinoscope Haute Lisibilité PC & Mobile)
@@ -3563,6 +3983,34 @@ body.theme-slate .coach-treasurer-box label {
   flex: 1;
 }
 
+.preview-btn-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card-bg);
+  color: var(--text-main);
+  border: 1.5px solid var(--card-border);
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.preview-btn-nav:hover {
+  border-color: #0284c7;
+  color: #0284c7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-slate .preview-btn-nav:hover {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
 /* Bloc d'envoi WhatsApp */
 .preview-wa-block {
   width: 100%;
@@ -3753,6 +4201,66 @@ body.theme-slate .preview-text:focus {
 @media (max-width: 640px) {
   #previewView {
     padding: 6px 8px 30px;
+  }
+  .tactical-preview-wrap {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+  .tactical-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .tactical-team-tabs {
+    width: 100%;
+    display: flex;
+  }
+  .tactical-team-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 6px 8px;
+    font-size: 0.76rem;
+  }
+  .court-player-chip {
+    min-width: 62px;
+    max-width: 82px;
+    padding: 4px 6px;
+    border-radius: 10px;
+  }
+  .court-player-chip .court-player-avatar {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+    font-size: 0.72rem;
+  }
+  .court-pos-label {
+    font-size: 0.58rem;
+    padding: 1px 5px;
+  }
+  .court-player-name {
+    font-size: 0.65rem;
+    max-width: 72px;
+  }
+  .tactical-bench-wrap {
+    padding: 12px 10px;
+  }
+  .bench-chip {
+    padding: 5px 8px;
+    gap: 6px;
+  }
+  .bench-chip-avatar {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    font-size: 0.68rem;
+  }
+  .bench-chip-name {
+    font-size: 0.76rem;
+  }
+  .bench-chip-poste {
+    font-size: 0.62rem;
   }
   .preview-wa-block {
     padding: 12px 14px;

@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.16">
+  <link rel="stylesheet" href="css/style.css?v=2.2.17">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -1505,7 +1505,7 @@
 </div>
 <div id="previewView" style="display:none;">
 <main class="preview-page">
-<div class="preview-header"><button class="btn-reset" onclick="retourApercu()">← Retour</button><h1 id="previewTitle" onclick="retourAccueil()" title="Retour à l'accueil" style="cursor:pointer;">Aperçu Convocations & Terrain Tactique</h1><button class="btn-reset" onclick="retourAccueil()">Accueil</button></div>
+<div class="preview-header"><button type="button" class="btn-reset preview-btn-nav" onclick="retourApercu()">← Retour</button><h1 id="previewTitle" onclick="retourAccueil()" title="Retour à l'accueil" style="cursor:pointer;">🏟️ Aperçu Convocations & Terrain Tactique</h1><button type="button" class="btn-reset preview-btn-nav" onclick="retourAccueil()">Accueil</button></div>
 <div id="banniereVacancesPreview" class="banner-vacances" style="display:none;">
   <div style="display:flex;align-items:center;gap:10px;">
     <span style="font-size:1.3rem;">🏖️</span>
@@ -1514,33 +1514,42 @@
   <button type="button" class="btn-reset banner-vacances-btn" onclick="ouvrirModalVacances()">Gérer vacances</button>
 </div>
 <div id="tacticalPreviewWrap" class="tactical-preview-wrap" style="display:none;">
-<div class="tactical-header">
-<div style="font-weight:800;font-size:0.95rem;color:var(--color-secondary);">Terrain Tactique - Attaque Placée & Gardien</div>
-<div class="tactical-team-tabs" id="tacticalTeamTabs"></div>
-</div>
-<div id="tacticalSwapHint" style="font-size:0.78rem;color:#38bdf8;margin:6px 0 10px 0;text-align:center;font-weight:700;min-height:1.2em;"><span style="color:var(--text-muted);font-weight:500;">Astuce : Glissez-déposez ou cliquez sur deux joueurs pour échanger leurs postes.</span></div>
-<div class="handball-field-wrapper">
-<svg viewBox="0 0 500 420" class="handball-court-svg" style="width:100%;height:100%;display:block;">
-<rect x="15" y="15" width="470" height="375" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
-<line x1="15" y1="15" x2="485" y2="15" stroke="rgba(255,255,255,0.6)" stroke-width="2.5"/>
-<path d="M 112 390 A 138 138 0 0 1 215 252 L 285 252 A 138 138 0 0 1 388 390 Z" fill="rgba(37, 99, 235, 0.22)" stroke="#ffffff" stroke-width="2.5"/>
-<path d="M 43 390 A 207 207 0 0 1 215 183 L 285 183 A 207 207 0 0 1 457 390" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="8 8"/>
-<line x1="235" y1="229" x2="265" y2="229" stroke="#ffffff" stroke-width="3"/>
-<line x1="242" y1="298" x2="258" y2="298" stroke="#ffffff" stroke-width="2.5"/>
-<rect x="215" y="390" width="70" height="18" fill="none" stroke="#f43f5e" stroke-width="3"/>
-<line x1="225" y1="390" x2="225" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-<line x1="235" y1="390" x2="235" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-<line x1="245" y1="390" x2="245" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-<line x1="255" y1="390" x2="255" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-<line x1="265" y1="390" x2="265" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-<line x1="275" y1="390" x2="275" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-</svg>
-<div id="tacticalCourtNodes" class="court-nodes-container"></div>
-</div>
-<div class="tactical-bench-wrap">
-<div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Remplaçants & Rotation (glissez-déposez ou cliquez sur deux joueurs pour permuter) :</div>
-<div id="tacticalBenchList" class="bench-chips-list"></div>
-</div>
+  <div class="tactical-header">
+    <div class="tactical-title-wrap">
+      <div class="tactical-title">🏟️ Terrain Tactique & Dispositions</div>
+      <div class="tactical-subtitle">Attaque placée (7 titulaires) & rotation des remplaçants</div>
+    </div>
+    <div class="tactical-team-tabs" id="tacticalTeamTabs"></div>
+  </div>
+  <div id="tacticalSwapHint" class="tactical-hint-badge">
+    <span class="tactical-hint-icon">💡</span>
+    <span>Astuce : Glissez-déposez ou cliquez sur deux joueurs pour permuter leurs postes.</span>
+  </div>
+  <div class="handball-field-wrapper">
+    <svg viewBox="0 0 500 420" class="handball-court-svg" style="width:100%;height:100%;display:block;">
+      <rect x="15" y="15" width="470" height="375" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+      <line x1="15" y1="15" x2="485" y2="15" stroke="rgba(255,255,255,0.6)" stroke-width="2.5"/>
+      <path d="M 112 390 A 138 138 0 0 1 215 252 L 285 252 A 138 138 0 0 1 388 390 Z" fill="rgba(37, 99, 235, 0.22)" stroke="#ffffff" stroke-width="2.5"/>
+      <path d="M 43 390 A 207 207 0 0 1 215 183 L 285 183 A 207 207 0 0 1 457 390" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="8 8"/>
+      <line x1="235" y1="229" x2="265" y2="229" stroke="#ffffff" stroke-width="3"/>
+      <line x1="242" y1="298" x2="258" y2="298" stroke="#ffffff" stroke-width="2.5"/>
+      <rect x="215" y="390" width="70" height="18" fill="none" stroke="#f43f5e" stroke-width="3"/>
+      <line x1="225" y1="390" x2="225" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <line x1="235" y1="390" x2="235" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <line x1="245" y1="390" x2="245" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <line x1="255" y1="390" x2="255" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <line x1="265" y1="390" x2="265" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <line x1="275" y1="390" x2="275" y2="408" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+    </svg>
+    <div id="tacticalCourtNodes" class="court-nodes-container"></div>
+  </div>
+  <div class="tactical-bench-wrap">
+    <div id="tacticalBenchTitle" class="tactical-bench-title">
+      <span>🛋️ Remplaçants & Rotation</span>
+      <span class="bench-count-badge">0 sur le banc</span>
+    </div>
+    <div id="tacticalBenchList" class="bench-chips-list"></div>
+  </div>
 </div>
 <div id="previewWhatsAppBlock" class="preview-wa-block">
 <div class="preview-wa-header">
@@ -1584,13 +1593,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.16"></script>
-  <script src="js/api.js?v=2.2.16"></script>
-  <script src="js/app.js?v=2.2.16"></script>
+  <script src="js/spakta-data.js?v=2.2.17"></script>
+  <script src="js/api.js?v=2.2.17"></script>
+  <script src="js/app.js?v=2.2.17"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.16').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.17').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

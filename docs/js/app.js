@@ -1285,186 +1285,227 @@ if(cand){ assignes[pos.code] = cand.nom; prisNoms[cand.nom] = true; }
 COMPOSITIONS_TACTIQUES[eqKey] = assignes;
 }
 function rendreTabsTactique(){
-var c = document.getElementById("tacticalTeamTabs"); if(!c) return; c.innerHTML = "";
-var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
-var eqDefs = [{ key: "1B", label: CLUB_CONFIG.nomEquipe1 || "Équipe 1" }];
-if(nbEq >= 2) eqDefs.push({ key: "1C", label: CLUB_CONFIG.nomEquipe2 || "Équipe 2" });
-if(nbEq >= 3) eqDefs.push({ key: "1D", label: CLUB_CONFIG.nomEquipe3 || "Équipe 3" });
-eqDefs.forEach(function(eq){
-var tab = document.createElement("button"); tab.type = "button";
-tab.className = "tactical-team-tab" + (eq.key === EQUIPE_TACTIQUE_COURANTE ? " active" : "");
-tab.textContent = eq.label;
-tab.onclick = function(){ EQUIPE_TACTIQUE_COURANTE = eq.key; rendreTabsTactique(); afficherApercuTactique(eq.key); };
-c.appendChild(tab);
-});
+  var c = document.getElementById("tacticalTeamTabs"); if(!c) return; c.innerHTML = "";
+  var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
+  var eqDefs = [{ key: "1B", label: CLUB_CONFIG.nomEquipe1 || "Équipe 1" }];
+  if(nbEq >= 2) eqDefs.push({ key: "1C", label: CLUB_CONFIG.nomEquipe2 || "Équipe 2" });
+  if(nbEq >= 3) eqDefs.push({ key: "1D", label: CLUB_CONFIG.nomEquipe3 || "Équipe 3" });
+  eqDefs.forEach(function(eq){
+    var tab = document.createElement("button"); tab.type = "button";
+    var teamClass = "team-" + eq.key.toLowerCase();
+    tab.className = "tactical-team-tab " + teamClass + (eq.key === EQUIPE_TACTIQUE_COURANTE ? " active" : "");
+    var zoneId = "zone" + eq.key;
+    var listeNoms = extraireListeNoms(zoneId);
+    if(!listeNoms || listeNoms.length === 0){
+      if(CONTEXTE_APERCU && CONTEXTE_APERCU.compo && Array.isArray(CONTEXTE_APERCU.compo["equipe" + eq.key])){
+        listeNoms = CONTEXTE_APERCU.compo["equipe" + eq.key];
+      } else if(DERNIERE_COMPO && Array.isArray(DERNIERE_COMPO["equipe" + eq.key])){
+        listeNoms = DERNIERE_COMPO["equipe" + eq.key];
+      }
+    }
+    var count = (listeNoms && listeNoms.length) ? listeNoms.length : 0;
+    tab.innerHTML = "<span>" + eq.label + "</span>" + (count > 0 ? " <span class=\"tactical-team-badge\">" + count + "</span>" : "");
+    tab.onclick = function(){ EQUIPE_TACTIQUE_COURANTE = eq.key; rendreTabsTactique(); afficherApercuTactique(eq.key); };
+    c.appendChild(tab);
+  });
 }
 var TACTICAL_DRAGGED = null;
 var TACTICAL_SELECTED = null;
 function mettreAJourHintTactique(eqKey){
-var hintEl = document.getElementById("tacticalSwapHint"); if(!hintEl) return;
-if(TACTICAL_SELECTED){
-var label = TACTICAL_SELECTED.nom || TACTICAL_SELECTED.posCode;
-hintEl.innerHTML = "<span style='color:#38bdf8;font-weight:800;'>👉 " + label + " sélectionné — touchez/cliquez sur un autre poste ou remplaçant pour échanger (ou re-cliquez pour annuler).</span>";
-} else {
-hintEl.innerHTML = "<span style='color:#94a3b8;font-weight:500;'>Astuce : Glissez-déposez ou cliquez sur deux joueurs pour échanger leurs postes.</span>";
-}
+  var hintEl = document.getElementById("tacticalSwapHint"); if(!hintEl) return;
+  if(TACTICAL_SELECTED){
+    hintEl.classList.add("is-selected");
+    var label = TACTICAL_SELECTED.nom || TACTICAL_SELECTED.posCode;
+    hintEl.innerHTML = "<span class=\"tactical-hint-icon\">👉</span> <span><strong>" + label + "</strong> sélectionné — touchez/cliquez sur un autre poste ou remplaçant pour permuter (ou re-cliquez pour annuler).</span>";
+  } else {
+    hintEl.classList.remove("is-selected");
+    hintEl.innerHTML = "<span class=\"tactical-hint-icon\">💡</span> <span>Astuce : Glissez-déposez ou cliquez sur deux joueurs pour échanger leurs postes.</span>";
+  }
 }
 function surlignerSelectionTactique(){
-document.querySelectorAll(".court-player-chip").forEach(function(el){ el.classList.remove("tactical-selected"); });
-document.querySelectorAll(".bench-chip").forEach(function(el){ el.classList.remove("tactical-selected"); });
-if(!TACTICAL_SELECTED) return;
-if(TACTICAL_SELECTED.source === "court"){
-var node = document.querySelector('.court-node[data-pos="' + TACTICAL_SELECTED.posCode + '"] .court-player-chip');
-if(node) node.classList.add("tactical-selected");
-} else if(TACTICAL_SELECTED.source === "bench"){
-document.querySelectorAll(".bench-chip").forEach(function(b){
-if(b.getAttribute("data-nom") === TACTICAL_SELECTED.nom) b.classList.add("tactical-selected");
-});
-}
+  document.querySelectorAll(".court-player-chip").forEach(function(el){ el.classList.remove("tactical-selected"); });
+  document.querySelectorAll(".bench-chip").forEach(function(el){ el.classList.remove("tactical-selected"); });
+  if(!TACTICAL_SELECTED) return;
+  if(TACTICAL_SELECTED.source === "court"){
+    var node = document.querySelector('.court-node[data-pos="' + TACTICAL_SELECTED.posCode + '"] .court-player-chip');
+    if(node) node.classList.add("tactical-selected");
+  } else if(TACTICAL_SELECTED.source === "bench"){
+    document.querySelectorAll(".bench-chip").forEach(function(b){
+      if(b.getAttribute("data-nom") === TACTICAL_SELECTED.nom) b.classList.add("tactical-selected");
+    });
+  }
 }
 function executerPermutationTactique(eqKey, itemA, itemB){
-if(!COMPOSITIONS_TACTIQUES[eqKey]) COMPOSITIONS_TACTIQUES[eqKey] = {};
-var compoT = COMPOSITIONS_TACTIQUES[eqKey];
-if(itemA.source === "court" && itemB.source === "court"){
-var pA = compoT[itemA.posCode]; var pB = compoT[itemB.posCode];
-compoT[itemA.posCode] = pB; compoT[itemB.posCode] = pA;
-afficherToast("Permuté : " + (pA || itemA.posCode) + " ⇄ " + (pB || itemB.posCode), "succes", 1800);
-} else if(itemA.source === "court" && itemB.source === "bench"){
-var oldC = compoT[itemA.posCode]; compoT[itemA.posCode] = itemB.nom;
-afficherToast(itemB.nom + " placé en " + itemA.posCode + (oldC ? " (remplace " + oldC + ")" : ""), "succes", 1800);
-} else if(itemA.source === "bench" && itemB.source === "court"){
-var oldC = compoT[itemB.posCode]; compoT[itemB.posCode] = itemA.nom;
-afficherToast(itemA.nom + " placé en " + itemB.posCode + (oldC ? " (remplace " + oldC + ")" : ""), "succes", 1800);
-} else if(itemA.source === "bench" && itemB.source === "bench"){
-return;
-}
-if(itemA && itemA.nom){ verifierChouchouSelectionne(itemA.nom); if(estJoueurMvp(itemA.nom)) declencherAnimationMvp(itemA.nom); if(estJoueurChevre(itemA.nom)) declencherAnimationChevre(itemA.nom); }
-if(itemB && itemB.nom){ verifierChouchouSelectionne(itemB.nom); if(estJoueurMvp(itemB.nom)) declencherAnimationMvp(itemB.nom); if(estJoueurChevre(itemB.nom)) declencherAnimationChevre(itemB.nom); }
-TACTICAL_SELECTED = null;
-afficherApercuTactique(eqKey);
+  if(!COMPOSITIONS_TACTIQUES[eqKey]) COMPOSITIONS_TACTIQUES[eqKey] = {};
+  var compoT = COMPOSITIONS_TACTIQUES[eqKey];
+  if(itemA.source === "court" && itemB.source === "court"){
+    var pA = compoT[itemA.posCode]; var pB = compoT[itemB.posCode];
+    compoT[itemA.posCode] = pB; compoT[itemB.posCode] = pA;
+    afficherToast("Permuté : " + (pA || itemA.posCode) + " ⇄ " + (pB || itemB.posCode), "succes", 1800);
+  } else if(itemA.source === "court" && itemB.source === "bench"){
+    var oldC = compoT[itemA.posCode]; compoT[itemA.posCode] = itemB.nom;
+    afficherToast(itemB.nom + " placé en " + itemA.posCode + (oldC ? " (remplace " + oldC + ")" : ""), "succes", 1800);
+  } else if(itemA.source === "bench" && itemB.source === "court"){
+    var oldC = compoT[itemB.posCode]; compoT[itemB.posCode] = itemA.nom;
+    afficherToast(itemA.nom + " placé en " + itemB.posCode + (oldC ? " (remplace " + oldC + ")" : ""), "succes", 1800);
+  } else if(itemA.source === "bench" && itemB.source === "bench"){
+    return;
+  }
+  if(itemA && itemA.nom){ verifierChouchouSelectionne(itemA.nom); if(estJoueurMvp(itemA.nom)) declencherAnimationMvp(itemA.nom); if(estJoueurChevre(itemA.nom)) declencherAnimationChevre(itemA.nom); }
+  if(itemB && itemB.nom){ verifierChouchouSelectionne(itemB.nom); if(estJoueurMvp(itemB.nom)) declencherAnimationMvp(itemB.nom); if(estJoueurChevre(itemB.nom)) declencherAnimationChevre(itemB.nom); }
+  TACTICAL_SELECTED = null;
+  afficherApercuTactique(eqKey);
 }
 function gererClicTactique(eqKey, item){
-if(item && item.nom){ verifierChouchouSelectionne(item.nom); if(estJoueurMvp(item.nom)) declencherAnimationMvp(item.nom); if(estJoueurChevre(item.nom)) declencherAnimationChevre(item.nom); }
-if(!TACTICAL_SELECTED){
-TACTICAL_SELECTED = item;
-mettreAJourHintTactique(eqKey);
-surlignerSelectionTactique();
-} else {
-var meme = false;
-if(TACTICAL_SELECTED.source === item.source){
-if(item.source === "court" && TACTICAL_SELECTED.posCode === item.posCode) meme = true;
-if(item.source === "bench" && TACTICAL_SELECTED.nom === item.nom) meme = true;
-}
-if(meme){
-TACTICAL_SELECTED = null;
-mettreAJourHintTactique(eqKey);
-surlignerSelectionTactique();
-} else {
-var premier = TACTICAL_SELECTED;
-TACTICAL_SELECTED = null;
-executerPermutationTactique(eqKey, premier, item);
-}
-}
+  if(item && item.nom){ verifierChouchouSelectionne(item.nom); if(estJoueurMvp(item.nom)) declencherAnimationMvp(item.nom); if(estJoueurChevre(item.nom)) declencherAnimationChevre(item.nom); }
+  if(!TACTICAL_SELECTED){
+    TACTICAL_SELECTED = item;
+    mettreAJourHintTactique(eqKey);
+    surlignerSelectionTactique();
+  } else {
+    var meme = false;
+    if(TACTICAL_SELECTED.source === item.source){
+      if(item.source === "court" && TACTICAL_SELECTED.posCode === item.posCode) meme = true;
+      if(item.source === "bench" && TACTICAL_SELECTED.nom === item.nom) meme = true;
+    }
+    if(meme){
+      TACTICAL_SELECTED = null;
+      mettreAJourHintTactique(eqKey);
+      surlignerSelectionTactique();
+    } else {
+      var premier = TACTICAL_SELECTED;
+      TACTICAL_SELECTED = null;
+      executerPermutationTactique(eqKey, premier, item);
+    }
+  }
 }
 function afficherApercuTactique(eqKey){
-var zoneId = "zone" + eqKey; var listeNoms = extraireListeNoms(zoneId);
-if(!listeNoms || listeNoms.length === 0){
-if(CONTEXTE_APERCU && CONTEXTE_APERCU.compo && Array.isArray(CONTEXTE_APERCU.compo["equipe" + eqKey]) && CONTEXTE_APERCU.compo["equipe" + eqKey].length > 0){
-listeNoms = CONTEXTE_APERCU.compo["equipe" + eqKey];
-} else if(DERNIERE_COMPO && Array.isArray(DERNIERE_COMPO["equipe" + eqKey]) && DERNIERE_COMPO["equipe" + eqKey].length > 0){
-listeNoms = DERNIERE_COMPO["equipe" + eqKey];
-}
-}
-if(!listeNoms) listeNoms = [];
-initialiserTactiquePourEquipe(eqKey, listeNoms);
-var compoT = COMPOSITIONS_TACTIQUES[eqKey] || {};
-var nodesCont = document.getElementById("tacticalCourtNodes");
-mettreAJourHintTactique(eqKey);
-if(nodesCont){
-nodesCont.innerHTML = "";
-POSITIONS_HANDBALL.forEach(function(pos){
-var nomJ = compoT[pos.code];
-var jObj = nomJ ? (EFFECTIF_COMPLET.find(function(x){ return x.nom === nomJ; }) || { nom: nomJ }) : null;
-var node = document.createElement("div"); node.className = "court-node";
-node.style.left = pos.x + "%"; node.style.top = pos.y + "%"; node.setAttribute("data-pos", pos.code);
-var chip = document.createElement("div"); chip.className = "court-player-chip" + (jObj ? " filled" : " empty");
-chip.title = pos.label + " : " + (jObj ? jObj.nom : "Poste vacant");
-chip.draggable = true;
-chip.ondragstart = function(e){ TACTICAL_DRAGGED = { source: "court", posCode: pos.code, nom: nomJ, eqKey: eqKey }; chip.classList.add("tactical-dragging"); e.dataTransfer.setData("text/plain", pos.code); };
-chip.ondragend = function(e){ chip.classList.remove("tactical-dragging"); TACTICAL_DRAGGED = null; };
-node.ondragover = function(e){ e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
-node.ondragenter = function(e){ e.preventDefault(); node.classList.add("tactical-drop-hover"); };
-node.ondragleave = function(e){ node.classList.remove("tactical-drop-hover"); };
-node.ondrop = function(e){
-e.preventDefault(); node.classList.remove("tactical-drop-hover");
-if(!TACTICAL_DRAGGED) return;
-var d = TACTICAL_DRAGGED; TACTICAL_DRAGGED = null;
-if(d.source === "court" && d.posCode === pos.code) return;
-executerPermutationTactique(eqKey, d, { source: "court", posCode: pos.code, nom: nomJ });
-};
-var av = document.createElement("div"); av.className = "court-player-avatar";
-if(jObj && estJoueurChouchou(jObj.nom)){ av.classList.add("is-chouchou"); }
-var initLtr = jObj ? (jObj.nom || "").trim().charAt(0).toUpperCase() : "-";
-if(jObj && jObj.photo){
-var img = document.createElement("img"); img.src = jObj.photo; img.alt = jObj.nom;
-img.onerror = function(){ this.remove(); av.textContent = initLtr; };
-av.appendChild(img);
-} else {
-av.textContent = initLtr;
-}
-if(jObj && jObj.nom){ av.style.cursor = "pointer"; av.title = "Fiche de " + jObj.nom; av.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(jObj.nom); }; }
-chip.appendChild(av);
-var lbl = document.createElement("div"); lbl.className = "court-pos-label"; lbl.textContent = pos.code; chip.appendChild(lbl);
-var nameEl = document.createElement("div"); nameEl.className = "court-player-name"; nameEl.textContent = jObj ? jObj.nom : pos.label; chip.appendChild(nameEl);
-chip.onclick = function(e){ e.stopPropagation(); gererClicTactique(eqKey, { source: "court", posCode: pos.code, nom: nomJ }); };
-node.appendChild(chip); nodesCont.appendChild(node);
-});
-}
-var benchCont = document.getElementById("tacticalBenchList");
-var benchWrap = document.querySelector(".tactical-bench-wrap");
-if(benchWrap){
-benchWrap.ondragover = function(e){ e.preventDefault(); };
-benchWrap.ondrop = function(e){
-e.preventDefault();
-if(!TACTICAL_DRAGGED || TACTICAL_DRAGGED.source !== "court") return;
-var d = TACTICAL_DRAGGED; TACTICAL_DRAGGED = null;
-var courtNom = compoT[d.posCode]; delete compoT[d.posCode];
-afficherToast(courtNom + " envoyé sur le banc.", "info", 1800);
-afficherApercuTactique(eqKey);
-};
-}
-if(benchCont){
-benchCont.innerHTML = "";
-var surTerrainNoms = Object.values(compoT);
-var remps = listeNoms.filter(function(n){ return surTerrainNoms.indexOf(n) === -1; });
-if(remps.length === 0){ benchCont.innerHTML = "<span style='font-size:0.75rem;color:#64748b;font-style:italic;'>Aucun remplaçant (tous sur le terrain).</span>"; }
-else {
-remps.forEach(function(nom){
-var jObj = EFFECTIF_COMPLET.find(function(x){ return x.nom === nom; }) || { nom: nom, poste: "Demi-Centre" };
-var bChip = document.createElement("span"); bChip.className = "bench-chip";
-bChip.setAttribute("data-nom", nom);
-bChip.draggable = true;
-bChip.ondragstart = function(e){ TACTICAL_DRAGGED = { source: "bench", nom: nom, eqKey: eqKey }; bChip.classList.add("tactical-dragging"); e.dataTransfer.setData("text/plain", nom); };
-bChip.ondragend = function(e){ bChip.classList.remove("tactical-dragging"); TACTICAL_DRAGGED = null; };
-bChip.ondragover = function(e){ e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
-bChip.ondragenter = function(e){ e.preventDefault(); bChip.classList.add("tactical-drop-hover"); };
-bChip.ondragleave = function(e){ bChip.classList.remove("tactical-drop-hover"); };
-bChip.ondrop = function(e){
-e.preventDefault(); e.stopPropagation(); bChip.classList.remove("tactical-drop-hover");
-if(!TACTICAL_DRAGGED) return;
-var d = TACTICAL_DRAGGED; TACTICAL_DRAGGED = null;
-if(d.source === "bench" && d.nom === nom) return;
-executerPermutationTactique(eqKey, d, { source: "bench", nom: nom });
-};
-var chouMark = (jObj && estJoueurChouchou(jObj.nom)) ? "❤️ " : "";
-bChip.textContent = chouMark + jObj.nom + " (" + (jObj.poste || "Demi-Centre") + ")";
-bChip.title = "Glissez ou cliquez pour placer " + jObj.nom + " sur le terrain";
-bChip.onclick = function(e){ e.stopPropagation(); gererClicTactique(eqKey, { source: "bench", nom: jObj.nom }); };
-benchCont.appendChild(bChip);
-});
-}
-}
-surlignerSelectionTactique();
+  var zoneId = "zone" + eqKey; var listeNoms = extraireListeNoms(zoneId);
+  if(!listeNoms || listeNoms.length === 0){
+    if(CONTEXTE_APERCU && CONTEXTE_APERCU.compo && Array.isArray(CONTEXTE_APERCU.compo["equipe" + eqKey]) && CONTEXTE_APERCU.compo["equipe" + eqKey].length > 0){
+      listeNoms = CONTEXTE_APERCU.compo["equipe" + eqKey];
+    } else if(DERNIERE_COMPO && Array.isArray(DERNIERE_COMPO["equipe" + eqKey]) && DERNIERE_COMPO["equipe" + eqKey].length > 0){
+      listeNoms = DERNIERE_COMPO["equipe" + eqKey];
+    }
+  }
+  if(!listeNoms) listeNoms = [];
+  initialiserTactiquePourEquipe(eqKey, listeNoms);
+  var compoT = COMPOSITIONS_TACTIQUES[eqKey] || {};
+  var nodesCont = document.getElementById("tacticalCourtNodes");
+  mettreAJourHintTactique(eqKey);
+  if(nodesCont){
+    nodesCont.innerHTML = "";
+    POSITIONS_HANDBALL.forEach(function(pos){
+      var nomJ = compoT[pos.code];
+      var jObj = nomJ ? (EFFECTIF_COMPLET.find(function(x){ return x.nom === nomJ; }) || { nom: nomJ }) : null;
+      var node = document.createElement("div"); node.className = "court-node";
+      node.style.left = pos.x + "%"; node.style.top = pos.y + "%"; node.setAttribute("data-pos", pos.code);
+      var chip = document.createElement("div"); chip.className = "court-player-chip" + (jObj ? " filled" : " empty");
+      chip.title = pos.label + " : " + (jObj ? jObj.nom : "Poste vacant");
+      chip.draggable = true;
+      chip.ondragstart = function(e){ TACTICAL_DRAGGED = { source: "court", posCode: pos.code, nom: nomJ, eqKey: eqKey }; chip.classList.add("tactical-dragging"); e.dataTransfer.setData("text/plain", pos.code); };
+      chip.ondragend = function(e){ chip.classList.remove("tactical-dragging"); TACTICAL_DRAGGED = null; };
+      node.ondragover = function(e){ e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
+      node.ondragenter = function(e){ e.preventDefault(); node.classList.add("tactical-drop-hover"); };
+      node.ondragleave = function(e){ node.classList.remove("tactical-drop-hover"); };
+      node.ondrop = function(e){
+        e.preventDefault(); node.classList.remove("tactical-drop-hover");
+        if(!TACTICAL_DRAGGED) return;
+        var d = TACTICAL_DRAGGED; TACTICAL_DRAGGED = null;
+        if(d.source === "court" && d.posCode === pos.code) return;
+        executerPermutationTactique(eqKey, d, { source: "court", posCode: pos.code, nom: nomJ });
+      };
+      var av = document.createElement("div"); av.className = "court-player-avatar";
+      if(jObj && estJoueurChouchou(jObj.nom)){ av.classList.add("is-chouchou"); }
+      var initLtr = jObj ? (jObj.nom || "").trim().charAt(0).toUpperCase() : "-";
+      if(jObj && jObj.photo){
+        var img = document.createElement("img"); img.src = jObj.photo; img.alt = jObj.nom;
+        img.onerror = function(){ this.remove(); av.textContent = initLtr; };
+        av.appendChild(img);
+      } else {
+        av.textContent = initLtr;
+      }
+      if(jObj && jObj.nom){ av.style.cursor = "pointer"; av.title = "Fiche de " + jObj.nom; av.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(jObj.nom); }; }
+      chip.appendChild(av);
+      var lbl = document.createElement("div");
+      lbl.className = "court-pos-label badge-pos-" + pos.code.toLowerCase();
+      lbl.textContent = pos.code;
+      chip.appendChild(lbl);
+      var nameEl = document.createElement("div"); nameEl.className = "court-player-name"; nameEl.textContent = jObj ? jObj.nom : pos.label; chip.appendChild(nameEl);
+      chip.onclick = function(e){ e.stopPropagation(); gererClicTactique(eqKey, { source: "court", posCode: pos.code, nom: nomJ }); };
+      node.appendChild(chip); nodesCont.appendChild(node);
+    });
+  }
+  var benchTitle = document.getElementById("tacticalBenchTitle");
+  var benchCont = document.getElementById("tacticalBenchList");
+  var benchWrap = document.querySelector(".tactical-bench-wrap");
+  if(benchWrap){
+    benchWrap.ondragover = function(e){ e.preventDefault(); };
+    benchWrap.ondrop = function(e){
+      e.preventDefault();
+      if(!TACTICAL_DRAGGED || TACTICAL_DRAGGED.source !== "court") return;
+      var d = TACTICAL_DRAGGED; TACTICAL_DRAGGED = null;
+      var courtNom = compoT[d.posCode]; delete compoT[d.posCode];
+      afficherToast(courtNom + " envoyé sur le banc.", "info", 1800);
+      afficherApercuTactique(eqKey);
+    };
+  }
+  var surTerrainNoms = Object.values(compoT);
+  var remps = listeNoms.filter(function(n){ return surTerrainNoms.indexOf(n) === -1; });
+  if(benchTitle){
+    benchTitle.innerHTML = "<span>🛋️ Remplaçants & Rotation</span> <span class=\"bench-count-badge\">" + remps.length + " sur le banc</span>";
+  }
+  if(benchCont){
+    benchCont.innerHTML = "";
+    if(remps.length === 0){
+      benchCont.innerHTML = "<div class=\"bench-empty-state\"><span>✨</span><span>Tous les joueurs sélectionnés sont actuellement positionnés sur le terrain.</span></div>";
+    } else {
+      remps.forEach(function(nom){
+        var jObj = EFFECTIF_COMPLET.find(function(x){ return x.nom === nom; }) || { nom: nom, poste: "Demi-Centre" };
+        var bChip = document.createElement("div"); bChip.className = "bench-chip";
+        bChip.setAttribute("data-nom", nom);
+        bChip.draggable = true;
+        bChip.ondragstart = function(e){ TACTICAL_DRAGGED = { source: "bench", nom: nom, eqKey: eqKey }; bChip.classList.add("tactical-dragging"); e.dataTransfer.setData("text/plain", nom); };
+        bChip.ondragend = function(e){ bChip.classList.remove("tactical-dragging"); TACTICAL_DRAGGED = null; };
+        bChip.ondragover = function(e){ e.preventDefault(); e.dataTransfer.dropEffect = "move"; };
+        bChip.ondragenter = function(e){ e.preventDefault(); bChip.classList.add("tactical-drop-hover"); };
+        bChip.ondragleave = function(e){ bChip.classList.remove("tactical-drop-hover"); };
+        bChip.ondrop = function(e){
+          e.preventDefault(); e.stopPropagation(); bChip.classList.remove("tactical-drop-hover");
+          if(!TACTICAL_DRAGGED) return;
+          var d = TACTICAL_DRAGGED; TACTICAL_DRAGGED = null;
+          if(d.source === "bench" && d.nom === nom) return;
+          executerPermutationTactique(eqKey, d, { source: "bench", nom: nom });
+        };
+        var av = document.createElement("div"); av.className = "bench-chip-avatar";
+        if(jObj && estJoueurChouchou(jObj.nom)){ av.classList.add("is-chouchou"); }
+        var initLtr = (nom || "").trim().charAt(0).toUpperCase() || "-";
+        if(jObj && jObj.photo){
+          var img = document.createElement("img"); img.src = jObj.photo; img.alt = nom;
+          img.onerror = function(){ this.remove(); av.textContent = initLtr; };
+          av.appendChild(img);
+        } else {
+          av.textContent = initLtr;
+        }
+        bChip.appendChild(av);
+        var info = document.createElement("div"); info.className = "bench-chip-info";
+        var nameEl = document.createElement("div"); nameEl.className = "bench-chip-name";
+        var chou = (jObj && estJoueurChouchou(jObj.nom)) ? "❤️ " : "";
+        nameEl.textContent = chou + nom;
+        info.appendChild(nameEl);
+        var postEl = document.createElement("div"); postEl.className = "bench-chip-poste";
+        postEl.textContent = jObj.poste || "Remplaçant";
+        info.appendChild(postEl);
+        bChip.appendChild(info);
+        var swap = document.createElement("span"); swap.className = "bench-chip-swap"; swap.textContent = "⇄";
+        bChip.appendChild(swap);
+        bChip.title = "Glissez ou cliquez pour placer " + nom + " sur le terrain";
+        bChip.onclick = function(e){ e.stopPropagation(); gererClicTactique(eqKey, { source: "bench", nom: nom }); };
+        benchCont.appendChild(bChip);
+      });
+    }
+  }
+  surlignerSelectionTactique();
 }
 function ajusterAffichageNombreSeances(){
   var sel = document.getElementById("cfgNbSeancesTrain");
