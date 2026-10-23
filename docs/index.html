@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.1.7">
+  <link rel="stylesheet" href="css/style.css?v=2.2.0">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -107,7 +107,10 @@
           </div>
           <div class="player-details-container">
             <div id="playerChouchouBadgeCard" style="display:none;margin-bottom:3px;"><span class="chouchou-badge">❤️ Chouchou du coach</span></div>
-            <div id="playerNomPreview" class="player-card-name">Joueur</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
+              <div id="playerNomPreview" class="player-card-name">Joueur</div>
+              <span id="playerMaillotBadge" class="badge-pill-maillot" style="display:none;">#--</span>
+            </div>
             <div id="playerPostePreview" class="player-card-poste">Poste</div>
             <div class="player-card-badges">
               <span id="playerAssiduiteBadge" class="badge-pill-assiduite">⚡ Assiduité : --</span>
@@ -119,6 +122,30 @@
 
       <!-- Colonne Droite : Préférences & Actions Rapides -->
       <div class="profil-actions-col">
+        <!-- Tuile Spakta Stats Officielles -->
+        <div id="playerStatsBox" class="profil-side-box" style="display:none;">
+          <div class="profil-side-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>📊 Mes Stats Officielles (2026-2027)</span>
+            <span id="playerStatsTeamsBadge" class="spakta-team-pill">1C</span>
+          </div>
+          
+          <!-- Grille des statistiques Clés -->
+          <div id="playerStatsGrid" class="spakta-stats-grid">
+            <!-- Rempli dynamiquement en JS -->
+          </div>
+
+          <!-- Bouton déroulant Historique des Matchs -->
+          <button type="button" id="btnToggleMatchLog" class="btn-reset btn-spakta-history" onclick="toggleSpaktaMatchLog()">
+            <span>📅 Historique match par match</span>
+            <span id="iconToggleMatchLog">▾</span>
+          </button>
+
+          <!-- Liste déroulante des matchs -->
+          <div id="playerMatchLog" class="spakta-match-list" style="display:none;">
+            <!-- Rempli dynamiquement en JS -->
+          </div>
+        </div>
+
         <div class="profil-side-box">
           <div class="profil-side-title">⚙️ Mes Préférences Joueur</div>
           <div style="display:flex;gap:8px;margin-bottom:8px;">
@@ -553,6 +580,20 @@
 <div id="boxModalJoueurTresorier" style="display:flex;align-items:center;gap:8px;background:rgba(234,179,8,0.12);padding:8px 12px;border-radius:10px;border:1px solid rgba(234,179,8,0.25);margin-top:2px;">
 <input type="checkbox" id="modalJoueurTresorier" style="width:18px;height:18px;accent-color:#eab308;cursor:pointer;">
 <label for="modalJoueurTresorier" style="font-size:0.78rem;font-weight:700;color:#fef08a;cursor:pointer;margin:0;">⭐ Trésorier de la Caisse Noire (gestion & effectif)</label>
+</div>
+
+<!-- Section Stats Spakta Coach -->
+<div id="modalJoueurSpaktaBox" style="display:none;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px;margin-top:8px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+    <span style="font-size:0.8rem;font-weight:800;color:#f8fafc;">📊 Stats Spakta 2026-2027</span>
+    <span id="modalJoueurSpaktaTeamBadge" class="spakta-team-pill">--</span>
+  </div>
+  <div id="modalJoueurSpaktaGrid" class="spakta-stats-grid"></div>
+  <button type="button" id="btnModalToggleMatchLog" class="btn-reset btn-spakta-history" style="margin-top:8px;" onclick="toggleModalSpaktaMatchLog()">
+    <span>📅 Historique des matchs</span>
+    <span id="iconModalToggleMatchLog">▾</span>
+  </button>
+  <div id="modalJoueurMatchLog" class="spakta-match-list" style="display:none;max-height:160px;overflow-y:auto;margin-top:6px;"></div>
 </div>
 <div id="modalJoueurStatus" style="font-size:0.8rem;color:var(--color-secondary);min-height:1.2em;text-align:center;"></div>
 <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;">
@@ -1466,8 +1507,8 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/api.js?v=2.1.7"></script>
-  <script src="js/app.js?v=2.1.7"></script>
+  <script src="js/api.js?v=2.2.0"></script>
+  <script src="js/app.js?v=2.2.0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {

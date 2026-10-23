@@ -5481,6 +5481,11 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: data }))
         .setMimeType(ContentService.MimeType.JSON);
     }
+    if (e.parameter.action === 'getStatsSpakta') {
+      const stats = recupererStatsSpaktaClub();
+      return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: stats }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
   }
 
   const cfg = getClubConfig();
@@ -5567,7 +5572,8 @@ function doPost(e) {
       'importerInfosClubFFHB': importerInfosClubFFHB,
       'extraireMatchFFHB': extraireMatchFFHB,
       'verifierMiseAJour': verifierMiseAJour,
-      'enregistrerModeFonctionnement': enregistrerModeFonctionnement
+      'enregistrerModeFonctionnement': enregistrerModeFonctionnement,
+      'recupererStatsSpaktaClub': recupererStatsSpaktaClub
     };
 
     if (typeof router[action] === 'function') {
@@ -6027,6 +6033,7 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
     absences: getAbsencesJoueurs(),
     caisseNoire: getCaisseNoireData(),
     vacances: getVacancesData(ss),
+    statsSpakta: recupererStatsSpaktaClub(),
     clubConfig: {
       nomClub: cfg.nomClub,
       logoUrl: cfg.logoUrl,
@@ -7486,3 +7493,143 @@ function onEdit(e) {
   } catch (err) {}
 }
 
+
+
+/**
+ * HANDBALL BOT 2.0 - INTEGRATION STATS OFFICIELLES SPAKTA (ÉQUIPES 1B & 1C)
+ * Interroge l'API Spakta pour la saison 2026-2027 et met en cache pour 2 heures
+ */
+function recupererStatsSpaktaClub() {
+  try {
+    const cache = CacheService.getScriptCache();
+    const cached = cache.get('SPAKTA_STATS_26_27_V2');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {}
+    }
+  } catch (eCacheRead) {}
+
+  const token = 'XgcvHwmAkI62FOcPJRY3n5LRe_P-86a89Q1_5d7fbUM';
+  const headers = {
+    'Authorization': 'Bearer ' + token,
+    'Accept': 'application/json'
+  };
+
+  const teams = [
+    { code: '1C', slug: '01M2MNTEEPCGH2QK1ZWVJE451C', nom: 'Seniors M 1C' },
+    { code: '1B', slug: '01M2MNRJ49XV8NFGDJTTF8QD1G', nom: 'Seniors M 1B' }
+  ];
+
+  const joueursMap = {};
+
+  teams.forEach(function(t) {
+    try {
+      const url = 'https://scout.spakta.com/api/v1/teams/' + t.slug + '/stats?season=2026-2027';
+      const resp = UrlFetchApp.fetch(url, {
+        method: 'get',
+        headers: headers,
+        muteHttpExceptions: true
+      });
+      if (resp && resp.getResponseCode() === 200) {
+        const data = JSON.parse(resp.getContentText());
+        (data.players || []).forEach(function(p) {
+          const pid = p.id || p.name;
+          if (!joueursMap[pid]) {
+            joueursMap[pid] = {
+              id: p.id,
+              name: p.name,
+              position: p.position || '',
+              is_goalkeeper: Boolean(p.is_goalkeeper),
+              jersey_numbers: p.jersey_numbers || [],
+              teams: [t.code],
+              sheets: Number(p.sheets || 0),
+              totals: {
+                goals: Number((p.totals && p.totals.goals) || 0),
+                goals_7m: Number((p.totals && p.totals.goals_7m) || 0),
+                shots: Number((p.totals && p.totals.shots) || 0),
+                attempts: Number((p.totals && p.totals.attempts) || 0),
+                saves: Number((p.totals && p.totals.saves) || 0),
+                two_minutes: Number((p.totals && p.totals.two_minutes) || 0),
+                yellow_cards: Number((p.totals && p.totals.yellow_cards) || 0)
+              },
+              matches: []
+            };
+          } else {
+            if (joueursMap[pid].teams.indexOf(t.code) === -1) {
+              joueursMap[pid].teams.push(t.code);
+            }
+            (p.jersey_numbers || []).forEach(function(num) {
+              if (joueursMap[pid].jersey_numbers.indexOf(num) === -1) {
+                joueursMap[pid].jersey_numbers.push(num);
+              }
+            });
+            joueursMap[pid].sheets += Number(p.sheets || 0);
+            joueursMap[pid].totals.goals += Number((p.totals && p.totals.goals) || 0);
+            joueursMap[pid].totals.goals_7m += Number((p.totals && p.totals.goals_7m) || 0);
+            joueursMap[pid].totals.shots += Number((p.totals && p.totals.shots) || 0);
+            joueursMap[pid].totals.attempts += Number((p.totals && p.totals.attempts) || 0);
+            joueursMap[pid].totals.saves += Number((p.totals && p.totals.saves) || 0);
+            joueursMap[pid].totals.two_minutes += Number((p.totals && p.totals.two_minutes) || 0);
+            joueursMap[pid].totals.yellow_cards += Number((p.totals && p.totals.yellow_cards) || 0);
+          }
+
+          (p.matches || []).forEach(function(m) {
+            joueursMap[pid].matches.push({
+              teamCode: t.code,
+              date: m.date || '',
+              opponent: m.opponent || '',
+              side: m.side || 'HOME',
+              score_for: Number(m.score_for || 0),
+              score_against: Number(m.score_against || 0),
+              jersey_number: m.jersey_number || 0,
+              goals: Number(m.goals || 0),
+              goals_7m: Number(m.goals_7m || 0),
+              shots: Number(m.shots || 0),
+              attempts: Number(m.attempts || 0),
+              saves: Number(m.saves || 0),
+              two_minutes: Number(m.two_minutes || 0)
+            });
+          });
+        });
+      }
+    } catch (errFetch) {
+      Logger.log('Erreur fetch Spakta ' + t.code + ' : ' + errFetch.message);
+    }
+  });
+
+  const joueursList = Object.keys(joueursMap).map(function(k) {
+    const j = joueursMap[k];
+    j.matches.sort(function(a, b) {
+      return (b.date || '').localeCompare(a.date || '');
+    });
+    const nbS = j.sheets > 0 ? j.sheets : 1;
+    j.per_sheet = {
+      goals: Math.round((j.totals.goals / nbS) * 10) / 10,
+      saves: Math.round((j.totals.saves / nbS) * 10) / 10,
+      two_minutes: Math.round((j.totals.two_minutes / nbS) * 10) / 10
+    };
+    if (j.totals.attempts > 0) {
+      j.efficiency = Math.round((j.totals.goals / j.totals.attempts) * 1000) / 1000;
+    } else {
+      j.efficiency = 0;
+    }
+    return j;
+  });
+
+  const payload = {
+    saison: '2026-2027',
+    equipes: ['1B', '1C'],
+    joueurs: joueursList,
+    misAJourLe: new Date().toISOString()
+  };
+
+  try {
+    const str = JSON.stringify(payload);
+    if (str.length < 99000) {
+      CacheService.getScriptCache().put('SPAKTA_STATS_26_27_V2', str, 7200);
+    }
+  } catch (eC) {}
+
+  return payload;
+}

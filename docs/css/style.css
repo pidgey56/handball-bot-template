@@ -1289,10 +1289,11 @@ body.theme-slate .carnet-tab.active {
   max-width: 100%!important;
   max-height: 100%!important;
   object-fit: cover!important;
-  display: block!important;
-  position: static!important;
+  position: absolute!important;
+  inset: 0!important;
   border-radius: 14px!important;
   border: none!important;
+  z-index: 2;
 }
 .player-photo-fallback, .player-athlete-card .tavatar {
   width: 84px!important;
@@ -1305,6 +1306,7 @@ body.theme-slate .carnet-tab.active {
   display: flex;
   align-items: center!important;
   justify-content: center!important;
+  z-index: 1;
 }
 .player-details-container {
   padding-top: 12px;
@@ -2063,4 +2065,166 @@ body.train-tinder-mode-active #trainFooter {
   .tbtn-circle span {
     font-size: 1.1rem;
   }
+}
+
+
+/* ==========================================================================
+   SPAKTA STATS OFFICIELLES (SAISON 2026-2027)
+   ========================================================================== */
+.badge-pill-maillot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  color: #ffffff!important;
+  font-weight: 900;
+  font-size: 0.76rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.35);
+  border: 1px solid #60a5fa;
+  letter-spacing: 0.4px;
+}
+
+.spakta-team-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.15);
+  color: #ea580c;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  text-transform: uppercase;
+}
+
+.spakta-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.spakta-stat-card {
+  background: var(--card-bg, #ffffff);
+  border: 1.5px solid var(--card-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 7px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 1px 1px 0px var(--card-border, #e2e8f0);
+  transition: transform 0.15s ease;
+}
+
+.spakta-stat-card:hover {
+  transform: translateY(-1px);
+}
+
+.spakta-stat-val {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--text-main, #0f172a);
+  line-height: 1.1;
+}
+
+.spakta-stat-val.highlight {
+  color: var(--color-primary, #f97316);
+}
+
+.spakta-stat-lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.btn-spakta-history {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  border: 1px dashed var(--card-border, #cbd5e1);
+  border-radius: 8px;
+  background: var(--card-bg, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-spakta-history:hover {
+  color: var(--color-primary, #ea580c);
+  border-color: var(--color-primary, #ea580c);
+  background: rgba(249, 115, 22, 0.05);
+}
+
+.spakta-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.spakta-match-item {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e2e8f0);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spakta-match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: var(--text-main, #1e293b);
+}
+
+.spakta-match-score {
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+}
+
+.spakta-score-win {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.spakta-score-loss {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.spakta-score-draw {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.spakta-match-perf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-muted, #64748b);
+  font-size: 0.68rem;
+}
+
+.spakta-perf-badge {
+  font-weight: 800;
+  color: var(--color-primary, #ea580c);
 }

@@ -1,7 +1,13 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
-var APP_VERSION = '2.0.0';
+var APP_VERSION = '2.2.0';
+var STATS_SPAKTA = null;
+try {
+  var storedSpakta = localStorage.getItem("hb_spakta_stats");
+  if (storedSpakta) STATS_SPAKTA = JSON.parse(storedSpakta);
+} catch(e) {}
+
 var UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 var CLUB_CONFIG = window.CLUB_CONFIG || {
   nomClub: 'Mon Club Handball',
@@ -115,6 +121,7 @@ el.style.opacity = "0";
 setTimeout(function(){ el.style.visibility = "hidden"; el.style.display = "none"; }, 320);
 }
 function chargerDonneesCoach(conserverSelection){
+  if (typeof synchroniserStatsSpakta === "function") synchroniserStatsSpakta();
 afficherLoading("Chargement...", "Actualisation des données de l'équipe...");
 google.script.run.withSuccessHandler(function(data){
 appliquerDonneesRecues(data, !!conserverSelection);
@@ -609,6 +616,10 @@ function appliquerDonneesRecues(data, conserverSelection){
   try {
     if(!data) return;
     try { localStorage.setItem("hb_cache_data", JSON.stringify(data)); } catch(e){}
+    if(data.statsSpakta){
+      STATS_SPAKTA = data.statsSpakta;
+      try { localStorage.setItem("hb_spakta_stats", JSON.stringify(STATS_SPAKTA)); } catch(e){}
+    }
     if(data.clubConfig){
 CLUB_CONFIG = data.clubConfig;
 if(CLUB_CONFIG.modeFonctionnement){
@@ -1672,7 +1683,8 @@ if(!silencieux){
 }
 google.script.run.withSuccessHandler(function(res){
 if(!silencieux) document.getElementById("btnLogin").disabled = false;
-SESSION_TEL = res.telephone; SESSION_PIN = res.pin; SESSION_NOM = res.nom; EST_COACH = !!res.estCoach; EST_TRESORIER = !!res.estTresorier;
+SESSION_TEL = res.telephone; SESSION_PIN = res.pin; SESSION_NOM = res.nom;
+      if (typeof synchroniserStatsSpakta === "function") synchroniserStatsSpakta(); EST_COACH = !!res.estCoach; EST_TRESORIER = !!res.estTresorier;
 document.body.classList.add("user-logged-in");
 document.getElementById("loginBox").style.display = "none";
 document.getElementById("playerBox").style.display = "flex";
@@ -1856,6 +1868,197 @@ hSwap.innerHTML = "<span style='color:#38bdf8;'>Mode consultation joueur : visua
 }
 }
 }
+
+// ============================================================================
+// INTEGRATION SPAKTA STATISTIQUES OFFICIELLES (SAISON 2026-2027)
+// ============================================================================
+function normaliserTexteComparaison(str) {
+  return String(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function trouverStatsSpaktaJoueur(nom) {
+  if (!nom || !STATS_SPAKTA || !Array.isArray(STATS_SPAKTA.joueurs)) return null;
+  var nPropre = String(nom).replace(/\s*\([^)]*\)\s*/g, '').trim();
+  var nClean = normaliserTexteComparaison(nPropre);
+  var nWords = String(nPropre).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/).filter(Boolean);
+  var liste = STATS_SPAKTA.joueurs;
+
+  // 1. Match exact ou inverse (ex: "JOUANNO Pierre" vs "Pierre Jouanno" ou "Jouanno Pierre")
+  for (var i = 0; i < liste.length; i++) {
+    var p = liste[i];
+    var spClean = normaliserTexteComparaison(p.name);
+    var spWords = String(p.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/).filter(Boolean);
+    var spInverse = normaliserTexteComparaison(spWords.slice().reverse().join(''));
+    if (nClean === spClean || nClean === spInverse) return p;
+  }
+
+  // 2. Match avec prenom + initiale du nom (ex: "Thomas B" vs "BUCCELLATO Thomas", "Clement P" vs "PARET Clement")
+  if (nWords.length >= 2) {
+    var prenom = nWords[0];
+    var initialOuNom = nWords[1];
+    for (var j = 0; j < liste.length; j++) {
+      var pj = liste[j];
+      var pWords = String(pj.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/).filter(Boolean);
+      var pNom = pWords[0];
+      var pPrenom = pWords[1] || '';
+      if (normaliserTexteComparaison(pPrenom).startsWith(prenom) && normaliserTexteComparaison(pNom).startsWith(initialOuNom.charAt(0))) {
+        return pj;
+      }
+      if (normaliserTexteComparaison(pNom).startsWith(prenom) && normaliserTexteComparaison(pPrenom).startsWith(initialOuNom.charAt(0))) {
+        return pj;
+      }
+    }
+  }
+
+  // 3. Match si prenom seul et unique dans la base (ex: "Pierre" -> un seul Pierre dans Spakta)
+  if (nWords.length === 1) {
+    var singleName = nWords[0];
+    var matches = liste.filter(function(p) {
+      var pWords = String(p.name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/\s+/).filter(Boolean);
+      return pWords.some(function(w) { return normaliserTexteComparaison(w) === singleName; });
+    });
+    if (matches.length === 1) return matches[0];
+  }
+
+  return null;
+}
+
+function afficherStatsSpaktaJoueur(spData, prefix) {
+  var pfx = prefix || 'player';
+  var boxEl = document.getElementById(pfx === 'player' ? 'playerStatsBox' : 'modalJoueurSpaktaBox');
+  var gridEl = document.getElementById(pfx === 'player' ? 'playerStatsGrid' : 'modalJoueurSpaktaGrid');
+  var teamBadge = document.getElementById(pfx === 'player' ? 'playerStatsTeamsBadge' : 'modalJoueurSpaktaTeamBadge');
+  var logEl = document.getElementById(pfx === 'player' ? 'playerMatchLog' : 'modalJoueurMatchLog');
+  if (!boxEl || !gridEl) return;
+
+  if (!spData) {
+    boxEl.style.display = 'none';
+    return;
+  }
+
+  boxEl.style.display = 'block';
+
+  // Pastille Equipes (ex: "Equipe 1C" ou "Equipes 1B & 1C")
+  if (teamBadge) {
+    var eqArr = spData.teams || [];
+    teamBadge.textContent = eqArr.length > 0 ? ('Équipe ' + eqArr.join(' & ')) : 'ACBB';
+  }
+
+  var isGk = Boolean(spData.is_goalkeeper);
+  var html = '';
+
+  if (isGk) {
+    var savesTot = (spData.totals && spData.totals.saves) || 0;
+    var savesPerM = (spData.per_sheet && spData.per_sheet.saves) || 0;
+    var sheets = spData.sheets || 0;
+    var lastM = (spData.matches && spData.matches[0]) ? spData.matches[0] : null;
+
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val highlight">' + savesTot + '</div><div class="spakta-stat-lbl">Arrêts Totaux</div></div>';
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val">' + savesPerM + '</div><div class="spakta-stat-lbl">Arrêts / Match</div></div>';
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val">' + sheets + '</div><div class="spakta-stat-lbl">Matchs Joués</div></div>';
+    var txtLast = lastM ? (lastM.saves + ' arrêts vs ' + lastM.opponent) : 'Aucun match';
+    var dateLast = (lastM && lastM.date) ? lastM.date : '--';
+    html += '<div class="spakta-stat-card" style="grid-column: span 3;"><div class="spakta-stat-val highlight" style="font-size:0.92rem;">' + txtLast + '</div><div class="spakta-stat-lbl">🧤 Dernier Match (' + dateLast + ')</div></div>';
+  } else {
+    var goalsTot = (spData.totals && spData.totals.goals) || 0;
+    var goalsPerM = (spData.per_sheet && spData.per_sheet.goals) || 0;
+    var effPct = Math.round((spData.efficiency || 0) * 1000) / 10 + '%';
+    var goals7m = (spData.totals && spData.totals.goals_7m) || 0;
+    var sheetsF = spData.sheets || 0;
+    var twoMin = (spData.totals && spData.totals.two_minutes) || 0;
+
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val highlight">' + goalsTot + '</div><div class="spakta-stat-lbl">Buts Marqués</div></div>';
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val">' + goalsPerM + '</div><div class="spakta-stat-lbl">Moyenne / Match</div></div>';
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val">' + effPct + '</div><div class="spakta-stat-lbl">Réussite au Tir</div></div>';
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val">' + goals7m + '</div><div class="spakta-stat-lbl">Jets de 7m</div></div>';
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val">' + sheetsF + '</div><div class="spakta-stat-lbl">Matchs Joués</div></div>';
+    html += '<div class="spakta-stat-card"><div class="spakta-stat-val">' + twoMin + '</div><div class="spakta-stat-lbl">Discipline (2 min)</div></div>';
+  }
+
+  gridEl.innerHTML = html;
+
+  // Remplissage liste des matchs
+  if (logEl) {
+    if (!spData.matches || !spData.matches.length) {
+      logEl.innerHTML = '<div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:8px;">Aucun match disputé cette saison.</div>';
+    } else {
+      var mHtml = '';
+      spData.matches.forEach(function(m) {
+        var scoreClass = 'spakta-score-draw';
+        var scoreLbl = (m.score_for !== undefined && m.score_against !== undefined) ? (m.score_for + ' - ' + m.score_against) : '--';
+        if (m.score_for > m.score_against) scoreClass = 'spakta-score-win';
+        else if (m.score_for < m.score_against) scoreClass = 'spakta-score-loss';
+
+        var perfTxt = isGk ? (m.saves + ' arrêt' + (m.saves > 1 ? 's' : '')) : (m.goals + ' but' + (m.goals > 1 ? 's' : '') + (m.goals_7m > 0 ? ' (dont ' + m.goals_7m + ' pen.)' : ''));
+        if (m.two_minutes > 0) perfTxt += ' • ' + m.two_minutes + 'x 2min';
+
+        var dateFormatee = m.date;
+        try {
+          var pDate = m.date.split('-');
+          if (pDate.length === 3) dateFormatee = pDate[2] + '/' + pDate[1];
+        } catch(ed){}
+
+        mHtml += '<div class="spakta-match-item">';
+        mHtml += '  <div class="spakta-match-header">';
+        mHtml += '    <span>' + dateFormatee + ' • vs ' + m.opponent + ' (' + (m.side === 'HOME' ? 'Dom.' : 'Ext.') + ' - Eq ' + (m.teamCode || '') + ')</span>';
+        mHtml += '    <span class="spakta-match-score ' + scoreClass + '">' + scoreLbl + '</span>';
+        mHtml += '  </div>';
+        mHtml += '  <div class="spakta-match-perf">';
+        mHtml += '    <span>Maillot #' + (m.jersey_number || '--') + '</span>';
+        mHtml += '    <span class="spakta-perf-badge">' + perfTxt + '</span>';
+        mHtml += '  </div>';
+        mHtml += '</div>';
+      });
+      logEl.innerHTML = mHtml;
+    }
+  }
+}
+
+function toggleSpaktaMatchLog() {
+  var el = document.getElementById('playerMatchLog');
+  var icon = document.getElementById('iconToggleMatchLog');
+  if (!el) return;
+  if (el.style.display === 'none' || !el.style.display) {
+    el.style.display = 'flex';
+    if (icon) icon.textContent = '▴';
+  } else {
+    el.style.display = 'none';
+    if (icon) icon.textContent = '▾';
+  }
+}
+
+function toggleModalSpaktaMatchLog() {
+  var el = document.getElementById('modalJoueurMatchLog');
+  var icon = document.getElementById('iconModalToggleMatchLog');
+  if (!el) return;
+  if (el.style.display === 'none' || !el.style.display) {
+    el.style.display = 'flex';
+    if (icon) icon.textContent = '▴';
+  } else {
+    el.style.display = 'none';
+    if (icon) icon.textContent = '▾';
+  }
+}
+
+function synchroniserStatsSpakta(callback) {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run.withSuccessHandler(function(res) {
+      if (res && res.joueurs) {
+        STATS_SPAKTA = res;
+        try { localStorage.setItem('hb_spakta_stats', JSON.stringify(STATS_SPAKTA)); } catch(e) {}
+        if (typeof SESSION_NOM !== 'undefined' && SESSION_NOM) majEspaceJoueur(SESSION_NOM);
+        if (typeof callback === 'function') callback(res);
+      }
+    }).withFailureHandler(function(err) {
+      console.warn('Échec synchro Spakta :', err);
+    }).recupererStatsSpaktaClub();
+  }
+}
+
 function majEspaceJoueur(nom){
 if(!nom) nom = SESSION_NOM;
 if(!nom) return;
@@ -1910,6 +2113,18 @@ return jNom === nSimple;
 }
 var bTr = document.getElementById("playerAssiduiteBadge");
 if(bTr) bTr.textContent = "⚡ Assiduité : " + nbTr + " séance" + (nbTr > 1 ? "s" : "");
+
+var spData = (typeof trouverStatsSpaktaJoueur === 'function') ? trouverStatsSpaktaJoueur(nom) : null;
+var bMaillot = document.getElementById("playerMaillotBadge");
+if(bMaillot){
+  if(spData && spData.jersey_numbers && spData.jersey_numbers.length > 0){
+    bMaillot.textContent = "#" + spData.jersey_numbers.join(" / #");
+    bMaillot.style.display = "inline-flex";
+  } else {
+    bMaillot.style.display = "none";
+  }
+}
+if(typeof afficherStatsSpaktaJoueur === 'function') afficherStatsSpaktaJoueur(spData, 'player');
 var statutBadge = document.getElementById("matchHubStatutBadge");
 var equipeBadge = document.getElementById("matchHubEquipeBadge");
 var advEl = document.getElementById("matchHubAdversaire");
@@ -3790,6 +4005,10 @@ function ouvrirModalJoueur(nom){
   majBoutonMvpModal(isMvp);
   var isCh = estJoueurChevre(nom);
   majBoutonChevreModal(isCh);
+
+  var spModalData = (typeof trouverStatsSpaktaJoueur === 'function') ? trouverStatsSpaktaJoueur(nom) : null;
+  if(typeof afficherStatsSpaktaJoueur === 'function') afficherStatsSpaktaJoueur(spModalData, 'modalJoueur');
+
   document.getElementById("modalJoueurBg").style.display = "flex";
 }
 function fermerModalJoueur(){ var bdrop = document.getElementById("modalJoueurBackdrop"); if(bdrop) bdrop.style.opacity = "0"; document.getElementById("modalJoueurBg").style.display = "none"; }
