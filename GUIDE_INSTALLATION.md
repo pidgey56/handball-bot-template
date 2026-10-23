@@ -1,6 +1,35 @@
-# 📖 Guide d'Installation Complet - Handball Bot
+# 📖 Guide d'Installation Complet - Handball Bot 2.0
 
-Ce guide pas à pas détaille comment installer, configurer et utiliser le **Handball Bot** pour votre club de handball.
+Ce guide pas à pas détaille comment installer, configurer et utiliser **Handball Bot 2.0** pour votre club de handball.
+
+---
+
+## ⚡ Nouveauté 2.0 : Choisissez votre Mode de Démarrage
+
+Handball Bot 2.0 propose **3 modes d'utilisation modulaires** selon les besoins de votre collectif :
+
+| Mode | Pour qui ? | WhatsApp Bot requis ? | Temps d'installation |
+|---|---|:---:|:---:|
+| **🏆 Mode FFHB Uniquement** *(Recommandé)* | Collectifs engagés en championnat officiel voulant scraper leurs matchs et faire leurs compos tactiques | ❌ **Non (0 config)** | **2 minutes** |
+| **📋 Mode Loisir / Présences** | Équipes loisirs, jeunes ou vétérans sans poule FFHB (trombinoscope + présences entraînements) | ❌ **Non (0 config)** | **2 minutes** |
+| **⚡ Mode Complet Automatique** | Clubs voulant automatiser les sondages hebdomadaires sur WhatsApp via robot | ⚠️ Oui (GitHub Actions + Baileys) | **15 minutes** |
+
+> [!TIP]
+> **Vous démarrez ?** Choisissez le **Mode FFHB Uniquement** : aucun token GitHub à créer, aucun QR code à scanner, aucune dépendance externe ! Vous pourrez activer le bot WhatsApp plus tard en 1 clic si vous le souhaitez.
+
+---
+
+## 🌐 Activer votre WebApp PWA sur GitHub Pages (En 1 clic)
+
+Handball Bot 2.0 est propulsé par une application **PWA ultra-rapide** hébergée gratuitement sur votre GitHub Pages :
+1. Sur votre dépôt GitHub, allez dans l'onglet **Settings** (tout en haut à droite).
+2. Dans le menu de gauche, cliquez sur **Pages**.
+3. Dans la section **Build and deployment > Branch** :
+   - Sélectionnez la branche **`main`**.
+   - Sélectionnez le dossier **`/docs`** (au lieu de */ (root)*).
+   - Cliquez sur **Save**.
+4. Au bout de 30 secondes, GitHub affiche votre adresse : `https://<votre-compte>.github.io/<votre-depot>/`.
+5. Ouvrez cette adresse sur votre smartphone (iPhone ou Android) et cliquez sur **« Installer sur l'écran d'accueil »** !
 
 ---
 
