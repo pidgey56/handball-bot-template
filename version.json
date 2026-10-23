@@ -1,14 +1,13 @@
 {
-  "version": "2.2.14",
+  "version": "2.2.15",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.14 — Badges Sportifs Tinder Modernisés & Disparition Absolue Hors Sélection",
+  "title": "Handball Manager 2.2.15 — Optimisation Mobile Complète & Correction Navigation Onglets",
   "changelog": [
-    "Correction définitive du bug d'affichage simultané des tampons de placement (R1, R2, REPOS) sans sélection",
-    "Masquage strict (display: none !important et opacity: 0) par défaut et à l'initialisation de chaque carte",
-    "Apparition exclusive et progressive du badge correspondant lors du glissement tactile ou du clic bouton",
-    "Refonte esthétique complète des badges de placement façon 'sports badges' avec bordures blanches épaisses, effet verre dépoli (frost glass), dégradés dynamiques et ombres portées",
-    "Intégration d'icônes sportives distinctes (✓ pour les équipes/retenus, ✕ pour repos/non-retenus, ⚡ pour ménagés)",
-    "Repositionnement central optimisé du badge Repos pour supprimer tout risque de chevauchement avec les informations du joueur",
-    "Application uniforme sur la sélection Match Tinder et Entraînement Tinder"
+    "Résolution du débordement de l'onglet 'Entraînements' sur les autres options dans la barre de navigation du carnet",
+    "Labels d'onglets responsifs et harmonieux (Profil, Matchs, Séances, Équipe, Coach) sur smartphone évitant tout chevauchement",
+    "Restructuration mobile du bandeau d'en-tête coach en barre d'actions défilante horizontale (scroll chip bar)",
+    "Suppression des boutons redondants de bascule de mode pour libérer plus de 150px de hauteur utile sur smartphone",
+    "Ajustement compact des bandeaux vacances, titres et compteurs de sélection en mode mobile",
+    "Redimensionnement ergonomique de la carte Tinder (385px) et des commandes pour tenir intégralement dans l'écran sans défilement"
   ]
 }

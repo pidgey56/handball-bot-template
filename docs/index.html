@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.14">
+  <link rel="stylesheet" href="css/style.css?v=2.2.15">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -72,7 +72,7 @@
 <nav id="carnetNavTabs" class="carnet-nav-tabs" style="display:none;">
   <button type="button" class="carnet-tab active" data-tab="profil" onclick="basculerOngletCarnet('profil')">
     <span class="carnet-tab-icon">👤</span>
-    <span class="carnet-tab-label">Mon Profil</span>
+    <span class="carnet-tab-label"><span class="nav-label-desktop">Mon Profil</span><span class="nav-label-mobile">Profil</span></span>
   </button>
   <button type="button" class="carnet-tab" data-tab="matchs" onclick="basculerOngletCarnet('matchs')">
     <span class="carnet-tab-icon">🤾</span>
@@ -80,11 +80,11 @@
   </button>
   <button type="button" class="carnet-tab" data-tab="train" onclick="basculerOngletCarnet('train')">
     <span class="carnet-tab-icon">🏃</span>
-    <span class="carnet-tab-label">Entraînements</span>
+    <span class="carnet-tab-label"><span class="nav-label-desktop">Entraînements</span><span class="nav-label-mobile">Séances</span></span>
   </button>
   <button type="button" class="carnet-tab" data-tab="club" onclick="basculerOngletCarnet('club')">
     <span class="carnet-tab-icon">🏆</span>
-    <span class="carnet-tab-label">Vie d'Équipe</span>
+    <span class="carnet-tab-label"><span class="nav-label-desktop">Vie d'Équipe</span><span class="nav-label-mobile">Équipe</span></span>
   </button>
   <button type="button" class="carnet-tab" data-tab="coach" id="btnTabCoach" style="display:none;" onclick="basculerOngletCarnet('coach')">
     <span class="carnet-tab-icon">⚙️</span>
@@ -456,7 +456,7 @@
 </div>
 <div id="trainView" style="display:none;">
 <header>
-<div class="logo" onclick="retourAccueil()" title="Retour à l'accueil"><img class="logo-img" id="trainHeaderLogoImg" src="images/logo.svg" onerror="this.onerror=null;this.src='images/logo.png';" alt="Logo"> <span>Entraînements</span></div>
+<div class="logo" onclick="retourAccueil()" title="Retour à l'accueil"><img class="logo-img" id="trainHeaderLogoImg" src="images/logo.svg" onerror="this.onerror=null;this.src='images/logo.png';" alt="Logo"> <span id="trainHeaderTitle">Entraînements</span></div>
 <div class="header-actions">
 <button class="btn-reset" onclick="retourAccueil()">Accueil</button>
 <button class="btn-reset" onclick="ouvrirModalCollectifs()">Collectifs ▾</button>
@@ -1571,13 +1571,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.14"></script>
-  <script src="js/api.js?v=2.2.14"></script>
-  <script src="js/app.js?v=2.2.14"></script>
+  <script src="js/spakta-data.js?v=2.2.15"></script>
+  <script src="js/api.js?v=2.2.15"></script>
+  <script src="js/app.js?v=2.2.15"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.14').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.15').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

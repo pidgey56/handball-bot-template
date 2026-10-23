@@ -181,7 +181,9 @@ header {
 }
 .logo-img { width: 34px; height: 34px; object-fit: contain; }
 .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.header-actions button {
+.header-actions button,
+.header-actions .btn-reset,
+.header-actions .btn-sync {
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);
   color: var(--text-main);
@@ -191,14 +193,76 @@ header {
   font-weight: 700;
   box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
-.header-actions button:hover {
+.header-actions button:hover,
+.header-actions .btn-reset:hover,
+.header-actions .btn-sync:hover {
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0px var(--card-border);
 }
-.header-actions button:active {
+.header-actions button:active,
+.header-actions .btn-reset:active,
+.header-actions .btn-sync:active {
   transform: translate(1px, 1px);
   box-shadow: 1px 1px 0px var(--card-border);
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 6px 10px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+  header .logo {
+    font-size: 0.84rem;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  header .logo-img {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  #headerClubTitle,
+  #trainHeaderTitle {
+    font-size: 0.82rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100vw - 60px);
+  }
+  .header-actions {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px !important;
+    padding: 2px 0 4px 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .header-actions::-webkit-scrollbar {
+    display: none;
+  }
+  .header-actions button,
+  .header-actions .btn-reset,
+  .header-actions .btn-sync,
+  .header-actions .badge-mode {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    padding: 5px 10px !important;
+    border-radius: 99px !important;
+  }
+  #btnSwitchMode,
+  #btnSwitchModeTrain {
+    display: none !important;
+  }
 }
 
 /* Accueil & Card Centrale */
@@ -1566,32 +1630,64 @@ body.theme-slate .carnet-tab.active {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mode mobile pour la barre d'onglets : sticky en bas de l'?cran fa?on App mobile native */
+.nav-label-mobile {
+  display: none;
+}
+.nav-label-desktop {
+  display: inline;
+}
+
+/* Mode mobile pour la barre d'onglets : sticky en bas de l'écran façon App mobile native */
 @media(max-width: 640px) {
-  .carnet-nav-tabs {
-    position: fixed;
-    bottom: 8px;
-    left: 10px;
-    right: 10px;
-    width: calc(100% - 20px);
-    max-width: none;
-    margin: 0;
-    z-index: 95;
-    background: var(--card-bg);
-    border: 2px solid var(--card-border);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4), 2.5px 3.5px 0px var(--card-border);
-    padding: 4px;
-    border-radius: 18px;
+  .nav-label-desktop {
+    display: none !important;
   }
-  .carnet-tab {
-    padding: 6px 4px;
-    min-width: 58px;
+  .nav-label-mobile {
+    display: inline !important;
   }
-  .carnet-tab-icon {
-    font-size: 1.05rem;
+  .carnet-nav-tabs,
+  body.user-logged-in .carnet-nav-tabs {
+    position: fixed !important;
+    bottom: 8px !important;
+    left: 6px !important;
+    right: 6px !important;
+    width: calc(100% - 12px) !important;
+    max-width: none !important;
+    margin: 0 !important;
+    z-index: 95 !important;
+    background: var(--card-bg) !important;
+    border: 2px solid var(--card-border) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4), 2.5px 3.5px 0px var(--card-border) !important;
+    padding: 4px 2px !important;
+    border-radius: 18px !important;
+    display: flex !important;
+    gap: 3px !important;
+    box-sizing: border-box !important;
   }
-  .carnet-tab-label {
-    font-size: 0.65rem;
+  .carnet-tab,
+  body.user-logged-in .carnet-tab {
+    padding: 6px 2px !important;
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    max-width: 20% !important;
+    gap: 2px !important;
+    overflow: hidden !important;
+    border-radius: 12px !important;
+  }
+  .carnet-tab-icon,
+  body.user-logged-in .carnet-tab-icon {
+    font-size: 1.05rem !important;
+  }
+  .carnet-tab-label,
+  body.user-logged-in .carnet-tab-label {
+    font-size: 0.65rem !important;
+    letter-spacing: -0.2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    display: block !important;
+    text-align: center !important;
   }
   body.user-logged-in {
     padding-bottom: 78px !important;
@@ -1856,24 +1952,26 @@ body.user-logged-in .status-pill {
   font-size: 0.72rem!important;
 }
 
-body.user-logged-in .carnet-nav-tabs {
-  margin: 2px auto 8px auto!important;
-  max-width: 780px!important;
-  padding: 4px!important;
-  border-radius: 14px!important;
-}
+@media(min-width: 641px) {
+  body.user-logged-in .carnet-nav-tabs {
+    margin: 2px auto 8px auto!important;
+    max-width: 780px!important;
+    padding: 4px!important;
+    border-radius: 14px!important;
+  }
 
-body.user-logged-in .carnet-tab {
-  padding: 6px 8px!important;
-  gap: 2px!important;
-}
+  body.user-logged-in .carnet-tab {
+    padding: 6px 8px!important;
+    gap: 2px!important;
+  }
 
-body.user-logged-in .carnet-tab-icon {
-  font-size: 1rem!important;
-}
+  body.user-logged-in .carnet-tab-icon {
+    font-size: 1rem!important;
+  }
 
-body.user-logged-in .carnet-tab-label {
-  font-size: 0.7rem!important;
+  body.user-logged-in .carnet-tab-label {
+    font-size: 0.7rem!important;
+  }
 }
 
 /* Grille Dashboard Athlète pour Mon Profil (Desktop & Mobile) */
@@ -2830,45 +2928,108 @@ body.train-tinder-mode-active #trainFooter {
 
 @media(max-width: 640px) {
   #tinderView, #trainTinderView {
-    padding: 4px;
-    margin: 4px auto 14px auto;
+    padding: 2px;
+    margin: 2px auto 10px auto;
+  }
+  .view-mode-tabs {
+    margin: 4px auto 6px auto !important;
+    max-width: 320px !important;
+    gap: 6px !important;
+  }
+  .view-mode-tab {
+    padding: 6px 10px !important;
+    font-size: 0.8rem !important;
+    border-radius: 12px !important;
+  }
+  .banner-vacances {
+    padding: 6px 10px !important;
+    margin: 4px auto 8px auto !important;
+    gap: 8px;
+    border-radius: 10px !important;
+  }
+  .banner-vacances-text {
+    font-size: 0.74rem !important;
+    line-height: 1.25 !important;
+  }
+  .banner-vacances-btn {
+    padding: 4px 8px !important;
+    font-size: 0.72rem !important;
+  }
+  .tinder-header-title {
+    font-size: 0.78rem !important;
+    padding: 3px 10px !important;
+    margin: 0 auto 3px auto !important;
+  }
+  .tinder-btn-renfort {
+    font-size: 0.72rem !important;
+    padding: 4px 10px !important;
+    margin: 0 auto 6px auto !important;
+  }
+  .tscore-bar {
+    padding: 4px 8px !important;
+    margin: 0 auto 8px auto !important;
+    gap: 6px !important;
+    font-size: 0.74rem !important;
+    border-radius: 12px !important;
+  }
+  .tscore-pill {
+    padding: 2px 6px !important;
+    font-size: 0.72rem !important;
   }
   .tdeck {
-    height: 440px !important;
-    max-width: 340px !important;
+    height: 385px !important;
+    max-width: 330px !important;
+    margin: 0 auto !important;
   }
   .tcard {
-    height: 440px !important;
-    max-width: 340px !important;
-    padding: 14px 12px;
+    height: 385px !important;
+    max-width: 330px !important;
+    padding: 10px !important;
+  }
+  .tcard-nom {
+    font-size: 1.35rem !important;
+  }
+  .tcard-poste {
+    font-size: 0.85rem !important;
+  }
+  .tcard-train-pill {
+    font-size: 0.74rem !important;
+    padding: 2px 10px !important;
+  }
+  .tcard-spakta-bar {
+    padding: 4px 6px !important;
+  }
+  .tcard-spakta-val {
+    font-size: 0.84rem !important;
   }
   .tcontrols {
-    gap: 8px;
+    margin-top: 8px !important;
+    gap: 6px !important;
   }
   .tbtn-circle {
-    width: 58px;
-    height: 58px;
-    min-width: 58px;
-    min-height: 58px;
-    border-radius: 16px;
-    font-size: 0.78rem;
+    width: 54px !important;
+    height: 54px !important;
+    min-width: 54px !important;
+    min-height: 54px !important;
+    border-radius: 16px !important;
+    font-size: 0.74rem !important;
   }
   .tbtn-circle span {
-    font-size: 1.18rem;
+    font-size: 1.1rem !important;
   }
   .tbtn-out {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
-    min-height: 52px;
-    border-radius: 14px;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    border-radius: 14px !important;
   }
   .tbtn-undo {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 14px;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+    border-radius: 14px !important;
   }
 }
 
