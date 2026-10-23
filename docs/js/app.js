@@ -1,7 +1,7 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
-var APP_VERSION = '2.2.5';
+var APP_VERSION = '2.2.6';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -2055,14 +2055,14 @@ function synchroniserStatsSpakta(callback) {
         if (typeof callback === 'function') callback(res);
       }
     }).withFailureHandler(function(err) {
-      console.warn('Échec synchro Spakta backend :', err);
+      // Repli silencieux sur snapshot local si backend pas encore redéployé
     }).recupererStatsSpaktaClub();
   }
 
   // Si pas encore de données, charger le snapshot local statique
   if (!STATS_SPAKTA) {
     try {
-      fetch('js/spakta-data.json?v=2.2.5')
+      fetch('js/spakta-data.json?v=2.2.6')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (!STATS_SPAKTA && data && data.joueurs) {

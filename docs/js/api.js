@@ -147,11 +147,14 @@ const ApiClient = {
 
       const res = await response.json();
 
+      this.majBadgeStatut('online');
+
       if (res.status === 'error') {
+        if (action === 'recupererStatsSpaktaClub') {
+          return (typeof window !== 'undefined' && window.SPAKTA_INITIAL_DATA) || { ok: true, joueurs: [] };
+        }
         throw new Error(res.message || "Erreur serveur Google Sheets");
       }
-
-      this.majBadgeStatut('online');
 
       // Mise en cache des données lues
       if (action === 'getDonneesCoach' || action === 'authentifierUtilisateur') {
@@ -170,8 +173,14 @@ const ApiClient = {
         ? "Le serveur Google Sheets met trop de temps à répondre (délai dépassé). Veuillez réessayer."
         : (err.message || "Erreur réseau inconnue");
 
-      console.warn("[ApiClient] Appel réseau non disponible (" + errorMsg + ").");
-      this.majBadgeStatut('offline');
+      const isNetworkFailure = isTimeout || !navigator.onLine || err.name === 'TypeError' || (err.message && err.message.includes('fetch'));
+      if (isNetworkFailure) {
+        console.warn("[ApiClient] Appel réseau non disponible (" + errorMsg + ").");
+        this.majBadgeStatut('offline');
+      } else {
+        console.warn("[ApiClient] Erreur Google Sheets reçue (" + errorMsg + ").");
+        this.majBadgeStatut('online');
+      }
 
       // Fallback cache local en cas de coupure réseau
       if (action === 'getDonneesCoach') {
