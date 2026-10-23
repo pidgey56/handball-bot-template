@@ -4594,7 +4594,38 @@ async function partagerTexteConvocation(texte) {
   }
 }
 
+function appliquerClubConfigPublique(cfg){
+  if(!cfg) return;
+  if(cfg.nomClub){
+    var elNom = document.getElementById("homeClubName");
+    if(elNom) elNom.textContent = cfg.nomClub;
+    document.title = cfg.nomClub + " - Espace Coach";
+  }
+  if(cfg.logoUrl){
+    majClubLogoClient(cfg.logoUrl);
+  }
+  if(cfg.couleurPrimaire){
+    document.documentElement.style.setProperty("--color-primary", cfg.couleurPrimaire);
+  }
+}
+
 function demarrerApp(){
+  try {
+    var rawClubCfg = localStorage.getItem("hb_club_config");
+    if(rawClubCfg){
+      appliquerClubConfigPublique(JSON.parse(rawClubCfg));
+    }
+  } catch(eCfg){}
+
+  if(window.ApiClient && ApiClient.baseUrl){
+    ApiClient.call('getConfig').then(function(cfg){
+      if(cfg && cfg.nomClub){
+        appliquerClubConfigPublique(cfg);
+        try { localStorage.setItem("hb_club_config", JSON.stringify(cfg)); } catch(e){}
+      }
+    }).catch(function(e){});
+  }
+
   try { appliquerModeFonctionnementVisuel(); } catch(e){}
   if(APP_DEMARREE) return;
   APP_DEMARREE = true;

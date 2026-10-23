@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ==============================================================================
  * HANDBALL BOT - MODÈLE UNIVERSEL POUR CLUBS DE HANDBALL
  * ==============================================================================
@@ -5494,6 +5494,15 @@ function doPost(e) {
 
     // Table de routage universelle des méthodes backend
     const router = {
+      'getConfig': function() {
+        const cfg = getClubConfig();
+        return {
+          nomClub: cfg.nomClub || 'Handball Club',
+          logoUrl: cfg.logoUrl || '',
+          couleurPrimaire: cfg.couleurPrimaire || '#f97316',
+          couleurSecondaire: cfg.couleurSecondaire || '#d0d0d0'
+        };
+      },
       'getDonneesCoach': getDonneesCoach,
       'authentifierUtilisateur': authentifierUtilisateur,
       'enregistrerCompoEtPublier': enregistrerCompoEtPublier,
@@ -6263,25 +6272,36 @@ function construireHtmlWebApp() {
   } catch (e) {}
 
   const webAppUrl = cleanBase + '?api=' + encodeURIComponent(serviceUrl);
+  const nomClub = cfg.nomClub || 'Handball Club';
+  const logoUrl = cfg.logoUrl || genererLogoDefaut(cfg.couleurPrimaire);
+  const couleur = cfg.couleurPrimaire || '#f97316';
 
   return '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-    '<title>' + (cfg.nomClub || 'Handball') + ' - Espace Coach</title>' +
-    '<meta http-equiv="refresh" content="0;url=' + webAppUrl + '">' +
+    '<title>' + nomClub + ' - Portail</title>' +
     '<style>' +
-    'body{font-family:sans-serif;background:#090d16;color:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;}' +
-    '.card{background:#111827;padding:32px;border-radius:16px;border:1px solid #1f2937;max-width:440px;box-shadow:0 10px 30px rgba(0,0,0,0.5);}' +
-    'h2{margin-top:0;font-size:1.35rem;color:#f8fafc;}' +
-    'p{color:#94a3b8;font-size:0.9rem;line-height:1.5;}' +
-    'a.btn{display:inline-block;margin-top:16px;background:#3b82f6;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.95rem;transition:background 0.2s;}' +
-    'a.btn:hover{background:#2563eb;}' +
-    '</style></head><body>' +
-    '<div class="card">' +
-    '<h2>🤾 ' + (cfg.nomClub || 'Handball') + ' Manager 2.0</h2>' +
-    '<p>Chargement de votre application nouvelle génération (PWA instantanée)...</p>' +
-    '<a class="btn" href="' + webAppUrl + '">Ouvrir l\'application</a>' +
+    '* { box-sizing: border-box; }' +
+    'body { margin: 0; min-height: 100vh; background: #090d16; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; padding: 20px; text-align: center; cursor: pointer; }' +
+    '.launch-card { background: #111827; border: 1px solid #1f2937; border-radius: 24px; padding: 36px 28px; max-width: 420px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }' +
+    '.logo-wrap { width: 96px; height: 96px; margin: 0 auto 20px; border-radius: 50%; background: #1e293b; display: flex; align-items: center; justify-content: center; border: 3px solid ' + couleur + '; overflow: hidden; }' +
+    '.logo-wrap img { width: 80px; height: 80px; object-fit: contain; }' +
+    'h1 { font-size: 1.25rem; font-weight: 800; margin: 0 0 8px; color: #fff; line-height: 1.3; }' +
+    'p { font-size: 0.88rem; color: #94a3b8; line-height: 1.5; margin: 0 0 24px; }' +
+    '.btn-launch { display: block; width: 100%; background: ' + couleur + '; color: #fff; padding: 15px 20px; border-radius: 12px; font-weight: 800; font-size: 1.05rem; text-decoration: none; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }' +
+    '.hint { font-size: 0.75rem; color: #64748b; margin-top: 16px; }' +
+    '</style>' +
+    '</head><body onclick="ouvrirApp()">' +
+    '<div class="launch-card">' +
+    '<div class="logo-wrap"><img src="' + logoUrl + '" alt="Logo Club"></div>' +
+    '<h1>' + nomClub + '</h1>' +
+    '<p>Portail Joueurs & Coachs (Application Web PWA 2.0)</p>' +
+    '<a id="btnLaunch" class="btn-launch" href="' + webAppUrl + '" target="_top">🤾 Entrer sur l\'application</a>' +
+    '<div class="hint">Touchez ou cliquez n\'importe où pour lancer l\'application plein écran</div>' +
     '</div>' +
-    '<script>try{if(window.top){window.top.location.href="' + webAppUrl + '";}else{window.location.replace("' + webAppUrl + '");}}catch(e){window.location.replace("' + webAppUrl + '");}</script>' +
+    '<script>' +
+    'function ouvrirApp() { try { if (window.top) { window.top.location.href = "' + webAppUrl + '"; } else { window.location.href = "' + webAppUrl + '"; } } catch(e) { window.open("' + webAppUrl + '", "_top"); } }' +
+    'document.getElementById("btnLaunch").addEventListener("click", function(e) { e.stopPropagation(); ouvrirApp(); });' +
+    '</script>' +
     '</body></html>';
 }
 

@@ -1,9 +1,9 @@
-// ============================================================================
+﻿// ============================================================================
 // HANDBALL BOT 2.0 - SERVICE WORKER
 // Gestion du cache hors-ligne et fonctionnement PWA
 // ============================================================================
 
-const CACHE_NAME = 'handball-app-v2.0.5';
+const CACHE_NAME = 'handball-app-v2.0.6';
 const STATIC_ASSETS = [
   './',
   './index.html',
