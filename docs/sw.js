@@ -3,13 +3,13 @@
 // Gestion du cache hors-ligne et fonctionnement PWA
 // ============================================================================
 
-const CACHE_NAME = 'handball-app-v2.1.0';
+const CACHE_NAME = 'handball-app-v2.1.1';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './css/style.css?v=2.1.0',
-  './js/api.js?v=2.1.0',
-  './js/app.js?v=2.1.0',
+  './css/style.css?v=2.1.1',
+  './js/api.js?v=2.1.1',
+  './js/app.js?v=2.1.1',
   './manifest.json',
   './images/logo.png',
   './images/icon-192.png',
@@ -38,6 +38,9 @@ self.addEventListener('activate', event => {
 
 // Stratégie de cache : Stale-While-Revalidate pour les fichiers statiques, Network-Only pour l'API
 self.addEventListener('fetch', event => {
+  if (!event.request || !event.request.url || !event.request.url.startsWith('http')) {
+    return;
+  }
   const url = new URL(event.request.url);
 
   // Ignorer les requêtes non HTTP / HTTPS (ex: extensions Chrome)
@@ -61,8 +64,10 @@ self.addEventListener('fetch', event => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
+            if (event.request.url.startsWith('http')) {
+              cache.put(event.request, responseToCache).catch(() => {});
+            }
+          }).catch(() => {});
         }
         return networkResponse;
       }).catch(() => {

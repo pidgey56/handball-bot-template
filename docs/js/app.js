@@ -1942,7 +1942,7 @@ CURRENT_MATCH_SALLE = "";
 }
 if(VACANCES_DATA && VACANCES_DATA.enVacancesCetteSemaine){
 var infoV = VACANCES_DATA.infoSemaine || {};
-if(statutBadge){ statutBadge.textContent = "🏖️ VACANCES"; statutBadge.style.background = "rgba(14,165,233,0.25)"; statutBadge.style.color = "#7dd3fc"; }
+if(statutBadge){ statutBadge.textContent = "🏖️ VACANCES"; statutBadge.style.background = "#e0f2fe"; statutBadge.style.color = "#0369a1"; statutBadge.style.borderColor = "#bae6fd"; }
 if(equipeBadge) equipeBadge.textContent = infoV.nom || "Trêve sportive";
 if(advEl) advEl.textContent = "🏖️ Pas de match cette semaine";
 var txtVac = "Période de vacances : " + (infoV.nom || "Vacances") + " (du " + (infoV.debutTexte || "") + " au " + (infoV.finTexte || "") + "). Aucun entraînement ni match programmé. Bon repos !";
@@ -1950,13 +1950,13 @@ if(infoV.commentaire) txtVac += " • " + infoV.commentaire;
 if(detEl) detEl.textContent = txtVac;
 if(actBox) actBox.style.display = "none";
 } else if(eqNomConvoque === "REPOS"){
-if(statutBadge){ statutBadge.textContent = "🛌 AU REPOS"; statutBadge.style.background = "rgba(239,68,68,0.2)"; statutBadge.style.color = "#fca5a5"; }
+if(statutBadge){ statutBadge.textContent = "🛌 AU REPOS"; statutBadge.style.background = "#fee2e2"; statutBadge.style.color = "#b91c1c"; statutBadge.style.borderColor = "#fecaca"; }
 if(equipeBadge) equipeBadge.textContent = "Non retenu ce week-end";
 if(advEl) advEl.textContent = "Repos ce week-end";
 if(detEl) detEl.textContent = "Profitez de votre week-end pour recharger les batteries ! Rendez-vous au prochain entraînement.";
 if(actBox) actBox.style.display = "none";
 } else if(eqNomConvoque && aVraiMatch(detailsEquipe)){
-if(statutBadge){ statutBadge.textContent = "🔥 CONVOQUÉ"; statutBadge.style.background = "rgba(34,197,94,0.25)"; statutBadge.style.color = "#86efac"; }
+if(statutBadge){ statutBadge.textContent = "🔥 CONVOQUÉ"; statutBadge.style.background = "#dcfce7"; statutBadge.style.color = "#15803d"; statutBadge.style.borderColor = "#86efac"; }
 if(equipeBadge) equipeBadge.textContent = eqNomConvoque;
 if(advEl) advEl.textContent = "⚔️ Contre " + detailsEquipe.adversaire;
 var detLignes = [];
@@ -1966,7 +1966,7 @@ if(detailsEquipe.heureRdv && detailsEquipe.heureRdv !== "-") detLignes.push("⏱
 if(detEl) detEl.textContent = detLignes.length ? detLignes.join(" • ") : "Consultez les horaires et le gymnase ci-dessous.";
 if(actBox) actBox.style.display = "flex";
 } else if(eqNomConvoque && !aVraiMatch(detailsEquipe)){
-if(statutBadge){ statutBadge.textContent = "🏖️ PAS DE MATCH"; statutBadge.style.background = "rgba(59,130,246,0.15)"; statutBadge.style.color = "#93c5fd"; }
+if(statutBadge){ statutBadge.textContent = "🏖️ PAS DE MATCH"; statutBadge.style.background = "#e0f2fe"; statutBadge.style.color = "#0369a1"; statutBadge.style.borderColor = "#bae6fd"; }
 if(equipeBadge) equipeBadge.textContent = eqNomConvoque + " • Exempt";
 if(advEl) advEl.textContent = "🏖️ Pas de match officiel ce week-end";
 if(detEl) detEl.textContent = "L'équipe " + eqNomConvoque + " n'a pas de match officiel programmé ce week-end (exempt ou pause de calendrier). Profitez-en pour vous reposer !";
@@ -1998,7 +1998,7 @@ nomEqAvenir = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "Équipe 3";
 }
 if(aVraiMatch(matchAvenir)){
 if(matchAvenir.salle && matchAvenir.salle !== "-") CURRENT_MATCH_SALLE = matchAvenir.salle;
-if(statutBadge){ statutBadge.textContent = "⏳ SÉLECTION EN COURS"; statutBadge.style.background = "rgba(234,179,8,0.2)"; statutBadge.style.color = "#facc15"; }
+if(statutBadge){ statutBadge.textContent = "⏳ SÉLECTION EN COURS"; statutBadge.style.background = "#fef3c7"; statutBadge.style.color = "#b45309"; statutBadge.style.borderColor = "#fde68a"; }
 if(equipeBadge) equipeBadge.textContent = nomEqAvenir + " (Match à venir)";
 if(advEl) advEl.textContent = "⚔️ Contre " + matchAvenir.adversaire;
 var detLignes = [];
@@ -2008,7 +2008,7 @@ if(matchAvenir.heureRdv && matchAvenir.heureRdv !== "-") detLignes.push("⏱️ 
 if(detEl) detEl.textContent = (detLignes.length ? detLignes.join(" • ") + " • " : "") + "Sélection finale en cours par le coach.";
 if(actBox) actBox.style.display = "flex";
 } else {
-if(statutBadge){ statutBadge.textContent = "🏖️ PAS DE MATCH"; statutBadge.style.background = "rgba(59,130,246,0.15)"; statutBadge.style.color = "#93c5fd"; }
+if(statutBadge){ statutBadge.textContent = "🏖️ PAS DE MATCH"; statutBadge.style.background = "#e0f2fe"; statutBadge.style.color = "#0369a1"; statutBadge.style.borderColor = "#bae6fd"; }
 if(equipeBadge) equipeBadge.textContent = nomEqAvenir + " • Pas de match";
 if(advEl) advEl.textContent = "🏖️ Pas de match officiel ce week-end";
 if(detEl) detEl.textContent = "Aucun match officiel programmé ce week-end pour le club (exempt ou pause de calendrier). Bon repos !";
@@ -2065,10 +2065,7 @@ btnHeadC.style.display = (stCaisse === "desactivee" && !EST_COACH && !EST_TRESOR
 if(stCaisse === "desactivee"){
 if(tileCaisse) tileCaisse.style.display = (EST_COACH || EST_TRESORIER) ? "flex" : "none";
 if(tBadgeCaisse){
-tBadgeCaisse.textContent = "⚪ Désactivée (Jeunes)";
-tBadgeCaisse.style.background = "rgba(148,163,184,0.18)";
-tBadgeCaisse.style.color = "#cbd5e1";
-tBadgeCaisse.style.borderColor = "rgba(148,163,184,0.35)";
+tBadgeCaisse.textContent = "⚪ Désactivée (Jeunes)"; tBadgeCaisse.style.background = "#f1f5f9"; tBadgeCaisse.style.color = "#475569"; tBadgeCaisse.style.borderColor = "#cbd5e1";
 }
 if(tSubCaisse) tSubCaisse.textContent = "Non mise en place pour cette équipe";
 } else if(stCaisse === "fermee"){
@@ -2078,15 +2075,9 @@ var monTotalDuF = 0;
 mesAmendesImpayeesF.forEach(function(a){ monTotalDuF += (Number(a.montant) || 0); });
 if(tBadgeCaisse){
 if(monTotalDuF > 0){
-tBadgeCaisse.textContent = "🔒 Fermée (Dû : " + monTotalDuF + " €)";
-tBadgeCaisse.style.background = "rgba(239,68,68,0.25)";
-tBadgeCaisse.style.color = "#fca5a5";
-tBadgeCaisse.style.borderColor = "rgba(239,68,68,0.35)";
+tBadgeCaisse.textContent = "🔒 Fermée (Dû : " + monTotalDuF + " €)"; tBadgeCaisse.style.background = "#fee2e2"; tBadgeCaisse.style.color = "#b91c1c"; tBadgeCaisse.style.borderColor = "#fca5a5";
 } else {
-tBadgeCaisse.textContent = "🔒 Caisse Fermée";
-tBadgeCaisse.style.background = "rgba(245,158,11,0.25)";
-tBadgeCaisse.style.color = "#fde68a";
-tBadgeCaisse.style.borderColor = "rgba(245,158,11,0.4)";
+tBadgeCaisse.textContent = "🔒 Caisse Fermée"; tBadgeCaisse.style.background = "#fef3c7"; tBadgeCaisse.style.color = "#92400e"; tBadgeCaisse.style.borderColor = "#fde68a";
 }
 }
 if(tSubCaisse){
@@ -2100,15 +2091,9 @@ var monTotalDu = 0;
 mesAmendesImpayees.forEach(function(a){ monTotalDu += (Number(a.montant) || 0); });
 if(tBadgeCaisse){
 if(monTotalDu > 0){
-tBadgeCaisse.textContent = "Dû : " + monTotalDu + " €";
-tBadgeCaisse.style.background = "rgba(239,68,68,0.25)";
-tBadgeCaisse.style.color = "#fca5a5";
-tBadgeCaisse.style.borderColor = "rgba(239,68,68,0.35)";
+tBadgeCaisse.textContent = "Dû : " + monTotalDu + " €"; tBadgeCaisse.style.background = "#fee2e2"; tBadgeCaisse.style.color = "#b91c1c"; tBadgeCaisse.style.borderColor = "#fca5a5";
 } else {
-tBadgeCaisse.textContent = "À jour 🟢";
-tBadgeCaisse.style.background = "rgba(34,197,94,0.2)";
-tBadgeCaisse.style.color = "#86efac";
-tBadgeCaisse.style.borderColor = "rgba(34,197,94,0.35)";
+tBadgeCaisse.textContent = "À jour 🟢"; tBadgeCaisse.style.background = "#dcfce7"; tBadgeCaisse.style.color = "#15803d"; tBadgeCaisse.style.borderColor = "#86efac";
 }
 }
 if(tSubCaisse){
@@ -2120,22 +2105,13 @@ var badgeCoachCaisse = document.getElementById("badgeCoachCaisseStats");
 var descCoachCaisse = document.getElementById("dashDescCaisseNoire");
 if(badgeCoachCaisse && CAISSE_NOIRE_DATA && CAISSE_NOIRE_DATA.stats){
 if(stCaisse === "desactivee"){
-badgeCoachCaisse.textContent = "⚪ Non mise en place (Désactivée)";
-badgeCoachCaisse.style.background = "rgba(148,163,184,0.18)";
-badgeCoachCaisse.style.color = "#cbd5e1";
-badgeCoachCaisse.style.borderColor = "rgba(148,163,184,0.35)";
+badgeCoachCaisse.textContent = "⚪ Non mise en place (Désactivée)"; badgeCoachCaisse.style.background = "#f1f5f9"; badgeCoachCaisse.style.color = "#475569"; badgeCoachCaisse.style.borderColor = "#cbd5e1";
 if(descCoachCaisse) descCoachCaisse.textContent = "Désactivée (ex: équipe jeune) • Cliquez sur Administrer pour l'activer";
 } else if(stCaisse === "fermee"){
-badgeCoachCaisse.textContent = "🔒 Clôturée / Fermée (" + (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " €)";
-badgeCoachCaisse.style.background = "rgba(245,158,11,0.25)";
-badgeCoachCaisse.style.color = "#fde68a";
-badgeCoachCaisse.style.borderColor = "rgba(245,158,11,0.4)";
+badgeCoachCaisse.textContent = "🔒 Clôturée / Fermée (" + (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " €)"; badgeCoachCaisse.style.background = "#fef3c7"; badgeCoachCaisse.style.color = "#92400e"; badgeCoachCaisse.style.borderColor = "#fde68a";
 if(descCoachCaisse) descCoachCaisse.textContent = "Caisse clôturée • Nouveaux signalements suspendus";
 } else {
-badgeCoachCaisse.textContent = (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " € en caisse • " + (CAISSE_NOIRE_DATA.stats.totalDu || 0) + " € impayés";
-badgeCoachCaisse.style.background = "rgba(234,179,8,0.2)";
-badgeCoachCaisse.style.color = "#fef08a";
-badgeCoachCaisse.style.borderColor = "rgba(234,179,8,0.35)";
+badgeCoachCaisse.textContent = (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " € en caisse • " + (CAISSE_NOIRE_DATA.stats.totalDu || 0) + " € impayés"; badgeCoachCaisse.style.background = "#fef3c7"; badgeCoachCaisse.style.color = "#92400e"; badgeCoachCaisse.style.borderColor = "#fde68a";
 if(descCoachCaisse) descCoachCaisse.textContent = "Gérer les amendes, encaissements, dépenses d'équipe et barème";
 }
 }
@@ -4502,30 +4478,30 @@ function appliquerModeFonctionnementVisuel(mode) {
 
   [btnF, btnL, btnC].forEach(function(b) {
     if (b) {
-      b.style.background = "rgba(15,23,42,0.8)";
-      b.style.color = "#94a3b8";
-      b.style.borderColor = "rgba(255,255,255,0.1)";
+      b.style.background = "#f8fafc";
+      b.style.color = "#475569";
+      b.style.borderColor = "#cbd5e1";
     }
   });
 
   if (m === "FFHB_ONLY") {
-    if (btnF) { btnF.style.background = "#1e3a8a"; btnF.style.color = "#fff"; btnF.style.borderColor = "#3b82f6"; }
+    if (btnF) { btnF.style.background = "#eff6ff"; btnF.style.color = "#1d4ed8"; btnF.style.borderColor = "#3b82f6"; }
     if (lbl) lbl.textContent = "🏆 Mode FFHB Uniquement";
-    if (bDesc) { bDesc.textContent = "Scraping FFHB + Convocation manuelle (0 WhatsApp)"; bDesc.style.color = "#60a5fa"; }
+    if (bDesc) { bDesc.textContent = "Scraping FFHB + Convocation manuelle (0 WhatsApp)"; bDesc.style.color = "#1d4ed8"; bDesc.style.background = "#eff6ff"; }
     if (bWhatsApp) bWhatsApp.style.display = "none";
     if (matchHub) matchHub.style.display = "block";
     var btnPub = document.getElementById("btnPublishPreview");
     if (btnPub) { btnPub.textContent = "📢 Partager la Convocation"; btnPub.style.background = "#0284c7"; }
   } else if (m === "PRESENCES_ONLY") {
-    if (btnL) { btnL.style.background = "#065f46"; btnL.style.color = "#fff"; btnL.style.borderColor = "#10b981"; }
+    if (btnL) { btnL.style.background = "#ecfdf5"; btnL.style.color = "#047857"; btnL.style.borderColor = "#10b981"; }
     if (lbl) lbl.textContent = "📋 Mode Loisir / Présences";
-    if (bDesc) { bDesc.textContent = "Trombinoscope + Présences entraînements"; bDesc.style.color = "#34d399"; }
+    if (bDesc) { bDesc.textContent = "Trombinoscope + Présences entraînements"; bDesc.style.color = "#047857"; bDesc.style.background = "#ecfdf5"; }
     if (bWhatsApp) bWhatsApp.style.display = "none";
     if (matchHub) matchHub.style.display = "none";
   } else {
-    if (btnC) { btnC.style.background = "#4338ca"; btnC.style.color = "#fff"; btnC.style.borderColor = "#6366f1"; }
+    if (btnC) { btnC.style.background = "#eef2ff"; btnC.style.color = "#4338ca"; btnC.style.borderColor = "#6366f1"; }
     if (lbl) lbl.textContent = "⚡ Mode Complet Automatique";
-    if (bDesc) { bDesc.textContent = "FFHB + Bot WhatsApp + Sondages auto"; bDesc.style.color = "#a5b4fc"; }
+    if (bDesc) { bDesc.textContent = "FFHB + Bot WhatsApp + Sondages auto"; bDesc.style.color = "#4338ca"; bDesc.style.background = "#eef2ff"; }
     if (bWhatsApp) bWhatsApp.style.display = "inline-flex";
     if (matchHub) matchHub.style.display = "block";
     var btnPub = document.getElementById("btnPublishPreview");

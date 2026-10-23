@@ -3,16 +3,53 @@
 // Connecteur universel WebApp (GitHub Pages) <-> Google Apps Script API
 // ============================================================================
 
+const OFFICIAL_DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbzhTdgiYwejEfF9hXvcBSdg-SOpwtniR2NcUmAPAWRRQoh7l3KsBBG5NZvlIo87baKH/exec";
+
+function assainirUrlApi(url) {
+  if (!url) return '';
+  var u = String(url).trim().replace(/\\/g, '/');
+  // Corriger la coquille courante 'S0pwtnir' -> 'SOpwtniR'
+  if (u.includes("S0pwtnir")) {
+    u = u.replace("S0pwtnir", "SOpwtniR");
+  }
+  // Corriger backslash ou slash erroné
+  if (u.includes("2NcUmAP/WRRQ")) {
+    u = u.replace("2NcUmAP/WRRQ", "2NcUmAPAWRRQ");
+  }
+  // S'assurer qu'elle se termine par /exec
+  if (u.includes("script.google.com/macros/s/") && !u.endsWith("/exec")) {
+    u = u.replace(/\/+$/, '') + "/exec";
+  }
+  return u;
+}
+
 const ApiClient = {
   // URL de l'API Google Apps Script (stockée dans localStorage ou passée en ?api=...)
   baseUrl: (function() {
-    const params = new URLSearchParams(window.location.search);
-    const queryApi = params.get('api');
-    if (queryApi) {
-      localStorage.setItem('hb_api_url', queryApi);
-      return queryApi;
+    var host = (typeof window !== 'undefined' && window.location && window.location.hostname) || '';
+    // Si on est directement sur Google Apps Script, baseUrl reste vide pour privilégier l'exécution native
+    if (host.includes('google.com') || host.includes('googleusercontent.com')) {
+      return '';
     }
-    return localStorage.getItem('hb_api_url') || '';
+    const params = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
+    const queryApi = params ? params.get('api') : null;
+    if (queryApi) {
+      var cleanedQ = assainirUrlApi(queryApi);
+      try { localStorage.setItem('hb_api_url', cleanedQ); } catch(e){}
+      return cleanedQ;
+    }
+    try {
+      var stored = localStorage.getItem('hb_api_url');
+      if (stored) {
+        var cleanedS = assainirUrlApi(stored);
+        if (cleanedS !== stored) {
+          localStorage.setItem('hb_api_url', cleanedS);
+        }
+        return cleanedS;
+      }
+    } catch(e){}
+    // Par défaut sur GitHub Pages / PWA : URL officielle
+    return OFFICIAL_DEFAULT_API_URL;
   })(),
 
   // Statut de connexion : 'idle' | 'syncing' | 'online' | 'offline'
@@ -21,8 +58,8 @@ const ApiClient = {
   // Enregistrer une nouvelle URL de Google Sheet API
   setBaseUrl: function(url) {
     if (!url) return;
-    this.baseUrl = url.trim();
-    localStorage.setItem('hb_api_url', this.baseUrl);
+    this.baseUrl = assainirUrlApi(url);
+    try { localStorage.setItem('hb_api_url', this.baseUrl); } catch(e){}
     this.majBadgeStatut();
   },
 
@@ -56,14 +93,18 @@ const ApiClient = {
 
   // Appel générique vers l'API Google Sheets avec timeout & Stale-While-Revalidate
   call: async function(action, args = []) {
-    // Cas 1 : Exécution native dans l'iframe Google Apps Script
-    if (window.google && window.google.script && window.google.script.runNative && !this.baseUrl) {
-      return new Promise((resolve, reject) => {
-        window.google.script.runNative
-          .withSuccessHandler(resolve)
-          .withFailureHandler(reject)
-          [action](...args);
-      });
+    // Cas 1 : Exécution native dans l'environnement Google Apps Script
+    var isGoogleHost = (typeof window !== 'undefined' && window.location && window.location.hostname && (window.location.hostname.includes('google.com') || window.location.hostname.includes('googleusercontent.com')));
+    var nativeRunner = (typeof window !== 'undefined' && window.google && window.google.script && (window.google.script.runNative || window.google.script.run));
+    if (nativeRunner && (isGoogleHost || !this.baseUrl)) {
+      if (typeof nativeRunner[action] === 'function') {
+        return new Promise((resolve, reject) => {
+          nativeRunner
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            [action](...args);
+        });
+      }
     }
 
     // Cas 2 : Exécution PWA sans URL configurée
@@ -89,7 +130,8 @@ const ApiClient = {
     const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     try {
-      const response = await fetch(this.baseUrl, {
+      var targetUrl = assainirUrlApi(this.baseUrl) || OFFICIAL_DEFAULT_API_URL;
+      const response = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'text/plain;charset=utf-8'

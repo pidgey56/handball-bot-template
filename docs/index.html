@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.1.0">
+  <link rel="stylesheet" href="css/style.css?v=2.1.1">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -28,7 +28,7 @@
 <span style="font-size:2rem;animation:bounce 1.2s infinite;">🤾</span>
 </div>
 <div id="loadingScreenTitle" style="font-size:1.05rem;font-weight:900;color:#fff;letter-spacing:0.2px;margin-bottom:6px;">Chargement du club...</div>
-<div id="loadingScreenSub" style="font-size:0.78rem;color:#94a3b8;">Synchronisation FFHB & WhatsApp</div>
+<div id="loadingScreenSub" style="font-size:0.78rem;color:var(--text-muted);">Synchronisation FFHB & WhatsApp</div>
 </div>
 <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true"><defs><clipPath id="svgHeartClip" clipPathUnits="objectBoundingBox"><path d="M 0.5, 0.90 C 0.25, 0.70, 0, 0.48, 0, 0.26 C 0, 0.10, 0.12, 0, 0.30, 0 C 0.42, 0, 0.48, 0.06, 0.5, 0.14 C 0.52, 0.06, 0.58, 0, 0.70, 0 C 0.88, 0, 1, 0.10, 1, 0.26 C 1, 0.48, 0.75, 0.70, 0.5, 0.90 Z" /></clipPath></defs></svg>
 <div id="homeView">
@@ -50,14 +50,14 @@
 <div class="home-logo-wrap">
 <div class="masking-tape masking-tape-orange"></div>
 <div class="home-logo"><img id="homeLogoImg" src="images/logo.png" alt="Club"></div>
-<button type="button" id="btnEditClubLogoBadge" class="btn-logo-edit-badge" title="Changer le blason du club" onclick="ouvrirModalCouleurs()" style="display:none;">Logo</button>
+<button type="button" id="btnEditClubLogoBadge" class="btn-logo-edit-badge" title="Changer le blason du club" onclick="ouvrirModalCouleurs()" style="display:none;">✏️</button>
 </div>
 <h1 id="homeClubName">Handball Club</h1>
 <p class="home-sub" id="subPortail">Portail Joueurs & Coachs</p>
 <div id="loginBox" style="display:flex;flex-direction:column;gap:12px;text-align:left;">
-<label style="font-size:0.8rem;color:#94a3b8;font-weight:600;">Votre numéro de téléphone :</label>
+<label style="font-size:0.8rem;color:var(--text-muted);font-weight:700;">Votre numéro de téléphone :</label>
 <input id="inpTel" class="inp-field" type="tel" placeholder="Ex : 06 12 34 56 78">
-<label style="font-size:0.8rem;color:#94a3b8;font-weight:600;">Code PIN personnel (4 à 8 chiffres) :</label>
+<label style="font-size:0.8rem;color:var(--text-muted);font-weight:700;">Code PIN personnel (4 à 8 chiffres) :</label>
 <input id="inpPin" class="inp-field" type="password" inputmode="numeric" maxlength="8" placeholder="Choisissez votre PIN à la 1re connexion">
 <div class="home-status" id="loginError" style="color:#f87171;text-align:center;"></div>
 <button class="btn-enter" id="btnLogin" onclick="seConnecter()">Se connecter</button>
@@ -93,17 +93,18 @@
     <div class="player-box-left" style="width:100%;">
       <div id="playerPreviewCard" class="player-athlete-card">
         <div class="masking-tape masking-tape-orange"></div>
-        <img id="playerCardLogo" class="card-logo-watermark" src="images/logo.png" alt="Club">
-        <img id="playerImgPreview" class="tbg-photo" style="display:none;">
-        <div class="tbg-overlay"></div>
-        <div id="playerInitialPreview" class="tavatar" style="position:absolute;top:38px;left:50%;transform:translateX(-50%);margin:0;">J</div>
-        <div style="position:relative;z-index:2;text-align:center;width:100%;">
-          <div id="playerChouchouBadgeCard" style="display:none;margin-bottom:4px;"><span class="chouchou-badge" style="font-size:0.75rem;padding:3px 10px;">❤️ Chouchou du coach</span></div>
-          <div id="playerNomPreview" style="font-weight:900;font-size:1.35rem;letter-spacing:0.3px;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.8);">Joueur</div>
-          <div id="playerPostePreview" style="font-size:0.84rem;color:var(--color-secondary);font-weight:700;margin-top:2px;text-shadow:0 2px 4px rgba(0,0,0,0.8);">Poste</div>
-          <div style="display:flex;justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
-            <span id="playerAssiduiteBadge" style="font-size:0.7rem;background:rgba(15,23,42,0.75);backdrop-filter:blur(6px);padding:3px 8px;border-radius:99px;border:1px solid rgba(255,255,255,0.15);color:#e2e8f0;font-weight:700;">⚡ Assiduité : --</span>
-            <span id="playerStatutPresenceBadge" style="font-size:0.7rem;background:rgba(34,197,94,0.2);backdrop-filter:blur(6px);padding:3px 8px;border-radius:99px;border:1px solid rgba(34,197,94,0.4);color:#86efac;font-weight:700;">✓ Actif</span>
+        <div class="player-photo-container">
+          <img id="playerCardLogo" class="card-logo-watermark" src="images/logo.png" alt="Club">
+          <img id="playerImgPreview" class="player-photo-img" style="display:none;">
+          <div id="playerInitialPreview" class="player-photo-fallback">J</div>
+        </div>
+        <div class="player-details-container">
+          <div id="playerChouchouBadgeCard" style="display:none;margin-bottom:4px;"><span class="chouchou-badge">❤️ Chouchou du coach</span></div>
+          <div id="playerNomPreview" class="player-card-name">Joueur</div>
+          <div id="playerPostePreview" class="player-card-poste">Poste</div>
+          <div class="player-card-badges">
+            <span id="playerAssiduiteBadge" class="badge-pill-assiduite">⚡ Assiduité : --</span>
+            <span id="playerStatutPresenceBadge" class="badge-pill-actif">✓ Actif</span>
           </div>
         </div>
       </div>
@@ -152,17 +153,17 @@
   <div id="panelMatchs" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
     <div id="matchHubBanner" class="match-hub-banner" onclick="ouvrirApercuCompoJoueur()" style="width:100%;box-sizing:border-box;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <span id="matchHubStatutBadge" style="font-size:0.76rem;font-weight:800;padding:3px 9px;border-radius:99px;background:rgba(234,179,8,0.2);color:#facc15;border:1px solid rgba(234,179,8,0.3);">⏳ MATCH DU WEEK-END</span>
-        <span id="matchHubEquipeBadge" style="font-size:0.75rem;font-weight:700;color:#94a3b8;"></span>
+        <span id="matchHubStatutBadge" class="coach-badge-caisse">⏳ MATCH DU WEEK-END</span>
+        <span id="matchHubEquipeBadge" style="font-size:0.75rem;font-weight:700;color:var(--text-muted);"></span>
       </div>
-      <div id="matchHubAdversaire" style="font-weight:900;font-size:1.05rem;color:#fff;margin-bottom:3px;">Consultez vos convocations</div>
-      <div id="matchHubDetails" style="font-size:0.8rem;color:#cbd5e1;line-height:1.4;margin-bottom:8px;">Détails des matchs et convocations officiels du club.</div>
+      <div id="matchHubAdversaire" style="font-weight:800;font-size:1.1rem;color:var(--text-main);margin-bottom:3px;">Consultez vos convocations</div>
+      <div id="matchHubDetails" style="font-size:0.84rem;color:var(--text-muted);line-height:1.4;margin-bottom:8px;">Détails des matchs et convocations officiels du club.</div>
       <div id="matchHubActions" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-        <button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.76rem;background:rgba(30,41,59,0.8);" onclick="event.stopPropagation();ouvrirGpsGymnase('waze')">🚗 Waze</button>
-        <button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.76rem;background:rgba(30,41,59,0.8);" onclick="event.stopPropagation();ouvrirGpsGymnase('maps')">📍 Maps</button>
+        <button type="button" class="btn-reset" style="padding:6px 12px;font-size:0.76rem;background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;font-weight:700;" onclick="event.stopPropagation();ouvrirGpsGymnase('waze')">🚗 Waze</button>
+        <button type="button" class="btn-reset" style="padding:6px 12px;font-size:0.76rem;background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;font-weight:700;" onclick="event.stopPropagation();ouvrirGpsGymnase('maps')">📍 Maps</button>
         <button type="button" class="btn-wa" style="padding:6px 12px;font-size:0.76rem;flex:1;" onclick="event.stopPropagation();ouvrirApercuCompoJoueur()">📐 Voir Terrain Tactique</button>
       </div>
-      <div style="font-size:0.72rem;color:#38bdf8;font-weight:700;display:flex;align-items:center;gap:4px;">📐 Toucher pour ouvrir le terrain tactique & compositions →</div>
+      <div style="font-size:0.74rem;color:var(--color-primary);font-weight:700;display:flex;align-items:center;gap:4px;">📐 Toucher pour ouvrir le terrain tactique & compositions →</div>
     </div>
     
     <div class="dash-tile" style="width:100%;box-sizing:border-box;margin-top:6px;">
@@ -226,27 +227,27 @@
     <div id="coachMenuBox" style="width:100%;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <span style="font-size:0.85rem;color:var(--color-secondary);font-weight:900;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">ESPACE COACH</span>
-        <span class="badge-mode" style="background:rgba(148,163,184,0.15);color:#94a3b8;">Tableau de bord</span>
+        <span class="badge-mode" style="background:rgba(148,163,184,0.15);color:var(--text-muted);">Tableau de bord</span>
       </div>
-      <div id="modeSelectorBar" style="background:rgba(30,41,59,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;margin-bottom:14px;">
+      <div id="modeSelectorBar" class="mode-selector-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
           <div>
-            <span style="font-size:0.72rem;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Mode de fonctionnement du club</span>
-            <div id="lblModeActif" style="font-size:0.95rem;font-weight:900;color:#fff;margin-top:2px;">🏆 Mode FFHB Uniquement</div>
+            <span style="font-size:0.72rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Mode de fonctionnement du club</span>
+            <div id="lblModeActif" style="font-size:0.95rem;font-weight:900;color:var(--text-main);margin-top:2px;">🏆 Mode FFHB Uniquement</div>
           </div>
-          <span id="badgeModeDesc" style="font-size:0.75rem;padding:3px 10px;border-radius:99px;background:rgba(59,130,246,0.15);color:#60a5fa;font-weight:700;">Zéro WhatsApp requis</span>
+          <span id="badgeModeDesc" class="coach-badge-vacances">Zéro WhatsApp requis</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;">
-          <button type="button" class="btn-tab-mode" id="btnModeFFHB" onclick="changerModeFonctionnement('FFHB_ONLY')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid #3b82f6;background:#1e3a8a;color:#fff;cursor:pointer;">🏆 FFHB Pur</button>
-          <button type="button" class="btn-tab-mode" id="btnModeLoisir" onclick="changerModeFonctionnement('PRESENCES_ONLY')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.8);color:#94a3b8;cursor:pointer;">📋 Présences Seules</button>
-          <button type="button" class="btn-tab-mode" id="btnModeComplet" onclick="changerModeFonctionnement('COMPLET')" style="padding:8px 4px;font-size:0.75rem;font-weight:800;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(15,23,42,0.8);color:#94a3b8;cursor:pointer;">⚡ Complet</button>
+          <button type="button" class="btn-tab-mode" id="btnModeFFHB" onclick="changerModeFonctionnement('FFHB_ONLY')">🏆 FFHB Pur</button>
+          <button type="button" class="btn-tab-mode" id="btnModeLoisir" onclick="changerModeFonctionnement('PRESENCES_ONLY')">📋 Présences Seules</button>
+          <button type="button" class="btn-tab-mode" id="btnModeComplet" onclick="changerModeFonctionnement('COMPLET')">⚡ Complet</button>
         </div>
       </div>
-      <div class="coach-dashboard-grid">
+<div class="coach-dashboard-grid">
         <div class="dash-tile" onclick="gererClicDashCompo(event)" style="cursor:pointer;" title="Entrer dans la composition">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
             <div class="dash-tile-title">Convocations Matchs</div>
-            <span id="badgeModeDefautCompo" style="font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.08);color:#94a3b8;font-weight:700;">Mode auto</span>
+            <span id="badgeModeDefautCompo" style="font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.08);color:var(--text-muted);font-weight:700;">Mode auto</span>
           </div>
           <div class="dash-tile-desc">Feuilles de matchs 1 à 3 équipes</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
@@ -257,7 +258,7 @@
         <div class="dash-tile" onclick="gererClicDashTrain(event)" style="cursor:pointer;" title="Entrer dans les entraînements">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
             <div class="dash-tile-title">Séances Entraînement</div>
-            <span id="badgeModeDefautTrain" style="font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.08);color:#94a3b8;font-weight:700;">Mode auto</span>
+            <span id="badgeModeDefautTrain" style="font-size:0.68rem;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,0.08);color:var(--text-muted);font-weight:700;">Mode auto</span>
           </div>
           <div class="dash-tile-desc">Séparé / Réduit / Complet</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
@@ -276,21 +277,21 @@
           <div class="dash-tile-desc">Photo de blason, couleurs & thèmes</div>
           <button type="button" class="btn-enter btn-enter-alt" style="margin:6px 0 0 0;padding:8px;font-size:0.8rem;width:100%;" onclick="ouvrirModalCouleurs()">Personnaliser</button>
         </div>
-        <div class="dash-tile" id="dashTileCaisseNoireCoach" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95));border:1px solid rgba(234,179,8,0.3);">
+        <div class="dash-tile" id="dashTileCaisseNoireCoach" style="grid-column:1/-1;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <div class="dash-tile-title" style="color:#fde047;">💰 Caisse Noire & Amendes</div>
-            <span id="badgeCoachCaisseStats" style="font-size:0.75rem;padding:2px 8px;border-radius:99px;background:rgba(234,179,8,0.2);color:#fef08a;font-weight:800;">0 € en caisse</span>
+            <div class="dash-tile-title" >💰 Caisse Noire & Amendes</div>
+            <span id="badgeCoachCaisseStats" class="coach-badge-caisse">0 € en caisse</span>
           </div>
           <div id="dashDescCaisseNoire" class="dash-tile-desc">Gérer les amendes, encaissements, dépenses d'équipe et barème</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
-            <button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;background:rgba(234,179,8,0.25);border:1px solid #eab308;color:#fef08a;font-weight:700;" onclick="ouvrirModalAdminCaisseNoire()">⚙️ Administrer</button>
+            <button type="button" class="btn-enter" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalAdminCaisseNoire()">⚙️ Administrer</button>
             <button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalCaisseNoire()">👀 Vue Joueurs</button>
           </div>
         </div>
-        <div class="dash-tile" id="dashTileVacancesCoach" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(14,116,144,0.35),rgba(15,23,42,0.95));border:1px solid rgba(14,165,233,0.35);" onclick="ouvrirModalVacances()">
+        <div class="dash-tile" id="dashTileVacancesCoach" style="grid-column:1/-1;" onclick="ouvrirModalVacances()">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <div class="dash-tile-title" style="color:#38bdf8;">🏖️ Vacances & Trêves Scolaires</div>
-            <span id="badgeCoachVacances" style="font-size:0.75rem;padding:2px 8px;border-radius:99px;background:rgba(14,165,233,0.2);color:#7dd3fc;font-weight:800;">0 en cours</span>
+            <div class="dash-tile-title" >🏖️ Vacances & Trêves Scolaires</div>
+            <span id="badgeCoachVacances" class="coach-badge-vacances">0 en cours</span>
           </div>
           <div id="dashDescVacances" class="dash-tile-desc">Gérer les congés et trêves scolaires (suspension auto des sondages et entraînements)</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;" onclick="event.stopPropagation()">
@@ -298,6 +299,7 @@
             <button type="button" class="btn-enter btn-enter-alt" style="margin:0;padding:8px 4px;font-size:0.78rem;" onclick="ouvrirModalConfigEntrainements()">🏃 Horaires Entraînement</button>
           </div>
         </div>
+      
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
         <button type="button" class="btn-enter btn-enter-alt" onclick="ouvrirModalCollectifs()" style="font-size:0.75rem;padding:7px;margin:0;">👥 Multi-Collectifs</button>
@@ -391,7 +393,7 @@
 <button type="button" class="btn-save" style="font-size:0.8rem;padding:7px 12px;background:#0284c7;" onclick="sauvegarderBrouillonLocal(true)">Sauvegarder Brouillon</button>
 <button type="button" class="btn-wa" style="font-size:0.8rem;padding:7px 12px;" onclick="ouvrirApercuMatch()">Aperçu & Terrain tactique</button>
 </div>
-<div class="tinder-kbd-hint" style="font-size:0.75rem;color:#94a3b8;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ↑ ou 1 / 2 / 3 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
+<div class="tinder-kbd-hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ↑ ou 1 / 2 / 3 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
 </div>
 <footer id="appFooter">
 <button class="btn-reset" onclick="recommencerSelection()">Réinitialiser</button>
@@ -418,7 +420,7 @@
 <div class="tabs" id="trainTabsContainer"></div>
 <div class="train-config-bar">
 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-<span style="font-size:0.8rem;color:#94a3b8;font-weight:700;">Séance :</span>
+<span style="font-size:0.8rem;color:var(--text-muted);font-weight:700;">Séance :</span>
 <div class="train-type-pills">
 <button type="button" class="train-type-pill active" id="pillSepare" onclick="changerTypeSeance('separe')">2 Groupes</button>
 <button type="button" class="train-type-pill" id="pillReduit" onclick="changerTypeSeance('reduit')">Effectif réduit</button>
@@ -426,8 +428,8 @@
 </div>
 </div>
 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-<span id="trainExplication" style="font-size:0.8rem;color:#94a3b8;">Répartissez les joueurs disponibles</span>
-<label id="lblMaxJoueurs" style="font-size:0.8rem;color:#cbd5e1;display:none;">Max retenus : <input type="number" id="inpMaxJoueurs" value="20" min="5" max="35" onchange="majMaxRetenus(this.value)"></label>
+<span id="trainExplication" style="font-size:0.8rem;color:var(--text-muted);">Répartissez les joueurs disponibles</span>
+<label id="lblMaxJoueurs" style="font-size:0.8rem;color:var(--text-muted);display:none;">Max retenus : <input type="number" id="inpMaxJoueurs" value="20" min="5" max="35" onchange="majMaxRetenus(this.value)"></label>
 </div>
 </div>
 <div class="view-mode-tabs">
@@ -463,7 +465,7 @@
 <button type="button" class="btn-save" style="font-size:0.8rem;padding:7px 12px;" onclick="sauvegarderEntrainement(false)">Sauvegarder la Séance</button>
 <button type="button" class="btn-wa" style="font-size:0.8rem;padding:7px 12px;" onclick="ouvrirApercuEntrainement()">Aperçu WhatsApp</button>
 </div>
-<div class="tinder-kbd-hint" style="font-size:0.75rem;color:#94a3b8;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ou 1 / 2 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
+<div class="tinder-kbd-hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ou 1 / 2 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
 </div>
 <footer id="trainFooter">
 <button class="btn-reset" onclick="reinitialiserSeance()">Réinitialiser</button>
@@ -510,7 +512,7 @@
 <button type="button" id="btnModalChevre" class="btn-reset" style="font-size:0.8rem;padding:7px 12px;border-radius:8px;border:1px solid #ea580c;color:#fed7aa;background:rgba(234,88,12,0.12);display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;" onclick="toggleChevreCourant()">🐐 Chèvre</button>
 </div>
 <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:3px;margin-top:2px;text-align:center;">
-<label for="modalJoueurPhotoUrl" style="font-size:0.72rem;color:#94a3b8;">Ou coller une URL d'image web (https://...) :</label>
+<label for="modalJoueurPhotoUrl" style="font-size:0.72rem;color:var(--text-muted);">Ou coller une URL d'image web (https://...) :</label>
 <div style="display:flex;gap:6px;">
 <input type="url" id="modalJoueurPhotoUrl" class="inp-field" style="font-size:0.78rem;padding:5px 8px;" placeholder="https://site.com/photo.jpg" oninput="changerUrlPhotoCoach(this.value)">
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.75rem;color:#f87171;border-color:rgba(239,68,68,0.3);" title="Retirer la photo" onclick="effacerPhotoModalCoach()">🗑️</button>
@@ -557,14 +559,14 @@
 <button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalNouveauJoueur()">✕</button>
 </div>
 <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
-<div><label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Nom et Prénom * :</label><input type="text" id="inpNouvNom" class="inp-field" placeholder="Ex : Thomas Dubois" required></div>
-<div><label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Numéro de téléphone (optionnel) :</label><input type="tel" id="inpNouvTel" class="inp-field" placeholder="Ex : 06 12 34 56 78"></div>
-<div><label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Photo (URL externe ou Drive, optionnel) :</label><input type="url" id="inpNouvPhoto" class="inp-field" placeholder="https://site.com/photo.jpg"></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Nom et Prénom * :</label><input type="text" id="inpNouvNom" class="inp-field" placeholder="Ex : Thomas Dubois" required></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Numéro de téléphone (optionnel) :</label><input type="tel" id="inpNouvTel" class="inp-field" placeholder="Ex : 06 12 34 56 78"></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Photo (URL externe ou Drive, optionnel) :</label><input type="url" id="inpNouvPhoto" class="inp-field" placeholder="https://site.com/photo.jpg"></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-<div><label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Poste :</label><select id="selNouvPoste" class="inp-field"><option value="Gardien">Gardien</option><option value="Ailier Gauche">Ailier Gauche</option><option value="Arrière Gauche">Arrière Gauche</option><option value="Demi-Centre" selected>Demi-Centre</option><option value="Pivot">Pivot</option><option value="Arrière Droit">Arrière Droit</option><option value="Ailier Droit">Ailier Droit</option></select></div>
-<div><label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Équipe :</label><select id="selNouvEquipe" class="inp-field"></select></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Poste :</label><select id="selNouvPoste" class="inp-field"><option value="Gardien">Gardien</option><option value="Ailier Gauche">Ailier Gauche</option><option value="Arrière Gauche">Arrière Gauche</option><option value="Demi-Centre" selected>Demi-Centre</option><option value="Pivot">Pivot</option><option value="Arrière Droit">Arrière Droit</option><option value="Ailier Droit">Ailier Droit</option></select></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Équipe :</label><select id="selNouvEquipe" class="inp-field"></select></div>
 </div>
-<div><label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Notes Coach (confidentiel) :</label><textarea id="inpNouvNote" class="inp-field" rows="2" placeholder="Ex : Joue aussi arrière, retour blessure..."></textarea></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Notes Coach (confidentiel) :</label><textarea id="inpNouvNote" class="inp-field" rows="2" placeholder="Ex : Joue aussi arrière, retour blessure..."></textarea></div>
 <div id="boxNouvJoueurTresorier" style="display:flex;align-items:center;gap:8px;background:rgba(234,179,8,0.12);padding:8px 12px;border-radius:10px;border:1px solid rgba(234,179,8,0.25);margin-top:2px;">
 <input type="checkbox" id="inpNouvTresorier" style="width:18px;height:18px;accent-color:#eab308;cursor:pointer;">
 <label for="inpNouvTresorier" style="font-size:0.78rem;font-weight:700;color:#fef08a;cursor:pointer;margin:0;">⭐ Trésorier de la Caisse Noire</label>
@@ -583,11 +585,11 @@
 <h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Ajouter un Renfort / Hors sondage</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalRenfort()">✕</button>
 </div>
-<p style="font-size:0.78rem;color:#94a3b8;margin:0 0 10px 0;text-align:left;">Sélectionnez un joueur de l'effectif absent du sondage (descente d'équipe, retardataire) ou ajoutez un joueur invité.</p>
+<p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 10px 0;text-align:left;">Sélectionnez un joueur de l'effectif absent du sondage (descente d'équipe, retardataire) ou ajoutez un joueur invité.</p>
 <div style="margin-bottom:10px;"><input type="text" id="inpFiltreRenfort" class="inp-field" placeholder="Rechercher dans l'effectif..." oninput="filtrerListeRenforts(this.value)"></div>
 <div id="listeRenfortsDispos" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:14px;text-align:left;"></div>
 <div style="border-top:1px solid rgba(148,163,184,0.15);padding-top:10px;text-align:left;">
-<div style="font-size:0.8rem;font-weight:700;color:#cbd5e1;margin-bottom:6px;">Ou ajouter un joueur invité / extérieur :</div>
+<div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Ou ajouter un joueur invité / extérieur :</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
 <input type="text" id="inpInviteNom" class="inp-field" placeholder="Nom Prénom">
 <select id="selInvitePoste" class="inp-field"><option value="Gardien">Gardien</option><option value="Ailier Gauche">Ailier Gauche</option><option value="Arrière Gauche">Arrière Gauche</option><option value="Demi-Centre" selected>Demi-Centre</option><option value="Pivot">Pivot</option><option value="Arrière Droit">Arrière Droit</option><option value="Ailier Droit">Ailier Droit</option></select>
@@ -602,8 +604,8 @@
 <h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Collectifs & Multi-Groupes</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalCollectifs()">✕</button>
 </div>
-<p style="font-size:0.78rem;color:#94a3b8;margin:0 0 12px 0;text-align:left;">Gérez plusieurs collectifs (ex: SG1-SG2 et -15 Filles) et basculez instantanément de l'un à l'autre sans vous reconnecter.</p>
-<div style="font-size:0.8rem;font-weight:700;color:#cbd5e1;margin-bottom:6px;text-align:left;">Collectifs enregistrés :</div>
+<p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 12px 0;text-align:left;">Gérez plusieurs collectifs (ex: SG1-SG2 et -15 Filles) et basculez instantanément de l'un à l'autre sans vous reconnecter.</p>
+<div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-align:left;">Collectifs enregistrés :</div>
 <div id="listeCollectifs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;text-align:left;"></div>
 <div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:12px;padding:12px;text-align:left;">
 <div style="font-size:0.8rem;font-weight:800;color:#f8fafc;margin-bottom:6px;">Lier un autre collectif / catégorie :</div>
@@ -621,7 +623,7 @@
 <h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Installer sur votre smartphone</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalPwa()">✕</button>
 </div>
-<p style="font-size:0.8rem;color:#94a3b8;margin:0 0 12px 0;text-align:left;">Installez Handball Bot sur votre écran d'accueil pour l'utiliser en plein écran sans barre d'adresse, comme une application native.</p>
+<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 12px 0;text-align:left;">Installez Handball Bot sur votre écran d'accueil pour l'utiliser en plein écran sans barre d'adresse, comme une application native.</p>
 <div id="pwaIosGuide" style="display:none;background:#0e1626;padding:14px;border-radius:14px;border:1px solid rgba(148,163,184,0.18);text-align:left;font-size:0.82rem;line-height:1.45;color:#e2e8f0;">
 <div style="font-weight:800;color:var(--color-primary);margin-bottom:8px;">Sur iPhone / iPad (Safari) :</div>
 <div style="margin-bottom:6px;">1. Touchez l'icône Partager (carré avec flèche vers le haut ⎋) en bas de Safari.</div>
@@ -646,10 +648,10 @@
 <h2 style="margin:0;font-size:1.25rem;display:flex;align-items:center;gap:8px;">Identité & Couleurs du Club</h2>
 <button class="btn-reset" style="padding:4px 10px;" onclick="fermerModalCouleurs()">✕</button>
 </div>
-<p style="font-size:0.8rem;color:#94a3b8;margin:0 0 14px 0;text-align:left;">Personnalisez l'identité visuelle et le blason de votre club. Ces éléments s'appliquent immédiatement et sont enregistrés dans Google Sheets.</p>
+<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;text-align:left;">Personnalisez l'identité visuelle et le blason de votre club. Ces éléments s'appliquent immédiatement et sont enregistrés dans Google Sheets.</p>
 <div style="background:#0e1726;border:1px solid rgba(249,115,22,0.4);border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,0.25);">
 <div style="font-weight:800;font-size:0.88rem;color:#fb923c;display:flex;align-items:center;gap:6px;margin-bottom:4px;">⚡ Synchronisation Page Club FFHB</div>
-<div style="font-size:0.74rem;color:#cbd5e1;margin-bottom:8px;line-height:1.35;">Renseignez l'URL de votre club sur monclub.ffhandball.fr pour importer automatiquement son blason officiel et extraire la charte graphique de l'application.</div>
+<div style="font-size:0.74rem;color:var(--text-muted);margin-bottom:8px;line-height:1.35;">Renseignez l'URL de votre club sur monclub.ffhandball.fr pour importer automatiquement son blason officiel et extraire la charte graphique de l'application.</div>
 <div style="display:flex;gap:6px;align-items:center;">
 <input type="url" id="inpFfhbClubUrl" class="inp-field" placeholder="https://monclub.ffhandball.fr/clubs/..." style="font-size:0.76rem;padding:7px 10px;flex:1;min-width:0;">
 <button type="button" id="btnImportFfhb" class="btn-enter" style="font-size:0.76rem;padding:7px 12px;white-space:nowrap;margin:0;width:auto;" onclick="importerDepuisFfhbClient()">⚡ Importer</button>
@@ -658,7 +660,7 @@
 </div>
 <div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;">
 <div style="font-weight:800;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;color:#f8fafc;">Blason & Photo du Club</div>
-<div style="font-size:0.75rem;color:#94a3b8;margin-bottom:10px;">Téléversez le logo du club ou collez un lien URL direct.</div>
+<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Téléversez le logo du club ou collez un lien URL direct.</div>
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
 <div style="width:68px;height:68px;border-radius:12px;background:#030712;border:1px solid rgba(148,163,184,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px;flex-shrink:0;">
 <img id="modalClubLogoPreview" src="images/logo.png" style="max-width:100%;max-height:100%;object-fit:contain;">
@@ -666,7 +668,7 @@
 <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;">
 <input type="file" id="fileClubLogo" accept="image/*" style="display:none;" onchange="chargerFichierLogoClub(event)">
 <button type="button" class="btn-enter" style="font-size:0.78rem;padding:7px 10px;margin:0;width:100%;" onclick="ouvrirSelecteurLogoClub()">Téléverser une photo / blason</button>
-<button type="button" class="btn-reset" style="font-size:0.72rem;padding:5px 8px;color:#94a3b8;width:100%;" onclick="reinitialiserLogoClubClient()">↺ Rétablir le logo dynamique officiel</button>
+<button type="button" class="btn-reset" style="font-size:0.72rem;padding:5px 8px;color:var(--text-muted);width:100%;" onclick="reinitialiserLogoClubClient()">↺ Rétablir le logo dynamique officiel</button>
 </div>
 </div>
 <div style="display:flex;gap:6px;align-items:center;">
@@ -677,7 +679,7 @@
 </div>
 <div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;">
 <div style="font-weight:800;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;color:#f8fafc;">Nombre d'Équipes dans le groupe WhatsApp</div>
-<div style="font-size:0.75rem;color:#94a3b8;margin-bottom:10px;">Adapte les colonnes de présence, les compositions et les sélections (1, 2 ou 3 équipes).</div>
+<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Adapte les colonnes de présence, les compositions et les sélections (1, 2 ou 3 équipes).</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
 <button type="button" class="btn-reset" id="btnNbEq1" style="padding:8px 4px;font-size:0.8rem;border:1px solid #334155;border-radius:8px;" onclick="choisirNbEquipesModal(1)">1 Équipe</button>
 <button type="button" class="btn-reset" id="btnNbEq2" style="padding:8px 4px;font-size:0.8rem;border:1px solid #334155;border-radius:8px;" onclick="choisirNbEquipesModal(2)">2 Équipes</button>
@@ -688,46 +690,46 @@
 <div id="boxCfgEq1" style="background:#090d16;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,0.15);">
 <div style="font-weight:700;font-size:0.8rem;color:var(--color-team1);margin-bottom:6px;">Équipe 1</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Code :</label><input type="text" id="cfgEqCode1" class="inp-field" placeholder="SG1" style="font-size:0.75rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Libellé :</label><input type="text" id="cfgEqLabel1" class="inp-field" placeholder="Équipe 1" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Code :</label><input type="text" id="cfgEqCode1" class="inp-field" placeholder="SG1" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Libellé :</label><input type="text" id="cfgEqLabel1" class="inp-field" placeholder="Équipe 1" style="font-size:0.75rem;padding:5px;"></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Mot-clé FFHB :</label><input type="text" id="cfgEqMotCle1" class="inp-field" placeholder="MON CLUB" style="font-size:0.75rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Délai RDV (h) :</label><input type="number" id="cfgEqDelai1" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Mot-clé FFHB :</label><input type="text" id="cfgEqMotCle1" class="inp-field" placeholder="MON CLUB" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Délai RDV (h) :</label><input type="number" id="cfgEqDelai1" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"></div>
 </div>
 <div style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">URL Championnat :</label><input type="url" id="cfgEqUrl1" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">URL Coupe (opt.) :</label><input type="url" id="cfgEqUrlCoupe1" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">URL Championnat :</label><input type="url" id="cfgEqUrl1" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">URL Coupe (opt.) :</label><input type="url" id="cfgEqUrlCoupe1" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"></div>
 </div>
 </div>
 <div id="boxCfgEq2" style="background:#090d16;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,0.15);">
 <div style="font-weight:700;font-size:0.8rem;color:var(--color-team2);margin-bottom:6px;">Équipe 2</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Code :</label><input type="text" id="cfgEqCode2" class="inp-field" placeholder="SG2" style="font-size:0.75rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Libellé :</label><input type="text" id="cfgEqLabel2" class="inp-field" placeholder="Équipe 2" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Code :</label><input type="text" id="cfgEqCode2" class="inp-field" placeholder="SG2" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Libellé :</label><input type="text" id="cfgEqLabel2" class="inp-field" placeholder="Équipe 2" style="font-size:0.75rem;padding:5px;"></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Mot-clé FFHB :</label><input type="text" id="cfgEqMotCle2" class="inp-field" placeholder="MON CLUB 2" style="font-size:0.75rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Délai RDV (h) :</label><input type="number" id="cfgEqDelai2" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Mot-clé FFHB :</label><input type="text" id="cfgEqMotCle2" class="inp-field" placeholder="MON CLUB 2" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Délai RDV (h) :</label><input type="number" id="cfgEqDelai2" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"></div>
 </div>
 <div style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">URL Championnat :</label><input type="url" id="cfgEqUrl2" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">URL Coupe (opt.) :</label><input type="url" id="cfgEqUrlCoupe2" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">URL Championnat :</label><input type="url" id="cfgEqUrl2" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">URL Coupe (opt.) :</label><input type="url" id="cfgEqUrlCoupe2" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"></div>
 </div>
 </div>
 <div id="boxCfgEq3" style="background:#090d16;padding:10px;border-radius:10px;border:1px solid rgba(148,163,184,0.15);">
 <div style="font-weight:700;font-size:0.8rem;color:var(--color-team3);margin-bottom:6px;">Équipe 3</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Code :</label><input type="text" id="cfgEqCode3" class="inp-field" placeholder="SG3" style="font-size:0.75rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Libellé :</label><input type="text" id="cfgEqLabel3" class="inp-field" placeholder="Équipe 3" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Code :</label><input type="text" id="cfgEqCode3" class="inp-field" placeholder="SG3" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Libellé :</label><input type="text" id="cfgEqLabel3" class="inp-field" placeholder="Équipe 3" style="font-size:0.75rem;padding:5px;"></div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Mot-clé FFHB :</label><input type="text" id="cfgEqMotCle3" class="inp-field" placeholder="MON CLUB 3" style="font-size:0.75rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">Délai RDV (h) :</label><input type="number" id="cfgEqDelai3" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Mot-clé FFHB :</label><input type="text" id="cfgEqMotCle3" class="inp-field" placeholder="MON CLUB 3" style="font-size:0.75rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">Délai RDV (h) :</label><input type="number" id="cfgEqDelai3" class="inp-field" value="1" min="0" max="5" step="0.5" style="font-size:0.75rem;padding:5px;"></div>
 </div>
 <div style="margin-top:4px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">URL Championnat :</label><input type="url" id="cfgEqUrl3" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"></div>
-<div><label style="font-size:0.7rem;color:#94a3b8;display:block;">URL Coupe (opt.) :</label><input type="url" id="cfgEqUrlCoupe3" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">URL Championnat :</label><input type="url" id="cfgEqUrl3" class="inp-field" placeholder="https://www.ffhandball.fr/.../poule-..." style="font-size:0.72rem;padding:5px;"></div>
+<div><label style="font-size:0.7rem;color:var(--text-muted);display:block;">URL Coupe (opt.) :</label><input type="url" id="cfgEqUrlCoupe3" class="inp-field" placeholder="https://www.ffhandball.fr/.../coupe-de-france/..." style="font-size:0.72rem;padding:5px;"></div>
 </div>
 </div>
 </div>
@@ -788,11 +790,11 @@
 <h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Horaires des Entraînements</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.85rem;" onclick="fermerModalConfigEntrainements()">✕</button>
 </div>
-<p style="font-size:0.8rem;color:#94a3b8;margin:0 0 14px 0;text-align:left;">Configurez les jours et horaires des créneaux d'entraînement (1 à 5 séances par semaine). Ils s'appliqueront aux sondages et aux convocations WhatsApp.</p>
+<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;text-align:left;">Configurez les jours et horaires des créneaux d'entraînement (1 à 5 séances par semaine). Ils s'appliqueront aux sondages et aux convocations WhatsApp.</p>
 <div style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;">
 <div>
 <div style="font-weight:800;font-size:0.88rem;color:#f8fafc;">Nombre d'entraînements par semaine</div>
-<div style="font-size:0.75rem;color:#94a3b8;">Choisissez entre 1 et 5 créneaux hebdomadaires</div>
+<div style="font-size:0.75rem;color:var(--text-muted);">Choisissez entre 1 et 5 créneaux hebdomadaires</div>
 </div>
 <select id="cfgNbSeancesTrain" class="inp-field" style="width:auto;padding:6px 12px;font-size:0.9rem;font-weight:700;border-color:var(--color-primary);" onchange="ajusterAffichageNombreSeances()">
 <option value="1">1 entraînement</option>
@@ -807,65 +809,65 @@
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
 <span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);">Séance 1</span>
 <div style="display:flex;gap:10px;align-items:center;">
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"><input type="checkbox" id="cfgTrActif1" checked> Actif sondage</label>
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs1" checked> Option Absent</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);"><input type="checkbox" id="cfgTrActif1" checked> Actif sondage</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs1" checked> Option Absent</label>
 </div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour1" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi" selected>Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi">Samedi</option><option value="Dimanche">Dimanche</option></select></div>
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire1" class="inp-field" value="20h30" placeholder="ex: 20h30" style="padding:6px 10px;font-size:0.85rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour1" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi" selected>Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi">Samedi</option><option value="Dimanche">Dimanche</option></select></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire1" class="inp-field" value="20h30" placeholder="ex: 20h30" style="padding:6px 10px;font-size:0.85rem;"></div>
 </div>
 </div>
 <div id="boxCfgTrain2" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
 <span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);">Séance 2</span>
 <div style="display:flex;gap:10px;align-items:center;">
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"><input type="checkbox" id="cfgTrActif2" checked> Actif sondage</label>
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs2" checked> Option Absent</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);"><input type="checkbox" id="cfgTrActif2" checked> Actif sondage</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs2" checked> Option Absent</label>
 </div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour2" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi" selected>Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi">Samedi</option><option value="Dimanche">Dimanche</option></select></div>
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire2" class="inp-field" value="20h30" placeholder="ex: 20h30" style="padding:6px 10px;font-size:0.85rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour2" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi" selected>Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi">Samedi</option><option value="Dimanche">Dimanche</option></select></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire2" class="inp-field" value="20h30" placeholder="ex: 20h30" style="padding:6px 10px;font-size:0.85rem;"></div>
 </div>
 </div>
 <div id="boxCfgTrain3" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
 <span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);">Séance 3</span>
 <div style="display:flex;gap:10px;align-items:center;">
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"><input type="checkbox" id="cfgTrActif3"> Actif sondage</label>
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs3" checked> Option Absent</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);"><input type="checkbox" id="cfgTrActif3"> Actif sondage</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs3" checked> Option Absent</label>
 </div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour3" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi" selected>Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi">Samedi</option><option value="Dimanche">Dimanche</option></select></div>
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire3" class="inp-field" value="20h30" placeholder="ex: 20h30" style="padding:6px 10px;font-size:0.85rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour3" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi" selected>Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi">Samedi</option><option value="Dimanche">Dimanche</option></select></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire3" class="inp-field" value="20h30" placeholder="ex: 20h30" style="padding:6px 10px;font-size:0.85rem;"></div>
 </div>
 </div>
 <div id="boxCfgTrain4" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);display:none;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
 <span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);">Séance 4</span>
 <div style="display:flex;gap:10px;align-items:center;">
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"><input type="checkbox" id="cfgTrActif4"> Actif sondage</label>
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs4" checked> Option Absent</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);"><input type="checkbox" id="cfgTrActif4"> Actif sondage</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs4" checked> Option Absent</label>
 </div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour4" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi" selected>Vendredi</option><option value="Samedi">Samedi</option><option value="Dimanche">Dimanche</option></select></div>
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire4" class="inp-field" value="20h00" placeholder="ex: 20h00" style="padding:6px 10px;font-size:0.85rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour4" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi" selected>Vendredi</option><option value="Samedi">Samedi</option><option value="Dimanche">Dimanche</option></select></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire4" class="inp-field" value="20h00" placeholder="ex: 20h00" style="padding:6px 10px;font-size:0.85rem;"></div>
 </div>
 </div>
 <div id="boxCfgTrain5" style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);display:none;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
 <span style="font-weight:800;font-size:0.85rem;color:var(--color-primary);">Séance 5</span>
 <div style="display:flex;gap:10px;align-items:center;">
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"><input type="checkbox" id="cfgTrActif5"> Actif sondage</label>
-<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs5" checked> Option Absent</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);"><input type="checkbox" id="cfgTrActif5"> Actif sondage</label>
+<label style="font-size:0.75rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);" title="Ajoute l'option Absent dans le sondage WhatsApp"><input type="checkbox" id="cfgTrActifAbs5" checked> Option Absent</label>
 </div>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour5" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi" selected>Samedi</option><option value="Dimanche">Dimanche</option></select></div>
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire5" class="inp-field" value="10h00" placeholder="ex: 10h00" style="padding:6px 10px;font-size:0.85rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Jour :</label><select id="cfgTrJour5" class="inp-field" style="padding:6px 10px;font-size:0.85rem;"><option value="Lundi">Lundi</option><option value="Mardi">Mardi</option><option value="Mercredi">Mercredi</option><option value="Jeudi">Jeudi</option><option value="Vendredi">Vendredi</option><option value="Samedi" selected>Samedi</option><option value="Dimanche">Dimanche</option></select></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Horaire :</label><input type="text" id="cfgTrHoraire5" class="inp-field" value="10h00" placeholder="ex: 10h00" style="padding:6px 10px;font-size:0.85rem;"></div>
 </div>
 </div>
 </div>
@@ -882,7 +884,7 @@
 <div style="font-weight:900;font-size:1.15rem;color:#c7d2fe;display:flex;align-items:center;gap:8px;">📖 Guide des Fonctionnalités Coach</div>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalGuideCoach()">✕</button>
 </div>
-<div style="font-size:0.83rem;color:#cbd5e1;line-height:1.5;display:flex;flex-direction:column;gap:12px;">
+<div style="font-size:0.83rem;color:var(--text-muted);line-height:1.5;display:flex;flex-direction:column;gap:12px;">
 <div style="background:#171d2b;border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:12px;">
 <div style="font-weight:800;color:#818cf8;margin-bottom:6px;font-size:0.9rem;">🤾 1. Compositions de Matchs (1 à 3 équipes)</div>
 <ul style="margin:0 0 0 16px;padding:0;display:flex;flex-direction:column;gap:4px;">
@@ -955,11 +957,11 @@
 <div style="font-weight:900;font-size:1.15rem;color:#fde68a;display:flex;align-items:center;gap:8px;">🏆 Élection du MVP du Match</div>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalMvp()">✕</button>
 </div>
-<p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;">Votez pour le meilleur joueur du week-end (MVP de l'équipe) !</p>
+<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;line-height:1.4;">Votez pour le meilleur joueur du week-end (MVP de l'équipe) !</p>
 <div id="mvpFormBox" style="background:#0e1626;border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
 <div style="font-weight:800;font-size:0.86rem;color:#fcd34d;margin-bottom:10px;">🗳️ Déposer mon vote :</div>
 <div style="margin-bottom:12px;">
-<label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">⭐ Élu MVP (Meilleur Joueur) :</label>
+<label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">⭐ Élu MVP (Meilleur Joueur) :</label>
 <select id="selVoteMvp" class="inp-field" style="padding:8px 12px;font-size:0.88rem;"></select>
 </div>
 <button type="button" class="btn-enter" id="btnSubmitVoteMvp" style="margin:0;width:100%;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="enregistrerVoteMvp()">Enregistrer mon vote MVP !</button>
@@ -967,7 +969,7 @@
 </div>
 <div style="font-weight:800;font-size:0.88rem;color:#e2e8f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
 <span>📊 Podium MVP & Résultats en direct</span>
-<span id="mvpTotalVotesCount" style="font-size:0.72rem;color:#94a3b8;font-weight:600;">0 vote(s)</span>
+<span id="mvpTotalVotesCount" style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">0 vote(s)</span>
 </div>
 <div id="mvpPodiumContainer"></div>
 <div id="coachMvpResetBox" style="display:none;margin-top:14px;border-top:1px solid rgba(148,163,184,0.15);padding-top:10px;text-align:center;">
@@ -981,15 +983,15 @@
 <div style="font-weight:900;font-size:1.15rem;color:#fdba74;display:flex;align-items:center;gap:8px;">🐐 Trophée Chèvre du Match</div>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalChevre()">✕</button>
 </div>
-<p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;">Le bêtisier sympa du match ! Chaque joueur peut proposer les casseroles du week-end et voter pour la plus belle action.</p>
+<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;line-height:1.4;">Le bêtisier sympa du match ! Chaque joueur peut proposer les casseroles du week-end et voter pour la plus belle action.</p>
 <div id="chevreNewActionBox" style="background:#0e1626;border:1px solid rgba(234,88,12,0.3);border-radius:14px;padding:14px;margin-bottom:16px;">
 <div style="font-weight:800;font-size:0.86rem;color:#fdba74;margin-bottom:10px;display:flex;align-items:center;gap:6px;">➕ Proposer une action au bêtisier :</div>
 <div style="margin-bottom:10px;">
-<label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Description de la casserole :</label>
+<label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Description de la casserole :</label>
 <input id="inpChevreActionDesc" class="inp-field" type="text" placeholder="Ex : Tir de 7m direct dans le plafond du gymnase...">
 </div>
 <div style="margin-bottom:12px;">
-<label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Joueur concerné par l'action :</label>
+<label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Joueur concerné par l'action :</label>
 <select id="selChevreJoueurConcerne" class="inp-field" style="padding:8px 12px;font-size:0.88rem;"></select>
 </div>
 <button type="button" class="btn-enter" id="btnSubmitActionChevre" style="margin:0;width:100%;background:linear-gradient(135deg,#ea580c,#c2410c);color:#fff;" onclick="proposerActionChevreClient()">Proposer cette action au vote !</button>
@@ -1011,7 +1013,7 @@
 <div style="font-weight:900;font-size:1.15rem;color:#7dd3fc;display:flex;align-items:center;gap:8px;">🚗 Covoiturage Match</div>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalCovoiturage()">✕</button>
 </div>
-<p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;">Organisez les trajets pour les matchs à l'extérieur en quelques secondes.</p>
+<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;line-height:1.4;">Organisez les trajets pour les matchs à l'extérieur en quelques secondes.</p>
 <div id="covoitFormBox" style="background:#0e1626;border:1px solid rgba(2,132,199,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
 <div style="font-weight:800;font-size:0.86rem;color:#38bdf8;margin-bottom:10px;">Mon statut pour le déplacement :</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
@@ -1019,7 +1021,7 @@
 <button type="button" id="btnCovoitCherche" class="btn-reset" style="padding:8px 6px;font-size:0.78rem;font-weight:700;" onclick="selectionnerStatutCovoit('cherche')">🙋 Je cherche 1 place</button>
 </div>
 <div id="boxCovoitNbPlaces" style="display:block;margin-bottom:10px;">
-<label style="font-size:0.75rem;color:#94a3b8;display:block;margin-bottom:4px;">Nombre total de places libres dans ma voiture :</label>
+<label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Nombre total de places libres dans ma voiture :</label>
 <select id="selCovoitNbPlaces" class="inp-field" style="padding:8px 12px;font-size:0.88rem;">
 <option value="1">1 place libre</option>
 <option value="2">2 places libres</option>
@@ -1050,14 +1052,14 @@
 <div style="font-weight:900;font-size:1.15rem;color:#fca5a5;display:flex;align-items:center;gap:8px;">📅 Déclarer une Absence</div>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalAbsence()">✕</button>
 </div>
-<p style="font-size:0.8rem;color:#cbd5e1;margin:0 0 14px 0;line-height:1.4;">Prévenez l'entraîneur de vos futures indisponibilités pour lui faciliter la planification des compositions.</p>
+<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;line-height:1.4;">Prévenez l'entraîneur de vos futures indisponibilités pour lui faciliter la planification des compositions.</p>
 <div style="background:#0e1626;border:1px solid rgba(239,68,68,0.25);border-radius:14px;padding:14px;margin-bottom:14px;">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Du (début) :</label><input type="date" id="inpAbsenceDebut" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"></div>
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Au (inclus) :</label><input type="date" id="inpAbsenceFin" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Du (début) :</label><input type="date" id="inpAbsenceDebut" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Au (inclus) :</label><input type="date" id="inpAbsenceFin" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"></div>
 </div>
 <div style="margin-bottom:12px;">
-<label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Motif :</label>
+<label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Motif :</label>
 <select id="selAbsenceMotif" class="inp-field" style="padding:8px 12px;font-size:0.85rem;">
 <option value="Vacances / Voyage">Vacances / Voyage</option>
 <option value="Blessure / Santé">Blessure / Santé</option>
@@ -1091,7 +1093,7 @@
 </div>
 <h2 id="profilPublicNom" style="margin:0 0 6px 0;font-size:1.35rem;font-weight:900;color:#fff;">-</h2>
 <div id="profilPublicPosteBadge" style="display:inline-block;padding:4px 12px;background:rgba(249,115,22,0.18);color:var(--color-secondary);border:1px solid rgba(249,115,22,0.4);border-radius:99px;font-weight:800;font-size:0.82rem;margin-bottom:8px;">-</div>
-<div id="profilPublicEquipeBadge" style="font-size:0.75rem;color:#94a3b8;font-weight:600;margin-bottom:6px;"></div>
+<div id="profilPublicEquipeBadge" style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:6px;"></div>
 <div id="profilPublicAssiduiteBadge" style="font-size:0.78rem;color:#38bdf8;font-weight:700;margin-bottom:12px;"></div>
 </div>
 <div id="profilPublicCaisseBox" style="background:#090d16;border:1px solid rgba(234,179,8,0.3);border-radius:12px;padding:12px;margin-bottom:14px;text-align:left;">
@@ -1100,10 +1102,10 @@
 <span id="profilPublicCaisseStatut" style="font-size:0.75rem;font-weight:800;padding:2px 8px;border-radius:99px;"></span>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-bottom:8px;">
-<div style="background:rgba(255,255,255,0.03);padding:6px;border-radius:8px;"><div style="font-size:0.7rem;color:#94a3b8;">Amendes</div><div id="profilPublicTotalAmendes" style="font-weight:900;color:#f8fafc;font-size:0.95rem;">0 €</div></div>
-<div style="background:rgba(255,255,255,0.03);padding:6px;border-radius:8px;"><div style="font-size:0.7rem;color:#94a3b8;">Reste dû</div><div id="profilPublicResteDu" style="font-weight:900;color:#f87171;font-size:0.95rem;">0 €</div></div>
+<div style="background:rgba(255,255,255,0.03);padding:6px;border-radius:8px;"><div style="font-size:0.7rem;color:var(--text-muted);">Amendes</div><div id="profilPublicTotalAmendes" style="font-weight:900;color:#f8fafc;font-size:0.95rem;">0 €</div></div>
+<div style="background:rgba(255,255,255,0.03);padding:6px;border-radius:8px;"><div style="font-size:0.7rem;color:var(--text-muted);">Reste dû</div><div id="profilPublicResteDu" style="font-weight:900;color:#f87171;font-size:0.95rem;">0 €</div></div>
 </div>
-<div id="profilPublicAmendesList" style="max-height:120px;overflow-y:auto;font-size:0.72rem;color:#cbd5e1;"></div>
+<div id="profilPublicAmendesList" style="max-height:120px;overflow-y:auto;font-size:0.72rem;color:var(--text-muted);"></div>
 </div>
 <button type="button" class="btn-reset" style="width:100%;padding:9px;font-size:0.82rem;" onclick="fermerProfilJoueurPublic()">Fermer</button>
 </div>
@@ -1124,12 +1126,12 @@
 </div>
 <div id="vueCaisseCagnotte">
 <div style="background:linear-gradient(135deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95));border:1px solid rgba(234,179,8,0.3);border-radius:18px;padding:16px;text-align:center;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
-<div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;font-weight:800;">Solde Actuel en Caisse</div>
+<div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-weight:800;">Solde Actuel en Caisse</div>
 <div id="caisseSoldeMontant" style="font-size:2.4rem;font-weight:900;color:#fef08a;margin:4px 0;letter-spacing:-0.5px;text-shadow:0 2px 10px rgba(234,179,8,0.3);">0 €</div>
 <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
 <span id="caisseTotalCollecte" style="font-size:0.72rem;background:rgba(34,197,94,0.18);border:1px solid rgba(34,197,94,0.3);color:#86efac;padding:3px 8px;border-radius:99px;font-weight:700;">Encaissé : 0 €</span>
 <span id="caisseTotalImpaye" style="font-size:0.72rem;background:rgba(239,68,68,0.18);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;padding:3px 8px;border-radius:99px;font-weight:700;">Restant dû : 0 €</span>
-<span id="caisseTotalDepenses" style="font-size:0.72rem;background:rgba(148,163,184,0.18);border:1px solid rgba(148,163,184,0.3);color:#cbd5e1;padding:3px 8px;border-radius:99px;font-weight:700;">Dépenses : 0 €</span>
+<span id="caisseTotalDepenses" style="font-size:0.72rem;background:rgba(148,163,184,0.18);border:1px solid rgba(148,163,184,0.3);color:var(--text-muted);padding:3px 8px;border-radius:99px;font-weight:700;">Dépenses : 0 €</span>
 </div>
 </div>
 <div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;">
@@ -1140,34 +1142,34 @@
 <div style="width:100%;height:8px;background:#1e293b;border-radius:99px;overflow:hidden;margin-bottom:6px;">
 <div id="caisseObjectifBarre" style="height:100%;width:0%;background:linear-gradient(90deg,#eab308,#f59e0b);border-radius:99px;transition:width 0.4s ease;"></div>
 </div>
-<div id="caisseObjectifDesc" style="font-size:0.73rem;color:#94a3b8;line-height:1.3;">Pour financer la tournée et le restaurant de fin d'année.</div>
+<div id="caisseObjectifDesc" style="font-size:0.73rem;color:var(--text-muted);line-height:1.3;">Pour financer la tournée et le restaurant de fin d'année.</div>
 </div>
 <div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;">
 <div style="font-weight:800;font-size:0.8rem;color:#38bdf8;margin-bottom:4px;display:flex;align-items:center;gap:6px;">💳 Modalités de règlement :</div>
-<div id="caisseMoyenPaiement" style="font-size:0.78rem;color:#cbd5e1;line-height:1.4;margin-bottom:8px;">Lydia / Espèces au vestiaire</div>
+<div id="caisseMoyenPaiement" style="font-size:0.78rem;color:var(--text-muted);line-height:1.4;margin-bottom:8px;">Lydia / Espèces au vestiaire</div>
 <button type="button" class="btn-reset" style="font-size:0.72rem;padding:5px 10px;background:rgba(56,189,248,0.15);color:#7dd3fc;border-color:rgba(56,189,248,0.3);" onclick="copierInfosPaiementCaisse()">📋 Copier les informations de paiement</button>
 </div>
 </div>
 <div id="vueCaisseArdoise" style="display:none;">
 <div id="caisseArdoiseCard" style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;margin-bottom:12px;text-align:center;">
-<div id="caisseMonStatutDette" style="font-size:0.85rem;font-weight:800;color:#94a3b8;">Mon ardoise personnelle</div>
+<div id="caisseMonStatutDette" style="font-size:0.85rem;font-weight:800;color:var(--text-muted);">Mon ardoise personnelle</div>
 <div id="caisseMonMontantDu" style="font-size:2rem;font-weight:900;color:#f87171;margin:4px 0;">0 €</div>
-<div id="caisseMonMessageArdoise" style="font-size:0.75rem;color:#cbd5e1;margin-bottom:10px;">Vous êtes à jour de vos amendes ! Bravo 🟢</div>
+<div id="caisseMonMessageArdoise" style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Vous êtes à jour de vos amendes ! Bravo 🟢</div>
 <button type="button" id="btnOuvrirFormulaireBalance" class="btn-enter" style="margin:0;font-size:0.78rem;padding:7px 12px;background:#eab308;color:#000;font-weight:800;" onclick="ouvrirFormulaireBalance()">🚨 Signaler une amende (La Balance)</button>
 </div>
 <div id="boxFormulaireBalance" style="display:none;background:rgba(15,23,42,0.95);border:1px solid #eab308;border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;">
 <div style="font-weight:800;font-size:0.82rem;color:#fde047;margin-bottom:8px;">🕵️‍♂️ Dénoncer un coéquipier (ou s'auto-déclarer) :</div>
 <div style="margin-bottom:8px;">
-<label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Joueur fautif :</label>
+<label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Joueur fautif :</label>
 <select id="selBalanceJoueur" class="inp-field" style="padding:7px 10px;font-size:0.8rem;"></select>
 </div>
 <div style="margin-bottom:8px;">
-<label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Motif :</label>
+<label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Motif :</label>
 <select id="selBalanceBareme" class="inp-field" style="padding:7px 10px;font-size:0.8rem;" onchange="ajusterMontantBalance()"></select>
 </div>
 <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-bottom:8px;">
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Montant (€) :</label><input type="number" id="inpBalanceMontant" class="inp-field" step="0.5" min="0.5" style="padding:7px 10px;font-size:0.8rem;"></div>
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Commentaire (optionnel) :</label><input type="text" id="inpBalanceCommentaire" class="inp-field" placeholder="Ex: Arrivé à 20h45" style="padding:7px 10px;font-size:0.8rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Montant (€) :</label><input type="number" id="inpBalanceMontant" class="inp-field" step="0.5" min="0.5" style="padding:7px 10px;font-size:0.8rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Commentaire (optionnel) :</label><input type="text" id="inpBalanceCommentaire" class="inp-field" placeholder="Ex: Arrivé à 20h45" style="padding:7px 10px;font-size:0.8rem;"></div>
 </div>
 <div style="display:flex;gap:6px;">
 <button type="button" class="btn-enter" style="flex:1;margin:0;padding:7px;font-size:0.78rem;background:#eab308;color:#000;font-weight:800;" onclick="soumettreSignalementBalance()">Transmettre au trésorier</button>
@@ -1175,7 +1177,7 @@
 </div>
 <div id="statusBalance" style="font-size:0.75rem;color:var(--color-secondary);margin-top:4px;text-align:center;min-height:1.2em;"></div>
 </div>
-<div style="font-weight:800;font-size:0.82rem;color:#cbd5e1;margin-bottom:6px;text-align:left;">Historique de mes amendes :</div>
+<div style="font-weight:800;font-size:0.82rem;color:var(--text-muted);margin-bottom:6px;text-align:left;">Historique de mes amendes :</div>
 <div id="caisseMesAmendesList" style="max-height:220px;overflow-y:auto;"></div>
 </div>
 <div id="vueCaisseBareme" style="display:none;">
@@ -1183,7 +1185,7 @@
 <div id="caisseBaremeList" style="max-height:300px;overflow-y:auto;text-align:left;"></div>
 </div>
 <div id="vueCaisseClassement" style="display:none;">
-<div style="font-size:0.78rem;color:#94a3b8;margin-bottom:8px;text-align:left;">Classement des plus gros contributeurs de l'équipe :</div>
+<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px;text-align:left;">Classement des plus gros contributeurs de l'équipe :</div>
 <div id="caisseLeaderboardList" style="max-height:300px;overflow-y:auto;"></div>
 </div>
 <div style="margin-top:14px;border-top:1px solid rgba(148,163,184,0.15);padding-top:10px;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;">
@@ -1203,7 +1205,7 @@
 </div>
 <div style="background:#090d16;border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:10px 12px;margin-bottom:12px;text-align:left;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-<span style="font-size:0.75rem;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;color:#cbd5e1;display:flex;align-items:center;gap:6px;">Statut de la Caisse :</span>
+<span style="font-size:0.75rem;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">Statut de la Caisse :</span>
 <span id="badgeAdminStatutCaisseCourant" style="font-size:0.72rem;font-weight:800;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,0.2);color:#86efac;border:1px solid rgba(34,197,94,0.35);">🟢 Ouverte & Active</span>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
@@ -1211,13 +1213,13 @@
 <button type="button" id="btnStatutCaisseFermee" class="train-type-pill" style="font-size:0.72rem;padding:7px 2px;margin:0;" onclick="basculerStatutCaisseDirect('fermee')">🔒 Fermée</button>
 <button type="button" id="btnStatutCaisseDesactivee" class="train-type-pill" style="font-size:0.72rem;padding:7px 2px;margin:0;" onclick="basculerStatutCaisseDirect('desactivee')">⚪ Désactivée</button>
 </div>
-<div id="descAdminStatutCaisse" style="font-size:0.7rem;color:#94a3b8;margin-top:6px;line-height:1.3;">Caisse opérationnelle : les joueurs peuvent déclarer des amendes et consulter la cagnotte.</div>
+<div id="descAdminStatutCaisse" style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;line-height:1.3;">Caisse opérationnelle : les joueurs peuvent déclarer des amendes et consulter la cagnotte.</div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;text-align:center;">
-<div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"><div style="font-size:0.65rem;color:#94a3b8;font-weight:700;">EN CAISSE</div><div id="admStatEnCaisse" style="font-size:1.05rem;font-weight:900;color:#fef08a;">0 €</div></div>
-<div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"><div style="font-size:0.65rem;color:#94a3b8;font-weight:700;">ENCAISSÉ</div><div id="admStatEncaisse" style="font-size:1.05rem;font-weight:900;color:#86efac;">0 €</div></div>
-<div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"><div style="font-size:0.65rem;color:#94a3b8;font-weight:700;">IMPAYÉ</div><div id="admStatImpaye" style="font-size:1.05rem;font-weight:900;color:#fca5a5;">0 €</div></div>
-<div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"><div style="font-size:0.65rem;color:#94a3b8;font-weight:700;">EN ATTENTE</div><div id="admStatEnAttente" style="font-size:1.05rem;font-weight:900;color:#fcd34d;">0</div></div>
+<div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"><div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;">EN CAISSE</div><div id="admStatEnCaisse" style="font-size:1.05rem;font-weight:900;color:#fef08a;">0 €</div></div>
+<div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"><div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;">ENCAISSÉ</div><div id="admStatEncaisse" style="font-size:1.05rem;font-weight:900;color:#86efac;">0 €</div></div>
+<div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"><div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;">IMPAYÉ</div><div id="admStatImpaye" style="font-size:1.05rem;font-weight:900;color:#fca5a5;">0 €</div></div>
+<div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:6px;"><div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;">EN ATTENTE</div><div id="admStatEnAttente" style="font-size:1.05rem;font-weight:900;color:#fcd34d;">0</div></div>
 </div>
 <div style="display:flex;gap:4px;background:#090d16;padding:4px;border-radius:12px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.08);flex-wrap:wrap;">
 <button type="button" id="tabAdmInfliger" class="train-type-pill active" style="flex:1;min-width:75px;" onclick="basculerTabAdminCaisse('infliger')">⚡ Infliger</button>
@@ -1231,16 +1233,16 @@
 <div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;text-align:left;">
 <div style="font-weight:800;font-size:0.85rem;color:#fef08a;margin-bottom:10px;">⚡ Infliger une amende immédiate :</div>
 <div style="margin-bottom:10px;">
-<label style="font-size:0.75rem;color:#cbd5e1;display:block;margin-bottom:4px;">Joueur(s) sanctionné(s) :</label>
+<label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Joueur(s) sanctionné(s) :</label>
 <select id="selAdmJoueurs" class="inp-field" style="padding:8px 10px;font-size:0.84rem;"></select>
 </div>
 <div style="margin-bottom:10px;">
-<label style="font-size:0.75rem;color:#cbd5e1;display:block;margin-bottom:4px;">Motif du barème :</label>
+<label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Motif du barème :</label>
 <select id="selAdmBareme" class="inp-field" style="padding:8px 10px;font-size:0.84rem;" onchange="ajusterMontantAdmin()"></select>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-<div><label style="font-size:0.75rem;color:#cbd5e1;display:block;margin-bottom:4px;">Montant (€) :</label><input type="number" id="inpAdmMontant" class="inp-field" step="0.5" min="0.5" style="padding:8px 10px;font-size:0.84rem;"></div>
-<div><label style="font-size:0.75rem;color:#cbd5e1;display:block;margin-bottom:4px;">Statut immédiat :</label>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Montant (€) :</label><input type="number" id="inpAdmMontant" class="inp-field" step="0.5" min="0.5" style="padding:8px 10px;font-size:0.84rem;"></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Statut immédiat :</label>
 <select id="selAdmStatut" class="inp-field" style="padding:8px 10px;font-size:0.84rem;" onchange="basculerModePaiementAdmin()">
 <option value="impaye">⏳ À régler (Impayé)</option>
 <option value="paye">✅ Déjà payé (Encaissé)</option>
@@ -1248,7 +1250,7 @@
 </div>
 </div>
 <div id="boxAdmModePaiement" style="display:none;margin-bottom:10px;">
-<label style="font-size:0.75rem;color:#cbd5e1;display:block;margin-bottom:4px;">Moyen de règlement :</label>
+<label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Moyen de règlement :</label>
 <select id="selAdmModePaiement" class="inp-field" style="padding:8px 10px;font-size:0.84rem;">
 <option value="Espèces">💵 Espèces</option>
 <option value="Lydia">📱 Lydia / Paylib</option>
@@ -1256,7 +1258,7 @@
 </select>
 </div>
 <div style="margin-bottom:12px;">
-<label style="font-size:0.75rem;color:#cbd5e1;display:block;margin-bottom:4px;">Note / Contexte :</label>
+<label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:4px;">Note / Contexte :</label>
 <input type="text" id="inpAdmCommentaire" class="inp-field" placeholder="Ex: 15 min de retard au gymnase" style="padding:8px 10px;font-size:0.84rem;">
 </div>
 <button type="button" class="btn-enter" id="btnSubmitAdmAmende" style="margin:0;width:100%;padding:9px;background:#eab308;color:#000;font-weight:900;font-size:0.84rem;" onclick="infligerAmendeParAdmin()">⚡ Appliquer l'amende</button>
@@ -1264,16 +1266,16 @@
 </div>
 </div>
 <div id="vueAdmAttente" style="display:none;">
-<div style="font-size:0.8rem;color:#cbd5e1;margin-bottom:8px;text-align:left;">Amendes signalées par les joueurs en attente de décision :</div>
+<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;text-align:left;">Amendes signalées par les joueurs en attente de décision :</div>
 <div id="admListeEnAttente" style="max-height:280px;overflow-y:auto;text-align:left;"></div>
 </div>
 <div id="vueAdmEncaissements" style="display:none;">
-<div style="font-size:0.8rem;color:#cbd5e1;margin-bottom:8px;text-align:left;">Joueurs avec ardoise en cours (impayés) :</div>
+<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;text-align:left;">Joueurs avec ardoise en cours (impayés) :</div>
 <div id="admListeDebiteurs" style="max-height:280px;overflow-y:auto;text-align:left;"></div>
 </div>
 <div id="vueAdmDepenses" style="display:none;">
 <div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;">
-<div style="font-weight:800;font-size:0.82rem;color:#cbd5e1;margin-bottom:8px;">Enregistrer un achat / sortie d'argent :</div>
+<div style="font-weight:800;font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;">Enregistrer un achat / sortie d'argent :</div>
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:8px;">
 <input type="text" id="inpAdmDepenseMotif" class="inp-field" placeholder="Ex: Packs de bières + pizzas" style="padding:7px 10px;font-size:0.8rem;">
 <input type="number" id="inpAdmDepenseMontant" class="inp-field" placeholder="Montant €" step="0.5" style="padding:7px 10px;font-size:0.8rem;">
@@ -1281,18 +1283,18 @@
 <button type="button" class="btn-enter" style="margin:0;width:100%;padding:7px;font-size:0.78rem;" onclick="enregistrerDepenseParAdmin()">Déduire de la caisse</button>
 <div id="statusAdmDepense" style="font-size:0.75rem;color:var(--color-secondary);margin-top:4px;text-align:center;min-height:1.2em;"></div>
 </div>
-<div style="font-size:0.78rem;font-weight:800;color:#94a3b8;margin-bottom:6px;text-align:left;">Historique des dépenses :</div>
+<div style="font-size:0.78rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;text-align:left;">Historique des dépenses :</div>
 <div id="admListeDepenses" style="max-height:180px;overflow-y:auto;text-align:left;"></div>
 </div>
 <div id="vueAdmBareme" style="display:none;">
 <div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;">
-<div style="font-weight:800;font-size:0.82rem;color:#cbd5e1;margin-bottom:8px;">Objectif & Paiement :</div>
+<div style="font-weight:800;font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;">Objectif & Paiement :</div>
 <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-bottom:8px;">
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Cagnotte cible (€) :</label><input type="number" id="inpAdmCagnotteCible" class="inp-field" style="padding:7px 10px;font-size:0.8rem;"></div>
-<div><label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Description objectif :</label><input type="text" id="inpAdmObjectifDesc" class="inp-field" style="padding:7px 10px;font-size:0.8rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Cagnotte cible (€) :</label><input type="number" id="inpAdmCagnotteCible" class="inp-field" style="padding:7px 10px;font-size:0.8rem;"></div>
+<div><label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Description objectif :</label><input type="text" id="inpAdmObjectifDesc" class="inp-field" style="padding:7px 10px;font-size:0.8rem;"></div>
 </div>
 <div style="margin-bottom:8px;">
-<label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Statut de la Caisse Noire :</label>
+<label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Statut de la Caisse Noire :</label>
 <select id="selAdmStatutCaisse" class="inp-field" style="padding:7px 10px;font-size:0.8rem;">
 <option value="ouverte">🟢 Ouverte & Active (Amendes & Cagnotte)</option>
 <option value="fermee">🔒 Fermée / Clôturée (Consultation seule)</option>
@@ -1300,13 +1302,13 @@
 </select>
 </div>
 <div style="margin-bottom:8px;">
-<label style="font-size:0.72rem;color:#94a3b8;display:block;margin-bottom:3px;">Instructions / Lien Lydia :</label>
+<label style="font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:3px;">Instructions / Lien Lydia :</label>
 <input type="text" id="inpAdmMoyenPaiement" class="inp-field" style="padding:7px 10px;font-size:0.8rem;">
 </div>
 <button type="button" class="btn-reset" style="width:100%;font-size:0.78rem;padding:6px;border-color:var(--color-primary);color:#fff;" onclick="sauvegarderConfigCaisse()">Enregistrer les paramètres de cagnotte</button>
 </div>
 <div style="background:#090d16;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;margin-bottom:12px;text-align:left;">
-<div style="font-weight:800;font-size:0.82rem;color:#cbd5e1;margin-bottom:8px;">Ajouter une règle au barème :</div>
+<div style="font-weight:800;font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;">Ajouter une règle au barème :</div>
 <div style="margin-bottom:8px;"><input type="text" id="inpAdmNouveauTitreBareme" class="inp-field" placeholder="Titre (ex: 🍕 Oubli des pizzas après match)" style="padding:7px 10px;font-size:0.8rem;"></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
 <input type="number" id="inpAdmNouveauMontantBareme" class="inp-field" placeholder="Tarif (€)" step="0.5" style="padding:7px 10px;font-size:0.8rem;">
@@ -1320,11 +1322,11 @@
 </div>
 <button type="button" class="btn-enter" style="margin:0;width:100%;padding:7px;font-size:0.78rem;" onclick="ajouterLigneBaremeAdmin()">Ajouter au barème officiel</button>
 </div>
-<div style="font-size:0.78rem;font-weight:800;color:#94a3b8;margin-bottom:6px;text-align:left;">Barème officiel actuel :</div>
+<div style="font-size:0.78rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;text-align:left;">Barème officiel actuel :</div>
 <div id="admListeBaremeEditer" style="max-height:180px;overflow-y:auto;text-align:left;"></div>
 </div>
 <div id="vueAdmWhatsapp" style="display:none;text-align:left;">
-<div style="font-size:0.8rem;color:#cbd5e1;margin-bottom:8px;">Générez et partagez le récapitulatif de la caisse noire sur le groupe WhatsApp :</div>
+<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">Générez et partagez le récapitulatif de la caisse noire sur le groupe WhatsApp :</div>
 <textarea id="txtAdmBilanWa" class="inp-field" rows="8" style="font-size:0.8rem;line-height:1.4;margin-bottom:10px;resize:vertical;" readonly></textarea>
 <div style="display:flex;gap:6px;margin-bottom:14px;">
 <button type="button" class="btn-wa" style="flex:1;padding:8px 12px;font-size:0.8rem;" onclick="ouvrirBilanCaisseSurWhatsApp()">📱 Partager sur WhatsApp</button>
@@ -1346,7 +1348,7 @@
 <h2 style="margin:0;font-size:1.15rem;color:#f8fafc;display:flex;align-items:center;gap:8px;">🏖️ Vacances & Trêves Scolaires</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.85rem;" onclick="fermerModalVacances()">✕</button>
 </div>
-<p style="font-size:0.8rem;color:#94a3b8;margin:0 0 14px 0;text-align:left;line-height:1.45;">Pendant ces périodes, les entraînements et la détection de matchs sont suspendus, et aucun sondage WhatsApp n'est envoyé le lundi matin.</p>
+<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;text-align:left;line-height:1.45;">Pendant ces périodes, les entraînements et la détection de matchs sont suspendus, et aucun sondage WhatsApp n'est envoyé le lundi matin.</p>
 <div style="background:#0e1626;border:1px solid rgba(14,165,233,0.25);border-radius:14px;padding:14px;margin-bottom:14px;text-align:left;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
 <div id="titreFormVacance" style="font-weight:800;font-size:0.88rem;color:#38bdf8;">Ajouter une période de vacances :</div>
@@ -1354,19 +1356,19 @@
 </div>
 <input type="hidden" id="inpVacId" value="">
 <div style="margin-bottom:10px;">
-<label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:3px;">Nom de la période :</label>
+<label style="font-size:0.73rem;color:var(--text-muted);display:block;margin-bottom:3px;">Nom de la période :</label>
 <input type="text" id="inpVacNom" class="inp-field" placeholder="ex: Vacances de la Toussaint, Trêve de Noël..." style="padding:8px 12px;font-size:0.85rem;">
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-<div><label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:3px;">Du (début) :</label><input type="date" id="inpVacDebut" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"></div>
-<div><label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:3px;">Au (fin inclus) :</label><input type="date" id="inpVacFin" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"></div>
+<div><label style="font-size:0.73rem;color:var(--text-muted);display:block;margin-bottom:3px;">Du (début) :</label><input type="date" id="inpVacDebut" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"></div>
+<div><label style="font-size:0.73rem;color:var(--text-muted);display:block;margin-bottom:3px;">Au (fin inclus) :</label><input type="date" id="inpVacFin" class="inp-field" style="padding:8px 10px;font-size:0.82rem;"></div>
 </div>
 <div style="margin-bottom:10px;">
-<label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:3px;">Consignes / Commentaire (optionnel) :</label>
+<label style="font-size:0.73rem;color:var(--text-muted);display:block;margin-bottom:3px;">Consignes / Commentaire (optionnel) :</label>
 <input type="text" id="inpVacCommentaire" class="inp-field" placeholder="ex: Reprise des entraînements le lundi 2 novembre" style="padding:8px 12px;font-size:0.82rem;">
 </div>
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-<label style="font-size:0.78rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:#cbd5e1;"><input type="checkbox" id="chkVacActif" checked> Actif (suspendre entraînements & sondage)</label>
+<label style="font-size:0.78rem;display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-muted);"><input type="checkbox" id="chkVacActif" checked> Actif (suspendre entraînements & sondage)</label>
 </div>
 <div style="display:flex;gap:6px;">
 <button type="button" class="btn-enter" id="btnSubmitVacance" style="margin:0;flex:1;background:#0ea5e9;color:#fff;font-weight:700;" onclick="ajouterOuEditerVacanceClient()">+ Ajouter cette période</button>
@@ -1399,7 +1401,7 @@
 <div style="font-weight:800;font-size:0.95rem;color:var(--color-secondary);">Terrain Tactique - Attaque Placée & Gardien</div>
 <div class="tactical-team-tabs" id="tacticalTeamTabs"></div>
 </div>
-<div id="tacticalSwapHint" style="font-size:0.78rem;color:#38bdf8;margin:6px 0 10px 0;text-align:center;font-weight:700;min-height:1.2em;"><span style="color:#94a3b8;font-weight:500;">Astuce : Glissez-déposez ou cliquez sur deux joueurs pour échanger leurs postes.</span></div>
+<div id="tacticalSwapHint" style="font-size:0.78rem;color:#38bdf8;margin:6px 0 10px 0;text-align:center;font-weight:700;min-height:1.2em;"><span style="color:var(--text-muted);font-weight:500;">Astuce : Glissez-déposez ou cliquez sur deux joueurs pour échanger leurs postes.</span></div>
 <div class="handball-field-wrapper">
 <svg viewBox="0 0 500 420" class="handball-court-svg" style="width:100%;height:100%;display:block;">
 <rect x="15" y="15" width="470" height="375" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
@@ -1419,12 +1421,12 @@
 <div id="tacticalCourtNodes" class="court-nodes-container"></div>
 </div>
 <div class="tactical-bench-wrap">
-<div style="font-size:0.78rem;font-weight:700;color:#94a3b8;margin-bottom:6px;">Remplaçants & Rotation (glissez-déposez ou cliquez sur deux joueurs pour permuter) :</div>
+<div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Remplaçants & Rotation (glissez-déposez ou cliquez sur deux joueurs pour permuter) :</div>
 <div id="tacticalBenchList" class="bench-chips-list"></div>
 </div>
 </div>
 <div id="previewWhatsAppBlock">
-<div style="font-weight:800;font-size:0.88rem;color:#cbd5e1;margin:14px 0 6px 0;text-align:left;">Message de convocation WhatsApp (modifiable) :</div>
+<div style="font-weight:800;font-size:0.88rem;color:var(--text-muted);margin:14px 0 6px 0;text-align:left;">Message de convocation WhatsApp (modifiable) :</div>
 <div id="previewMessages"></div>
 <div class="preview-status" id="previewStatus"></div>
 <div class="preview-actions"><button class="btn-reset" onclick="retourApercu()">Retour</button><button type="button" class="btn-enter" id="btnSavePreview" style="background:#2563eb;color:#fff;font-weight:700;padding:8px 14px;font-size:0.82rem;width:auto;margin:0;" onclick="sauvegarderApercuDepuisTerrain()">💾 Sauvegarder la composition</button><button class="btn-wa" id="btnPublishPreview" onclick="publierApercu()">Publier sur WhatsApp</button></div>
@@ -1437,24 +1439,24 @@
   <div id="modalConfigApi" style="display:none;position:fixed;inset:0;background:rgba(5,7,13,0.85);backdrop-filter:blur(8px);z-index:999999;align-items:center;justify-content:center;padding:16px;">
     <div style="background:#111827;border:1px solid #1f2937;border-radius:16px;max-width:480px;width:100%;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
       <h3 style="color:#f8fafc;font-size:1.15rem;margin-bottom:8px;font-weight:800;">Liaison Google Sheet</h3>
-      <p style="color:#94a3b8;font-size:0.85rem;line-height:1.4;margin-bottom:16px;">
+      <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.4;margin-bottom:16px;">
         Entrez l'URL WebApp de votre Google Sheet (déployée via Apps Script) pour connecter l'application.
       </p>
       <input type="url" id="inpApiUrl" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;background:#1e293b;border:1px solid #334155;color:#fff;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:14px;outline:none;">
       <div style="display:flex;gap:10px;justify-content:flex-end;">
-        <button type="button" onclick="fermerModalApi()" style="background:#334155;color:#cbd5e1;border:none;padding:8px 16px;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;">Annuler</button>
+        <button type="button" onclick="fermerModalApi()" style="background:#334155;color:var(--text-muted);border:none;padding:8px 16px;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;">Annuler</button>
         <button type="button" onclick="sauvegarderApiUrl()" style="background:#3b82f6;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;">Enregistrer & Connecter</button>
       </div>
     </div>
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/api.js?v=2.1.0"></script>
-  <script src="js/app.js?v=2.1.0"></script>
+  <script src="js/api.js?v=2.1.1"></script>
+  <script src="js/app.js?v=2.1.1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.1.0').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.1.1').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>
