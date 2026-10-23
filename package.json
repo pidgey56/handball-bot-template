@@ -1,6 +1,6 @@
 {
   "name": "handball-whatsapp-bot",
-  "version": "2.2.9",
+  "version": "2.2.10",
   "description": "Bot WhatsApp & Gestionnaire de Matchs et Entraînements pour Clubs de Handball (v2.0 PWA)",
   "type": "module",
   "scripts": {

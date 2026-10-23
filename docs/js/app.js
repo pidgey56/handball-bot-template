@@ -838,12 +838,49 @@ function creerCarteTinderHtml(j, isTop){
   var card = document.createElement("div"); card.className = "tcard" + (isTop ? " tcard-top" : "");
   card.setAttribute("data-nom", j.nom);
 
-  var spData = (typeof trouverStatsSpaktaJoueur === "function") ? trouverStatsSpaktaJoueur(j.nom) : null;
-  var jerseyNum = (spData && spData.jersey_numbers && spData.jersey_numbers.length > 0) ? spData.jersey_numbers[0] : null;
+  var nomJoueur = (j && j.nom) ? String(j.nom).trim() : "";
+  var nomPropre = nomJoueur.replace(/\s*\([^)]*\)\s*/g, "").trim();
 
-  var isChou = (typeof estJoueurChouchou === "function") && estJoueurChouchou(j.nom);
-  var isMvp = (typeof estJoueurMvp === "function") && estJoueurMvp(j.nom);
-  var isChevre = (typeof estJoueurChevre === "function") && estJoueurChevre(j.nom);
+  // Résolution croisée robuste dans l'effectif complet pour garantir photo, idSpakta, assiduité et note
+  var pEff = (typeof EFFECTIF_COMPLET !== "undefined" && Array.isArray(EFFECTIF_COMPLET))
+    ? EFFECTIF_COMPLET.find(function(x){
+        return x.nom && (x.nom.toLowerCase() === nomJoueur.toLowerCase() || x.nom.toLowerCase() === nomPropre.toLowerCase());
+      })
+    : null;
+  var pJoueur = (typeof JOUEURS !== "undefined" && Array.isArray(JOUEURS))
+    ? JOUEURS.find(function(x){
+        return x.nom && (x.nom.toLowerCase() === nomJoueur.toLowerCase() || x.nom.toLowerCase() === nomPropre.toLowerCase());
+      })
+    : null;
+
+  var posteJoueur = (j && j.poste) || (pEff && pEff.poste) || (pJoueur && pJoueur.poste) || "Demi-Centre";
+  var photoJoueur = (j && j.photo) || (pEff && pEff.photo) || (pJoueur && pJoueur.photo) || "";
+  var idSpJoueur = (j && j.idSpakta) || (pEff && pEff.idSpakta) || (pJoueur && pJoueur.idSpakta) || "";
+  var noteJoueur = (j && j.note) || (pEff && pEff.note) || (pJoueur && pJoueur.note) || "";
+
+  var nbTrain = 0;
+  if (j && j.entrainements !== undefined && j.entrainements !== null && Number(j.entrainements) >= 0) {
+    nbTrain = Number(j.entrainements);
+  } else if (pJoueur && pJoueur.entrainements !== undefined && pJoueur.entrainements !== null && Number(pJoueur.entrainements) >= 0) {
+    nbTrain = Number(pJoueur.entrainements);
+  } else if (pEff && pEff.entrainements !== undefined && pEff.entrainements !== null && Number(pEff.entrainements) >= 0) {
+    nbTrain = Number(pEff.entrainements);
+  }
+  if (nbTrain === 0 && typeof ENTRAINEMENTS === "object" && ENTRAINEMENTS) {
+    var nSimple = nomPropre.toLowerCase();
+    Object.keys(ENTRAINEMENTS).forEach(function(sId){
+      var listS = ENTRAINEMENTS[sId] || [];
+      if (listS.some(function(item){
+        var itemNom = String(item.nom || "").trim().toLowerCase().replace(/\s*\([^)]*\)\s*/g, "").trim();
+        return itemNom === nSimple;
+      })) {
+        nbTrain++;
+      }
+    });
+  }
+
+  var spData = (typeof trouverStatsSpaktaJoueur === "function") ? trouverStatsSpaktaJoueur(nomJoueur, idSpJoueur) : null;
+  var jerseyNum = (spData && spData.jersey_numbers && spData.jersey_numbers.length > 0) ? spData.jersey_numbers[0] : null;
 
   if(jerseyNum){
     var jTop = document.createElement("div");
@@ -853,9 +890,15 @@ function creerCarteTinderHtml(j, isTop){
     card.appendChild(jTop);
   }
 
-  var tInit = (j.nom || "").trim().charAt(0).toUpperCase();
-  var av = document.createElement("div"); av.className = "tavatar"; av.textContent = tInit; av.style.cursor = "pointer"; av.title = "Fiche de " + j.nom; av.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); };
-  if(j.photo){ var bg = document.createElement("img"); bg.className = "tbg-photo"; bg.src = j.photo; bg.onerror = function(){ this.remove(); if(av) av.style.display = "flex"; }; card.appendChild(bg); }
+  var tInit = nomJoueur.charAt(0).toUpperCase();
+  var av = document.createElement("div"); av.className = "tavatar"; av.textContent = tInit; av.style.cursor = "pointer"; av.title = "Fiche de " + nomJoueur; av.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(nomJoueur); };
+  if(photoJoueur){
+    var bg = document.createElement("img");
+    bg.className = "tbg-photo";
+    bg.src = photoJoueur;
+    bg.onerror = function(){ this.remove(); if(av) av.style.display = "flex"; };
+    card.appendChild(bg);
+  }
   var ov = document.createElement("div"); ov.className = "tbg-overlay"; card.appendChild(ov);
 
   function addStamp(clsPos, clsCol, txt){ var s = document.createElement("div"); s.className = "stamp " + clsPos + " " + clsCol; s.textContent = txt; card.appendChild(s); }
@@ -874,27 +917,37 @@ function creerCarteTinderHtml(j, isTop){
   }
 
   var bEd = document.createElement("button"); bEd.className = "tbtn-edit-card"; bEd.textContent = "Fiche";
-  bEd.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); }; card.appendChild(bEd);
+  bEd.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(nomJoueur); }; card.appendChild(bEd);
 
   var tc = document.createElement("div"); tc.className = "tcontent";
-  if(!j.photo){ tc.appendChild(av); }
+  if(!photoJoueur){ tc.appendChild(av); }
   else { av.style.display = "none"; tc.appendChild(av); var sp = document.createElement("div"); sp.style.height = "20px"; tc.appendChild(sp); }
 
-  var bot = document.createElement("div"); bot.style.width = "100%"; bot.style.display = "flex"; bot.style.flexDirection = "column"; bot.style.alignItems = "center"; bot.style.gap = "4px";
+  var bot = document.createElement("div"); bot.style.width = "100%"; bot.style.display = "flex"; bot.style.flexDirection = "column"; bot.style.alignItems = "center"; bot.style.gap = "3px";
 
+  // Nom du joueur en blanc éclatant avec ombre portée nette
   var nomEl = document.createElement("div");
   nomEl.className = "tcard-nom";
-  nomEl.textContent = j.nom;
-  if(isChou){ var cB = document.createElement("span"); cB.className = "chouchou-badge"; cB.style.fontSize = "0.72rem"; cB.textContent = "❤️ Chouchou"; nomEl.appendChild(cB); }
-  if(isMvp){ var mB = document.createElement("span"); mB.className = "mvp-badge"; mB.style.fontSize = "0.72rem"; mB.textContent = "🏆 MVP"; nomEl.appendChild(mB); }
-  if(isChevre){ var chB = document.createElement("span"); chB.className = "chevre-badge"; chB.style.fontSize = "0.72rem"; chB.textContent = "🐐 Chèvre"; nomEl.appendChild(chB); }
+  nomEl.style.color = "#ffffff";
+  nomEl.style.textShadow = "0 2px 10px rgba(0, 0, 0, 0.95), 0 1px 3px rgba(0, 0, 0, 0.9)";
+  nomEl.textContent = nomJoueur;
   bot.appendChild(nomEl);
 
+  // Poste sur le terrain seul
   var postEl = document.createElement("div");
   postEl.className = "tcard-poste";
-  postEl.textContent = j.poste || "Demi-Centre";
+  postEl.textContent = posteJoueur;
   bot.appendChild(postEl);
 
+  // Présence entraînement sur une ligne dédiée en dessous (ex: 2 entraînements)
+  var trainEl = document.createElement("div");
+  trainEl.className = "tcard-train-line";
+  var labelTrain = (nbTrain === 0 || nbTrain === 1) ? (nbTrain + " entraînement") : (nbTrain + " entraînements");
+  var pillClass = (nbTrain === 0) ? "tcard-train-pill pill-zero" : "tcard-train-pill";
+  trainEl.innerHTML = '<span class="' + pillClass + '">⚡ ' + labelTrain + '</span>';
+  bot.appendChild(trainEl);
+
+  // Stats Spakta compactes
   if(spData && spData.totals){
     var spBox = document.createElement("div");
     spBox.className = "tcard-spakta-bar";
@@ -918,13 +971,17 @@ function creerCarteTinderHtml(j, isTop){
     bot.appendChild(spBox);
   }
 
-  var tags = document.createElement("div"); tags.style.display = "flex"; tags.style.gap = "6px"; tags.style.margin = "4px 0";
-  var sp1 = document.createElement("span"); sp1.className = j.dispo1B ? "tag tag-1b" : "tag"; sp1.textContent = (CLUB_CONFIG.nomEquipe1 || "Éq 1") + " " + (j.dispo1B ? "✓" : "✗"); tags.appendChild(sp1);
-  if(nbEq >= 2){ var sp2 = document.createElement("span"); sp2.className = j.dispo1C ? "tag tag-1c" : "tag"; sp2.textContent = (CLUB_CONFIG.nomEquipe2 || "Éq 2") + " " + (j.dispo1C ? "✓" : "✗"); tags.appendChild(sp2); }
-  if(nbEq >= 3){ var sp3 = document.createElement("span"); sp3.className = j.dispo1D ? "tag tag-1d" : "tag"; sp3.textContent = (CLUB_CONFIG.nomEquipe3 || "Éq 3") + " " + (j.dispo1D ? "✓" : "✗"); tags.appendChild(sp3); }
+  // Disponibilités par équipe pour le match
+  var tags = document.createElement("div"); tags.style.display = "flex"; tags.style.gap = "6px"; tags.style.margin = "3px 0 2px 0";
+  var dispo1B = (j && j.dispo1B) || (pJoueur && pJoueur.dispo1B);
+  var dispo1C = (j && j.dispo1C) || (pJoueur && pJoueur.dispo1C);
+  var dispo1D = (j && j.dispo1D) || (pJoueur && pJoueur.dispo1D);
+  var sp1 = document.createElement("span"); sp1.className = dispo1B ? "tag tag-1b" : "tag"; sp1.textContent = (CLUB_CONFIG.nomEquipe1 || "Éq 1") + " " + (dispo1B ? "✓" : "✗"); tags.appendChild(sp1);
+  if(nbEq >= 2){ var sp2 = document.createElement("span"); sp2.className = dispo1C ? "tag tag-1c" : "tag"; sp2.textContent = (CLUB_CONFIG.nomEquipe2 || "Éq 2") + " " + (dispo1C ? "✓" : "✗"); tags.appendChild(sp2); }
+  if(nbEq >= 3){ var sp3 = document.createElement("span"); sp3.className = dispo1D ? "tag tag-1d" : "tag"; sp3.textContent = (CLUB_CONFIG.nomEquipe3 || "Éq 3") + " " + (dispo1D ? "✓" : "✗"); tags.appendChild(sp3); }
   bot.appendChild(tags);
 
-  if(j.note){ var nt = document.createElement("div"); nt.className = "tnote-box"; nt.textContent = "Note : " + j.note; bot.appendChild(nt); }
+  if(noteJoueur){ var nt = document.createElement("div"); nt.className = "tnote-box"; nt.textContent = "Note : " + noteJoueur; bot.appendChild(nt); }
   tc.appendChild(bot); card.appendChild(tc);
   return card;
 }
@@ -2070,13 +2127,20 @@ function trouverStatsSpaktaJoueur(nom, idSpakta) {
   // 1. Recherche par identifiant Spakta direct (explicite)
   var targetId = idSpakta ? String(idSpakta).trim() : '';
   if (!targetId && nom && typeof EFFECTIF_COMPLET !== 'undefined' && Array.isArray(EFFECTIF_COMPLET)) {
+    var nNorm = String(nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     var pEff = EFFECTIF_COMPLET.find(function(x) {
-      return x.nom && x.nom.toLowerCase() === String(nom).trim().toLowerCase();
+      if (!x.nom) return false;
+      var xNorm = String(x.nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      return xNorm === nNorm || x.nom.toLowerCase() === String(nom).trim().toLowerCase();
     });
     if (pEff && pEff.idSpakta) targetId = String(pEff.idSpakta).trim();
   }
-  if (!targetId && nom && typeof SESSION_NOM !== 'undefined' && SESSION_NOM && SESSION_NOM.toLowerCase() === String(nom).trim().toLowerCase()) {
-    if (typeof SESSION_ID_SPAKTA !== 'undefined' && SESSION_ID_SPAKTA) targetId = SESSION_ID_SPAKTA;
+  if (!targetId && nom && typeof SESSION_NOM !== 'undefined' && SESSION_NOM) {
+    var sNorm = String(SESSION_NOM).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    var nNorm2 = String(nom).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    if (sNorm === nNorm2 && typeof SESSION_ID_SPAKTA !== 'undefined' && SESSION_ID_SPAKTA) {
+      targetId = SESSION_ID_SPAKTA;
+    }
   }
   if (targetId) {
     var matchId = liste.find(function(p) { return p.id === targetId; });
@@ -3976,7 +4040,48 @@ function creerCarteTrainTinderHtml(j, isTop){
   var card = document.createElement("div"); card.className = "tcard" + (isTop ? " tcard-top" : "");
   card.setAttribute("data-nom", j.nom);
 
-  var spData = (typeof trouverStatsSpaktaJoueur === "function") ? trouverStatsSpaktaJoueur(j.nom) : null;
+  var nomJoueur = (j && j.nom) ? String(j.nom).trim() : "";
+  var nomPropre = nomJoueur.replace(/\s*\([^)]*\)\s*/g, "").trim();
+
+  // Résolution croisée robuste dans l'effectif complet pour garantir photo, idSpakta, assiduité et note
+  var pEff = (typeof EFFECTIF_COMPLET !== "undefined" && Array.isArray(EFFECTIF_COMPLET))
+    ? EFFECTIF_COMPLET.find(function(x){
+        return x.nom && (x.nom.toLowerCase() === nomJoueur.toLowerCase() || x.nom.toLowerCase() === nomPropre.toLowerCase());
+      })
+    : null;
+  var pJoueur = (typeof JOUEURS !== "undefined" && Array.isArray(JOUEURS))
+    ? JOUEURS.find(function(x){
+        return x.nom && (x.nom.toLowerCase() === nomJoueur.toLowerCase() || x.nom.toLowerCase() === nomPropre.toLowerCase());
+      })
+    : null;
+
+  var posteJoueur = (j && j.poste) || (pEff && pEff.poste) || (pJoueur && pJoueur.poste) || "Demi-Centre";
+  var photoJoueur = (j && j.photo) || (pEff && pEff.photo) || (pJoueur && pJoueur.photo) || "";
+  var idSpJoueur = (j && j.idSpakta) || (pEff && pEff.idSpakta) || (pJoueur && pJoueur.idSpakta) || "";
+  var noteJoueur = (j && j.note) || (pEff && pEff.note) || (pJoueur && pJoueur.note) || "";
+
+  var nbTrain = 0;
+  if (j && j.entrainements !== undefined && j.entrainements !== null && Number(j.entrainements) >= 0) {
+    nbTrain = Number(j.entrainements);
+  } else if (pJoueur && pJoueur.entrainements !== undefined && pJoueur.entrainements !== null && Number(pJoueur.entrainements) >= 0) {
+    nbTrain = Number(pJoueur.entrainements);
+  } else if (pEff && pEff.entrainements !== undefined && pEff.entrainements !== null && Number(pEff.entrainements) >= 0) {
+    nbTrain = Number(pEff.entrainements);
+  }
+  if (nbTrain === 0 && typeof ENTRAINEMENTS === "object" && ENTRAINEMENTS) {
+    var nSimple = nomPropre.toLowerCase();
+    Object.keys(ENTRAINEMENTS).forEach(function(sId){
+      var listS = ENTRAINEMENTS[sId] || [];
+      if (listS.some(function(item){
+        var itemNom = String(item.nom || "").trim().toLowerCase().replace(/\s*\([^)]*\)\s*/g, "").trim();
+        return itemNom === nSimple;
+      })) {
+        nbTrain++;
+      }
+    });
+  }
+
+  var spData = (typeof trouverStatsSpaktaJoueur === "function") ? trouverStatsSpaktaJoueur(nomJoueur, idSpJoueur) : null;
   var jerseyNum = (spData && spData.jersey_numbers && spData.jersey_numbers.length > 0) ? spData.jersey_numbers[0] : null;
 
   if(jerseyNum){
@@ -3987,9 +4092,15 @@ function creerCarteTrainTinderHtml(j, isTop){
     card.appendChild(jTop);
   }
 
-  var trInit = (j.nom || "").trim().charAt(0).toUpperCase();
-  var avTr = document.createElement("div"); avTr.className = "tavatar"; avTr.textContent = trInit; avTr.style.cursor = "pointer"; avTr.title = "Fiche de " + j.nom; avTr.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); };
-  if(j.photo){ var bg = document.createElement("img"); bg.className = "tbg-photo"; bg.src = j.photo; bg.onerror = function(){ this.remove(); if(avTr) avTr.style.display = "flex"; }; card.appendChild(bg); }
+  var trInit = nomJoueur.charAt(0).toUpperCase();
+  var avTr = document.createElement("div"); avTr.className = "tavatar"; avTr.textContent = trInit; avTr.style.cursor = "pointer"; avTr.title = "Fiche de " + nomJoueur; avTr.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(nomJoueur); };
+  if(photoJoueur){
+    var bg = document.createElement("img");
+    bg.className = "tbg-photo";
+    bg.src = photoJoueur;
+    bg.onerror = function(){ this.remove(); if(avTr) avTr.style.display = "flex"; };
+    card.appendChild(bg);
+  }
   var ov = document.createElement("div"); ov.className = "tbg-overlay"; card.appendChild(ov);
 
   function addStamp(clsPos, clsCol, txt){ var s = document.createElement("div"); s.className = "stamp " + clsPos + " " + clsCol; s.textContent = txt; card.appendChild(s); }
@@ -4006,24 +4117,37 @@ function creerCarteTrainTinderHtml(j, isTop){
   }
 
   var bEd = document.createElement("button"); bEd.className = "tbtn-edit-card"; bEd.textContent = "Fiche";
-  bEd.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); }; card.appendChild(bEd);
+  bEd.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(nomJoueur); }; card.appendChild(bEd);
 
   var tc = document.createElement("div"); tc.className = "tcontent";
-  if(!j.photo){ tc.appendChild(avTr); }
+  if(!photoJoueur){ tc.appendChild(avTr); }
   else { avTr.style.display = "none"; tc.appendChild(avTr); var sp = document.createElement("div"); sp.style.height = "20px"; tc.appendChild(sp); }
 
-  var bot = document.createElement("div"); bot.style.width = "100%"; bot.style.display = "flex"; bot.style.flexDirection = "column"; bot.style.alignItems = "center"; bot.style.gap = "4px";
+  var bot = document.createElement("div"); bot.style.width = "100%"; bot.style.display = "flex"; bot.style.flexDirection = "column"; bot.style.alignItems = "center"; bot.style.gap = "3px";
 
+  // Nom du joueur en blanc éclatant avec ombre portée nette
   var nomEl = document.createElement("div");
   nomEl.className = "tcard-nom";
-  nomEl.textContent = j.nom;
+  nomEl.style.color = "#ffffff";
+  nomEl.style.textShadow = "0 2px 10px rgba(0, 0, 0, 0.95), 0 1px 3px rgba(0, 0, 0, 0.9)";
+  nomEl.textContent = nomJoueur;
   bot.appendChild(nomEl);
 
+  // Poste sur le terrain seul (sans "• 2 tr")
   var postEl = document.createElement("div");
   postEl.className = "tcard-poste";
-  postEl.textContent = (j.poste || "Demi-Centre") + " • " + (j.entrainements || 0) + " tr";
+  postEl.textContent = posteJoueur;
   bot.appendChild(postEl);
 
+  // Présence entraînement sur une ligne dédiée en dessous
+  var trainEl = document.createElement("div");
+  trainEl.className = "tcard-train-line";
+  var labelTrain = (nbTrain === 0 || nbTrain === 1) ? (nbTrain + " entraînement") : (nbTrain + " entraînements");
+  var pillClass = (nbTrain === 0) ? "tcard-train-pill pill-zero" : "tcard-train-pill";
+  trainEl.innerHTML = '<span class="' + pillClass + '">⚡ ' + labelTrain + '</span>';
+  bot.appendChild(trainEl);
+
+  // Stats Spakta compactes
   if(spData && spData.totals){
     var spBox = document.createElement("div");
     spBox.className = "tcard-spakta-bar";
@@ -4047,7 +4171,7 @@ function creerCarteTrainTinderHtml(j, isTop){
     bot.appendChild(spBox);
   }
 
-  if(j.note){ var nt = document.createElement("div"); nt.className = "tnote-box"; nt.textContent = "Note : " + j.note; bot.appendChild(nt); }
+  if(noteJoueur){ var nt = document.createElement("div"); nt.className = "tnote-box"; nt.textContent = "Note : " + noteJoueur; bot.appendChild(nt); }
   tc.appendChild(bot); card.appendChild(tc);
   return card;
 }

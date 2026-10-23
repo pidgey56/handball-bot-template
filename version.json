@@ -1,14 +1,14 @@
 {
-  "version": "2.2.9",
+  "version": "2.2.10",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.9 — Liaison Officielle Spakta Scout (Colonne J Effectif), Préremplissage Automatique & Sélecteur Coach",
+  "title": "Handball Manager 2.2.10 — Fiche Joueur Tinder Optimisée Sélection (Présence Entraînement sur Ligne Dédiée & Stats Spakta)",
   "changelog": [
-    "Support officiel de la Colonne J (ID Spakta) dans l'onglet Effectif du Google Sheets pour un rattachement déterministe aux statistiques Spakta Scout",
-    "Algorithme intelligent d'association et préremplissage automatique (menu Google Sheets '📊 20. Associer automatiquement les IDs Spakta à l'Effectif' et action backend 'associerIdsSpakta')",
-    "Dictionnaire de correspondance officiel pour l'effectif ACBB (32 joueurs pré-associés à 100%) et algorithme flou (nom inversé, prénom + initiale, prénom unique)",
-    "Sélecteur d'ID Spakta interactif dans la modale joueur avec <datalist> (affichage du maillot, poste et équipe officielle Spakta), badge de liaison dynamique et bouton '🔍 Auto'",
-    "Possibilité de définir un ID Spakta dès la création d'un joueur dans l'effectif",
-    "Organisation optimisée de l'Espace Joueur : le module Vie d'Équipe (MVP, Chèvre, Covoiturage, Caisse Noire) est désormais exclusivement réservé à son onglet dédié 'Vie d'Équipe' pour épurer et aérer l'onglet 'Mon Profil'",
-    "Fallback résilient dans api.js pour garantir une expérience fluide sans messages d'avertissement en cas d'appels API Spakta asynchrones"
+    "Optimisation de la fiche joueur en mode Tinder (sélection Match et Entraînement) pour afficher exclusivement les critères pertinents pour le coach",
+    "Présence aux entraînements de la semaine affichée sur une ligne dédiée sous le poste avec badge lumineux jaune or ('⚡ 2 entraînements', '⚡ 1 entraînement', '⚡ 0 entraînement')",
+    "Nettoyage de l'intitulé de poste : affichage pur du poste sans le '• 2 tr' condensé",
+    "Contraste maximal : nom du joueur en blanc pur #ffffff avec ombre portée nette pour une lisibilité parfaite sur le fond sombre",
+    "Intégration systématique des statistiques Spakta officielles (Buts, Moyenne, % Réussite au tir pour les joueurs de champ / Arrêts, Moyenne, Matchs joués pour les gardiens)",
+    "Suppression des badges ludiques (Chouchou, MVP, Chèvre) des cartes Tinder pour concentrer l'évaluation sur les aspects sportifs et la disponibilité",
+    "Conservation des tags de disponibilité par équipe (1B ✓, 1C ✗) et des notes médicales/tactiques du coach"
   ]
 }

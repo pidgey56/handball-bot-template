@@ -2205,6 +2205,35 @@ body.user-logged-in .carnet-tab-label {
   backdrop-filter: blur(8px);
 }
 
+/* Ligne Présence Entraînement sur la carte Tinder */
+.tcard-train-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1px 0 3px 0;
+}
+
+.tcard-train-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fde047 !important; /* Jaune or lumineux */
+  border: 1.5px solid rgba(253, 224, 71, 0.45);
+  border-radius: 99px;
+  padding: 3px 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.3px;
+}
+
+.tcard-train-pill.pill-zero {
+  color: #94a3b8 !important; /* Gris discret si 0 entraînement */
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
 /* Tuile Spakta compacte sur la carte Tinder */
 .tcard-spakta-bar {
   display: flex;
@@ -2541,11 +2570,12 @@ body.train-tinder-mode-active #trainFooter {
     margin: 4px auto 14px auto;
   }
   .tdeck {
-    height: 380px;
-    max-width: 320px;
+    height: 440px !important;
+    max-width: 340px !important;
   }
   .tcard {
-    height: 370px;
+    height: 440px !important;
+    max-width: 340px !important;
     padding: 14px 12px;
   }
   .tbtn-circle {

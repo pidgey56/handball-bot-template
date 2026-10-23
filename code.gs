@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '2.2.9';
+const APP_VERSION = '2.2.10';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 const LOGO_OFFICIEL_ACBB = 'https://media-logos-clubs.ffhandball.fr/256/2023-06-03-e7b37b0d-abbc-4623-9d38-ce7840be40f7.webp';
@@ -5503,7 +5503,7 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'ping') {
-      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.9' }))
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.10' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'getDonneesCoach') {
@@ -5818,6 +5818,7 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
   const mapPhotos = {};
   const mapPostes = {};
   const mapNotes = {};
+  const mapIdSpakta = {};
   const effectifComplet = [];
 
   const rowsVotes = shVotes ? shVotes.getDataRange().getValues().slice(1) : [];
@@ -5849,6 +5850,7 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
       const estTresorier = Boolean(r[7] === true || String(r[7] || '').toLowerCase() === 'oui' || String(r[7] || '').toLowerCase() === 'true' || /tr[eé]sorier/i.test(String(r[7] || '')));
       const estChouchou = Boolean(r[8] === true || String(r[8] || '').toLowerCase() === 'oui' || String(r[8] || '').toLowerCase() === 'true' || /chouchou/i.test(String(r[8] || '')));
       const idSpakta = String(r[9] || '').trim();
+      if (idSpakta) mapIdSpakta[cle] = idSpakta;
       effectifComplet.push({ nom: nomPropre, tel: dechiffrerNumero(r[1]), poste: posteEff, equipe: equipeEff, photo: photo, note: note, entrainements: nbTr, estTresorier: estTresorier, estChouchou: estChouchou, idSpakta: idSpakta });
     });
   }
@@ -5902,7 +5904,8 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
     const d1C = (cfg.nbEquipes >= 2 && r[4] !== undefined) ? (String(r[4]).trim().toUpperCase() === 'OUI') : false;
     const d1D = (cfg.nbEquipes >= 3 && r[5] !== undefined) ? (String(r[5]).trim().toUpperCase() === 'OUI') : false;
 
-    const fichePresence = { nom: nomJoueur, poste: posteJoueur, entrainements: Number(r[2]) || 0, photo: photoJoueur, note: noteJoueur };
+    const idSpaktaJoueur = mapIdSpakta[cleNom] || '';
+    const fichePresence = { nom: nomJoueur, poste: posteJoueur, entrainements: Number(r[2]) || 0, photo: photoJoueur, note: noteJoueur, idSpakta: idSpaktaJoueur };
 
     seances.forEach(function(s) {
       const col = mapColSeance[s.id];
@@ -5912,7 +5915,7 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
     });
 
     if (d1B || d1C || d1D) {
-      joueurs.push({ id: 'j_' + idx, nom: nomJoueur, poste: posteJoueur, entrainements: Number(r[2]) || 0, dispo1B: d1B, dispo1C: d1C, dispo1D: d1D, photo: photoJoueur, note: noteJoueur });
+      joueurs.push({ id: 'j_' + idx, nom: nomJoueur, poste: posteJoueur, entrainements: Number(r[2]) || 0, dispo1B: d1B, dispo1C: d1C, dispo1D: d1D, photo: photoJoueur, note: noteJoueur, idSpakta: idSpaktaJoueur });
     }
   });
 
