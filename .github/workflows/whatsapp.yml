@@ -34,6 +34,7 @@ jobs:
   run-whatsapp:
     if: github.repository != 'pidgey56/handball-bot-template'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Récupération du dépôt
         uses: actions/checkout@v4
@@ -41,7 +42,7 @@ jobs:
       - name: Installation de Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Installation des dépendances Baileys
         run: npm install

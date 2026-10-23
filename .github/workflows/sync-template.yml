@@ -34,6 +34,7 @@ jobs:
           curl -sSL "$UPSTREAM_RAW/send-poll.js" -o send-poll.js
           curl -sSL "$UPSTREAM_RAW/package.json" -o package.json
           curl -sSL "$UPSTREAM_RAW/version.json" -o version.json
+          curl -sSL "$UPSTREAM_RAW/Handball_Bot_Template.xlsx" -o Handball_Bot_Template.xlsx
           curl -sSL "$UPSTREAM_RAW/FONCTIONNALITES.md" -o FONCTIONNALITES.md
           curl -sSL "$UPSTREAM_RAW/GUIDE_INSTALLATION.md" -o GUIDE_INSTALLATION.md
           curl -sSL "$UPSTREAM_RAW/GUIDE_UTILISATION.md" -o GUIDE_UTILISATION.md
@@ -51,7 +52,7 @@ jobs:
 
       - name: Application des modifications
         run: |
-          git add code.gs send-poll.js package.json version.json FONCTIONNALITES.md GUIDE_INSTALLATION.md GUIDE_UTILISATION.md README.md docs/
+          git add code.gs send-poll.js package.json version.json Handball_Bot_Template.xlsx FONCTIONNALITES.md GUIDE_INSTALLATION.md GUIDE_UTILISATION.md README.md docs/
           if git diff --staged --quiet; then
             echo "Votre dépôt est déjà à jour avec le modèle officiel !"
           else
