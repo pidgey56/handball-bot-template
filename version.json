@@ -1,7 +1,7 @@
 {
-  "version": "2.2.7",
+  "version": "2.2.8",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.7 — Statistiques Spakta Scout 2026-2027, DA Carnet de Coach, Vie d'Équipe & Optimisations Backend",
+  "title": "Handball Manager 2.2.8 — Statistiques Spakta Scout 2026-2027, DA Carnet de Coach, Vie d'Équipe & Optimisations Backend",
   "changelog": [
     "Intégration officielle des statistiques Spakta Scout 2026-2027 : tuiles de statistiques personnalisées par poste (buteurs et gardiens), % aux tirs, 7m, 2 min, arrêts totaux et arrêts par match",
     "Historique déroulant match par match avec attribution officielle FFHB et Spakta, scores des rencontres et performances individuelles",

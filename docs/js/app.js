@@ -1,7 +1,7 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
-var APP_VERSION = '2.2.7';
+var APP_VERSION = '2.2.8';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -831,46 +831,102 @@ cont.appendChild(nextCard);
 attacherGestesTinder(topCard); majCompteurs();
 }
 function creerCarteTinderHtml(j, isTop){
-var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
-var eq1 = ((CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "ÉQUIPE 1").toUpperCase();
-var eq2 = ((CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "ÉQUIPE 2").toUpperCase();
-var eq3 = ((CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "ÉQUIPE 3").toUpperCase();
-var card = document.createElement("div"); card.className = "tcard" + (isTop ? " tcard-top" : "");
-card.setAttribute("data-nom", j.nom);
-var tInit = (j.nom || "").trim().charAt(0).toUpperCase();
-var av = document.createElement("div"); av.className = "tavatar"; av.textContent = tInit; av.style.cursor = "pointer"; av.title = "Fiche de " + j.nom; av.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); };
-if(j.photo){ var bg = document.createElement("img"); bg.className = "tbg-photo"; bg.src = j.photo; bg.onerror = function(){ this.remove(); if(av) av.style.display = "flex"; }; card.appendChild(bg); }
-var ov = document.createElement("div"); ov.className = "tbg-overlay"; card.appendChild(ov);
-function addStamp(clsPos, clsCol, txt){ var s = document.createElement("div"); s.className = "stamp " + clsPos + " " + clsCol; s.textContent = txt; card.appendChild(s); }
-if(nbEq === 1){
-addStamp("stamp-left", "stamp-out", "REPOS");
-addStamp("stamp-right", "stamp-1b", eq1);
-} else if(nbEq === 2){
-addStamp("stamp-left", "stamp-1b", eq1);
-addStamp("stamp-right", "stamp-1c", eq2);
-addStamp("stamp-down", "stamp-out", "REPOS");
-} else {
-addStamp("stamp-up", "stamp-1b", eq1);
-addStamp("stamp-left", "stamp-1c", eq2);
-addStamp("stamp-right", "stamp-1d", eq3);
-addStamp("stamp-down", "stamp-out", "REPOS");
-}
-var bEd = document.createElement("button"); bEd.className = "tbtn-edit-card"; bEd.textContent = "Fiche";
-bEd.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); }; card.appendChild(bEd);
-var tc = document.createElement("div"); tc.className = "tcontent";
-if(!j.photo){ tc.appendChild(av); }
-else { av.style.display = "none"; tc.appendChild(av); var sp = document.createElement("div"); sp.style.height = "20px"; tc.appendChild(sp); }
-var bot = document.createElement("div"); bot.style.width = "100%"; bot.style.display = "flex"; bot.style.flexDirection = "column"; bot.style.alignItems = "center"; bot.style.gap = "6px";
-var nomEl = document.createElement("div"); nomEl.style.fontSize = "1.5rem"; nomEl.style.fontWeight = "900"; nomEl.textContent = j.nom; bot.appendChild(nomEl);
-var postEl = document.createElement("div"); postEl.style.fontSize = "0.95rem"; postEl.style.color = "var(--color-secondary)"; postEl.style.fontWeight = "700"; postEl.textContent = j.poste || "Demi-Centre"; bot.appendChild(postEl);
-var tags = document.createElement("div"); tags.style.display = "flex"; tags.style.gap = "6px"; tags.style.margin = "4px 0";
-var sp1 = document.createElement("span"); sp1.className = j.dispo1B ? "tag tag-1b" : "tag"; sp1.textContent = (CLUB_CONFIG.nomEquipe1 || "Éq 1") + " " + (j.dispo1B ? "✓" : "✗"); tags.appendChild(sp1);
-if(nbEq >= 2){ var sp2 = document.createElement("span"); sp2.className = j.dispo1C ? "tag tag-1c" : "tag"; sp2.textContent = (CLUB_CONFIG.nomEquipe2 || "Éq 2") + " " + (j.dispo1C ? "✓" : "✗"); tags.appendChild(sp2); }
-if(nbEq >= 3){ var sp3 = document.createElement("span"); sp3.className = j.dispo1D ? "tag tag-1d" : "tag"; sp3.textContent = (CLUB_CONFIG.nomEquipe3 || "Éq 3") + " " + (j.dispo1D ? "✓" : "✗"); tags.appendChild(sp3); }
-bot.appendChild(tags);
-if(j.note){ var nt = document.createElement("div"); nt.className = "tnote-box"; nt.textContent = "Note : " + j.note; bot.appendChild(nt); }
-tc.appendChild(bot); card.appendChild(tc);
-return card;
+  var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
+  var eq1 = ((CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "ÉQUIPE 1").toUpperCase();
+  var eq2 = ((CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "ÉQUIPE 2").toUpperCase();
+  var eq3 = ((CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "ÉQUIPE 3").toUpperCase();
+  var card = document.createElement("div"); card.className = "tcard" + (isTop ? " tcard-top" : "");
+  card.setAttribute("data-nom", j.nom);
+
+  var spData = (typeof trouverStatsSpaktaJoueur === "function") ? trouverStatsSpaktaJoueur(j.nom) : null;
+  var jerseyNum = (spData && spData.jersey_numbers && spData.jersey_numbers.length > 0) ? spData.jersey_numbers[0] : null;
+
+  var isChou = (typeof estJoueurChouchou === "function") && estJoueurChouchou(j.nom);
+  var isMvp = (typeof estJoueurMvp === "function") && estJoueurMvp(j.nom);
+  var isChevre = (typeof estJoueurChevre === "function") && estJoueurChevre(j.nom);
+
+  if(jerseyNum){
+    var jTop = document.createElement("div");
+    jTop.className = "tcard-jersey-top";
+    jTop.textContent = "#" + jerseyNum;
+    jTop.title = "N° de maillot officiel Spakta / FFHB";
+    card.appendChild(jTop);
+  }
+
+  var tInit = (j.nom || "").trim().charAt(0).toUpperCase();
+  var av = document.createElement("div"); av.className = "tavatar"; av.textContent = tInit; av.style.cursor = "pointer"; av.title = "Fiche de " + j.nom; av.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); };
+  if(j.photo){ var bg = document.createElement("img"); bg.className = "tbg-photo"; bg.src = j.photo; bg.onerror = function(){ this.remove(); if(av) av.style.display = "flex"; }; card.appendChild(bg); }
+  var ov = document.createElement("div"); ov.className = "tbg-overlay"; card.appendChild(ov);
+
+  function addStamp(clsPos, clsCol, txt){ var s = document.createElement("div"); s.className = "stamp " + clsPos + " " + clsCol; s.textContent = txt; card.appendChild(s); }
+  if(nbEq === 1){
+    addStamp("stamp-left", "stamp-out", "REPOS");
+    addStamp("stamp-right", "stamp-1b", eq1);
+  } else if(nbEq === 2){
+    addStamp("stamp-left", "stamp-1b", eq1);
+    addStamp("stamp-right", "stamp-1c", eq2);
+    addStamp("stamp-down", "stamp-out", "REPOS");
+  } else {
+    addStamp("stamp-up", "stamp-1b", eq1);
+    addStamp("stamp-left", "stamp-1c", eq2);
+    addStamp("stamp-right", "stamp-1d", eq3);
+    addStamp("stamp-down", "stamp-out", "REPOS");
+  }
+
+  var bEd = document.createElement("button"); bEd.className = "tbtn-edit-card"; bEd.textContent = "Fiche";
+  bEd.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); }; card.appendChild(bEd);
+
+  var tc = document.createElement("div"); tc.className = "tcontent";
+  if(!j.photo){ tc.appendChild(av); }
+  else { av.style.display = "none"; tc.appendChild(av); var sp = document.createElement("div"); sp.style.height = "20px"; tc.appendChild(sp); }
+
+  var bot = document.createElement("div"); bot.style.width = "100%"; bot.style.display = "flex"; bot.style.flexDirection = "column"; bot.style.alignItems = "center"; bot.style.gap = "4px";
+
+  var nomEl = document.createElement("div");
+  nomEl.className = "tcard-nom";
+  nomEl.textContent = j.nom;
+  if(isChou){ var cB = document.createElement("span"); cB.className = "chouchou-badge"; cB.style.fontSize = "0.72rem"; cB.textContent = "❤️ Chouchou"; nomEl.appendChild(cB); }
+  if(isMvp){ var mB = document.createElement("span"); mB.className = "mvp-badge"; mB.style.fontSize = "0.72rem"; mB.textContent = "🏆 MVP"; nomEl.appendChild(mB); }
+  if(isChevre){ var chB = document.createElement("span"); chB.className = "chevre-badge"; chB.style.fontSize = "0.72rem"; chB.textContent = "🐐 Chèvre"; nomEl.appendChild(chB); }
+  bot.appendChild(nomEl);
+
+  var postEl = document.createElement("div");
+  postEl.className = "tcard-poste";
+  postEl.textContent = j.poste || "Demi-Centre";
+  bot.appendChild(postEl);
+
+  if(spData && spData.totals){
+    var spBox = document.createElement("div");
+    spBox.className = "tcard-spakta-bar";
+    if(spData.is_goalkeeper){
+      var saves = spData.totals.saves || 0;
+      var avgS = (spData.per_sheet && spData.per_sheet.saves) || 0;
+      var sheets = spData.sheets || 0;
+      spBox.innerHTML =
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val highlight">' + saves + '</span><span class="tcard-spakta-lbl">Arrêts</span></div>' +
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val">' + avgS + '/m</span><span class="tcard-spakta-lbl">Moyenne</span></div>' +
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val">' + sheets + '</span><span class="tcard-spakta-lbl">Matchs</span></div>';
+    } else {
+      var goals = spData.totals.goals || 0;
+      var avgG = (spData.per_sheet && spData.per_sheet.goals) || 0;
+      var effPct = Math.round(((spData.efficiency || 0) * 100)) + '%';
+      spBox.innerHTML =
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val highlight">' + goals + '</span><span class="tcard-spakta-lbl">Buts</span></div>' +
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val">' + avgG + '/m</span><span class="tcard-spakta-lbl">Moyenne</span></div>' +
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val">' + effPct + '</span><span class="tcard-spakta-lbl">Réussite</span></div>';
+    }
+    bot.appendChild(spBox);
+  }
+
+  var tags = document.createElement("div"); tags.style.display = "flex"; tags.style.gap = "6px"; tags.style.margin = "4px 0";
+  var sp1 = document.createElement("span"); sp1.className = j.dispo1B ? "tag tag-1b" : "tag"; sp1.textContent = (CLUB_CONFIG.nomEquipe1 || "Éq 1") + " " + (j.dispo1B ? "✓" : "✗"); tags.appendChild(sp1);
+  if(nbEq >= 2){ var sp2 = document.createElement("span"); sp2.className = j.dispo1C ? "tag tag-1c" : "tag"; sp2.textContent = (CLUB_CONFIG.nomEquipe2 || "Éq 2") + " " + (j.dispo1C ? "✓" : "✗"); tags.appendChild(sp2); }
+  if(nbEq >= 3){ var sp3 = document.createElement("span"); sp3.className = j.dispo1D ? "tag tag-1d" : "tag"; sp3.textContent = (CLUB_CONFIG.nomEquipe3 || "Éq 3") + " " + (j.dispo1D ? "✓" : "✗"); tags.appendChild(sp3); }
+  bot.appendChild(tags);
+
+  if(j.note){ var nt = document.createElement("div"); nt.className = "tnote-box"; nt.textContent = "Note : " + j.note; bot.appendChild(nt); }
+  tc.appendChild(bot); card.appendChild(tc);
+  return card;
 }
 function attacherGestesTinder(card){
 var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
@@ -2062,7 +2118,7 @@ function synchroniserStatsSpakta(callback) {
   // Si pas encore de données, charger le snapshot local statique
   if (!STATS_SPAKTA) {
     try {
-      fetch('js/spakta-data.json?v=2.2.7')
+      fetch('js/spakta-data.json?v=2.2.8')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (!STATS_SPAKTA && data && data.joueurs) {
@@ -3707,36 +3763,84 @@ cont.appendChild(nextCard);
 attacherGestesTrainTinder(topCard); majCompteursTrain();
 }
 function creerCarteTrainTinderHtml(j, isTop){
-var cfgS = TRAIN_CONFIG[SEANCE_COURANTE] || { type: "separe" };
-var card = document.createElement("div"); card.className = "tcard" + (isTop ? " tcard-top" : "");
-card.setAttribute("data-nom", j.nom);
-var trInit = (j.nom || "").trim().charAt(0).toUpperCase();
-var avTr = document.createElement("div"); avTr.className = "tavatar"; avTr.textContent = trInit; avTr.style.cursor = "pointer"; avTr.title = "Fiche de " + j.nom; avTr.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); };
-if(j.photo){ var bg = document.createElement("img"); bg.className = "tbg-photo"; bg.src = j.photo; bg.onerror = function(){ this.remove(); if(avTr) avTr.style.display = "flex"; }; card.appendChild(bg); }
-var ov = document.createElement("div"); ov.className = "tbg-overlay"; card.appendChild(ov);
-function addStamp(clsPos, clsCol, txt){ var s = document.createElement("div"); s.className = "stamp " + clsPos + " " + clsCol; s.textContent = txt; card.appendChild(s); }
-if(cfgS.type === "separe"){
-addStamp("stamp-left", "stamp-1b", "GROUPE 1");
-addStamp("stamp-right", "stamp-1c", "GROUPE 2");
-addStamp("stamp-down", "stamp-out", "REPOS");
-} else if(cfgS.type === "reduit"){
-addStamp("stamp-left", "stamp-out", "NON RETENU");
-addStamp("stamp-right", "stamp-1b", "RETENU");
-} else {
-addStamp("stamp-left", "stamp-out", "MÉNAGÉ");
-addStamp("stamp-right", "stamp-1b", "PRÉSENT");
-}
-var bEd = document.createElement("button"); bEd.className = "tbtn-edit-card"; bEd.textContent = "Fiche";
-bEd.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); }; card.appendChild(bEd);
-var tc = document.createElement("div"); tc.className = "tcontent";
-if(!j.photo){ tc.appendChild(avTr); }
-else { avTr.style.display = "none"; tc.appendChild(avTr); var sp = document.createElement("div"); sp.style.height = "20px"; tc.appendChild(sp); }
-var bot = document.createElement("div"); bot.style.width = "100%"; bot.style.display = "flex"; bot.style.flexDirection = "column"; bot.style.alignItems = "center"; bot.style.gap = "6px";
-var nomEl = document.createElement("div"); nomEl.style.fontSize = "1.5rem"; nomEl.style.fontWeight = "900"; nomEl.textContent = j.nom; bot.appendChild(nomEl);
-var postEl = document.createElement("div"); postEl.style.fontSize = "0.95rem"; postEl.style.color = "var(--color-secondary)"; postEl.style.fontWeight = "700"; postEl.textContent = (j.poste || "Demi-Centre") + " • " + (j.entrainements || 0) + " tr"; bot.appendChild(postEl);
-if(j.note){ var nt = document.createElement("div"); nt.className = "tnote-box"; nt.textContent = "Note : " + j.note; bot.appendChild(nt); }
-tc.appendChild(bot); card.appendChild(tc);
-return card;
+  var cfgS = TRAIN_CONFIG[SEANCE_COURANTE] || { type: "separe" };
+  var card = document.createElement("div"); card.className = "tcard" + (isTop ? " tcard-top" : "");
+  card.setAttribute("data-nom", j.nom);
+
+  var spData = (typeof trouverStatsSpaktaJoueur === "function") ? trouverStatsSpaktaJoueur(j.nom) : null;
+  var jerseyNum = (spData && spData.jersey_numbers && spData.jersey_numbers.length > 0) ? spData.jersey_numbers[0] : null;
+
+  if(jerseyNum){
+    var jTop = document.createElement("div");
+    jTop.className = "tcard-jersey-top";
+    jTop.textContent = "#" + jerseyNum;
+    jTop.title = "N° de maillot officiel Spakta / FFHB";
+    card.appendChild(jTop);
+  }
+
+  var trInit = (j.nom || "").trim().charAt(0).toUpperCase();
+  var avTr = document.createElement("div"); avTr.className = "tavatar"; avTr.textContent = trInit; avTr.style.cursor = "pointer"; avTr.title = "Fiche de " + j.nom; avTr.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); };
+  if(j.photo){ var bg = document.createElement("img"); bg.className = "tbg-photo"; bg.src = j.photo; bg.onerror = function(){ this.remove(); if(avTr) avTr.style.display = "flex"; }; card.appendChild(bg); }
+  var ov = document.createElement("div"); ov.className = "tbg-overlay"; card.appendChild(ov);
+
+  function addStamp(clsPos, clsCol, txt){ var s = document.createElement("div"); s.className = "stamp " + clsPos + " " + clsCol; s.textContent = txt; card.appendChild(s); }
+  if(cfgS.type === "separe"){
+    addStamp("stamp-left", "stamp-1b", "GROUPE 1");
+    addStamp("stamp-right", "stamp-1c", "GROUPE 2");
+    addStamp("stamp-down", "stamp-out", "REPOS");
+  } else if(cfgS.type === "reduit"){
+    addStamp("stamp-left", "stamp-out", "NON RETENU");
+    addStamp("stamp-right", "stamp-1b", "RETENU");
+  } else {
+    addStamp("stamp-left", "stamp-out", "MÉNAGÉ");
+    addStamp("stamp-right", "stamp-1b", "PRÉSENT");
+  }
+
+  var bEd = document.createElement("button"); bEd.className = "tbtn-edit-card"; bEd.textContent = "Fiche";
+  bEd.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); }; card.appendChild(bEd);
+
+  var tc = document.createElement("div"); tc.className = "tcontent";
+  if(!j.photo){ tc.appendChild(avTr); }
+  else { avTr.style.display = "none"; tc.appendChild(avTr); var sp = document.createElement("div"); sp.style.height = "20px"; tc.appendChild(sp); }
+
+  var bot = document.createElement("div"); bot.style.width = "100%"; bot.style.display = "flex"; bot.style.flexDirection = "column"; bot.style.alignItems = "center"; bot.style.gap = "4px";
+
+  var nomEl = document.createElement("div");
+  nomEl.className = "tcard-nom";
+  nomEl.textContent = j.nom;
+  bot.appendChild(nomEl);
+
+  var postEl = document.createElement("div");
+  postEl.className = "tcard-poste";
+  postEl.textContent = (j.poste || "Demi-Centre") + " • " + (j.entrainements || 0) + " tr";
+  bot.appendChild(postEl);
+
+  if(spData && spData.totals){
+    var spBox = document.createElement("div");
+    spBox.className = "tcard-spakta-bar";
+    if(spData.is_goalkeeper){
+      var saves = spData.totals.saves || 0;
+      var avgS = (spData.per_sheet && spData.per_sheet.saves) || 0;
+      var sheets = spData.sheets || 0;
+      spBox.innerHTML =
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val highlight">' + saves + '</span><span class="tcard-spakta-lbl">Arrêts</span></div>' +
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val">' + avgS + '/m</span><span class="tcard-spakta-lbl">Moyenne</span></div>' +
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val">' + sheets + '</span><span class="tcard-spakta-lbl">Matchs</span></div>';
+    } else {
+      var goals = spData.totals.goals || 0;
+      var avgG = (spData.per_sheet && spData.per_sheet.goals) || 0;
+      var effPct = Math.round(((spData.efficiency || 0) * 100)) + '%';
+      spBox.innerHTML =
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val highlight">' + goals + '</span><span class="tcard-spakta-lbl">Buts</span></div>' +
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val">' + avgG + '/m</span><span class="tcard-spakta-lbl">Moyenne</span></div>' +
+        '<div class="tcard-spakta-item"><span class="tcard-spakta-val">' + effPct + '</span><span class="tcard-spakta-lbl">Réussite</span></div>';
+    }
+    bot.appendChild(spBox);
+  }
+
+  if(j.note){ var nt = document.createElement("div"); nt.className = "tnote-box"; nt.textContent = "Note : " + j.note; bot.appendChild(nt); }
+  tc.appendChild(bot); card.appendChild(tc);
+  return card;
 }
 function attacherGestesTrainTinder(card){
 var cfgS = TRAIN_CONFIG[SEANCE_COURANTE] || { type: "separe" };
