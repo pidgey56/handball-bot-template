@@ -454,12 +454,21 @@ header {
   box-shadow: var(--card-shadow);
   transition: max-width 0.3s ease, transform 0.2s ease;
 }
-body.user-logged-in .home-card { background: transparent!important; border: none!important; box-shadow: none!important; max-width: 860px!important; padding: 10px 14px!important; margin: 0 auto; }
+body.user-logged-in .home-card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  max-width: 1400px !important;
+  width: 96% !important;
+  padding: 10px 14px !important;
+  margin: 0 auto !important;
+}
 
 @media(min-width: 1024px) {
   body.user-logged-in .home-card {
-    max-width: 1280px!important;
-    padding: 38px 46px!important;
+    max-width: 1440px !important;
+    width: 96% !important;
+    padding: 16px 20px !important;
   }
 }
 
@@ -2285,11 +2294,13 @@ body.theme-slate .carnet-tab.active {
 /* Desktop layout pour les panneaux du carnet */
 @media(min-width: 1024px) {
   #playerBox {
-    max-width: 880px;
+    max-width: 1440px !important;
+    width: 100% !important;
     margin: 0 auto;
   }
   .carnet-panel {
-    max-width: 880px;
+    max-width: 1440px !important;
+    width: 100% !important;
   }
 }
 
@@ -2449,12 +2460,13 @@ body.user-logged-in #homeView {
 }
 
 body.user-logged-in .home-card {
-  background: transparent!important;
-  border: none!important;
-  box-shadow: none!important;
-  max-width: 800px!important;
-  padding: 4px 8px!important;
-  margin: 0 auto!important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  max-width: 1440px !important;
+  width: 96% !important;
+  padding: 4px 12px !important;
+  margin: 0 auto !important;
 }
 
 /* En-tête compacte en mode connecté */
@@ -2472,8 +2484,9 @@ body.user-logged-in .home-header-wrapper {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  max-width: 780px;
-  padding: 8px 14px;
+  max-width: 1440px;
+  width: 100%;
+  padding: 10px 18px;
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);
   border-radius: 16px;
@@ -2542,23 +2555,25 @@ body.user-logged-in .status-pill {
 
 @media(min-width: 641px) {
   body.user-logged-in .carnet-nav-tabs {
-    margin: 2px auto 8px auto!important;
-    max-width: 780px!important;
-    padding: 4px!important;
-    border-radius: 14px!important;
+    margin: 4px auto 14px auto !important;
+    max-width: 1440px !important;
+    width: 100% !important;
+    padding: 6px !important;
+    border-radius: 16px !important;
   }
 
   body.user-logged-in .carnet-tab {
-    padding: 6px 8px!important;
-    gap: 2px!important;
+    padding: 10px 18px !important;
+    gap: 8px !important;
   }
 
   body.user-logged-in .carnet-tab-icon {
-    font-size: 1rem!important;
+    font-size: 1.15rem !important;
   }
 
   body.user-logged-in .carnet-tab-label {
-    font-size: 0.7rem!important;
+    font-size: 0.85rem !important;
+    font-weight: 700;
   }
 }
 
@@ -2568,24 +2583,44 @@ body.user-logged-in .status-pill {
   flex-direction: column;
   gap: 14px;
   width: 100%;
-  max-width: 1240px;
+  max-width: 1440px;
   margin: 0 auto;
 }
 
 @media(min-width: 860px) {
   .profil-grid-layout {
     display: grid;
-    grid-template-columns: 330px 1fr;
-    gap: 20px;
+    grid-template-columns: 360px 1fr;
+    gap: 24px;
     align-items: start;
     width: 100%;
   }
 }
 
-@media(min-width: 1200px) {
+@media(min-width: 1280px) {
   .profil-grid-layout {
-    grid-template-columns: 340px 1fr;
-    gap: 24px;
+    grid-template-columns: 400px 1fr;
+    gap: 28px;
+    max-width: 1440px;
+  }
+}
+
+/* Grille adaptative pour Vie d'Équipe et Coach sur grand écran PC */
+@media(min-width: 1024px) {
+  .player-hub-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 16px !important;
+  }
+  .player-hub-grid .tile-caisse {
+    grid-column: 1 / -1 !important;
+  }
+  .coach-dashboard-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 16px !important;
+  }
+  .coach-dashboard-grid #dashTileCaisseNoireCoach,
+  .coach-dashboard-grid #dashTileVacancesCoach {
+    grid-column: span 2 !important;
   }
 }
 
@@ -4060,8 +4095,8 @@ body.theme-slate .banner-vacances-btn {
  * TABLEAU DE BORD MODERNE DU MODULE ENTRAÎNEMENT
  * ============================================================================== */
 .train-dashboard-card {
-  max-width: 1080px;
-  width: 95%;
+  max-width: 1440px;
+  width: 96%;
   margin: 14px auto 14px auto;
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);
@@ -4445,7 +4480,7 @@ body.theme-slate .coach-treasurer-box label {
  * ============================================================================== */
 #previewView {
   width: 100%;
-  max-width: 1080px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 12px 14px 40px;
   box-sizing: border-box;
@@ -4453,7 +4488,7 @@ body.theme-slate .coach-treasurer-box label {
 
 .preview-page {
   width: 100%;
-  max-width: 860px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -4512,7 +4547,7 @@ body.theme-slate .preview-btn-nav:hover {
 /* Bloc d'envoi WhatsApp */
 .preview-wa-block {
   width: 100%;
-  max-width: 860px;
+  max-width: 1200px;
   margin: 12px auto 0 auto;
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);

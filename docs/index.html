@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.21">
+  <link rel="stylesheet" href="css/style.css?v=2.2.22">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -242,7 +242,7 @@
 <div id="playerBox" style="display:none;flex-direction:column;align-items:center;gap:14px;width:100%;">
 
   <!-- ONGLET 1 : MON PROFIL -->
-  <div id="panelProfil" class="carnet-panel active" style="display:flex;width:100%;max-width:1240px;margin:0 auto;">
+  <div id="panelProfil" class="carnet-panel active" style="display:flex;width:100%;max-width:1440px;margin:0 auto;">
     <div class="profil-grid-layout">
       <!-- Colonne Gauche (330px sur desktop) : Carte Joueur Athlète & Identité -->
       <div class="profil-card-col">
@@ -361,7 +361,7 @@
   </div>
 
   <!-- ONGLET 2 : MATCHS & COMPOSITIONS -->
-  <div id="panelMatchs" class="carnet-panel" style="display:none;width:100%;max-width:1240px;margin:0 auto;">
+  <div id="panelMatchs" class="carnet-panel" style="display:none;width:100%;max-width:1440px;margin:0 auto;">
     
     <div class="dash-tile" style="width:100%;box-sizing:border-box;margin-top:6px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -378,7 +378,7 @@
   </div>
 
   <!-- ONGLET 3 : ENTRAÎNEMENTS -->
-  <div id="panelTrain" class="carnet-panel" style="display:none;width:100%;max-width:1240px;margin:0 auto;">
+  <div id="panelTrain" class="carnet-panel" style="display:none;width:100%;max-width:1440px;margin:0 auto;">
     <div class="dash-tile" style="width:100%;box-sizing:border-box;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <div class="dash-tile-title">🏃 Séances d'Entraînement de la Semaine</div>
@@ -394,7 +394,7 @@
   </div>
 
   <!-- ONGLET 4 : VIE D'ÉQUIPE -->
-  <div id="panelClub" class="carnet-panel" style="display:none;width:100%;max-width:1240px;margin:0 auto;">
+  <div id="panelClub" class="carnet-panel" style="display:none;width:100%;max-width:1440px;margin:0 auto;">
     <div class="player-hub-grid" style="width:100%;">
       <div class="player-tile tile-mvp" onclick="ouvrirModalMvp()">
         <div class="player-tile-top"><span class="player-tile-icon">🏆</span><span id="tileBadgeMvp" class="player-tile-badge badge-mvp">Vote ouvert</span></div>
@@ -420,7 +420,7 @@
   </div>
 
   <!-- ONGLET 5 : GESTION COACH -->
-  <div id="panelCoach" class="carnet-panel" style="display:none;width:100%;max-width:1240px;margin:0 auto;">
+  <div id="panelCoach" class="carnet-panel" style="display:none;width:100%;max-width:1440px;margin:0 auto;">
     <div id="coachMenuBox" style="width:100%;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <span style="font-size:0.85rem;color:var(--color-secondary);font-weight:900;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">ESPACE COACH</span>
@@ -1769,13 +1769,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.21"></script>
-  <script src="js/api.js?v=2.2.21"></script>
-  <script src="js/app.js?v=2.2.21"></script>
+  <script src="js/spakta-data.js?v=2.2.22"></script>
+  <script src="js/api.js?v=2.2.22"></script>
+  <script src="js/app.js?v=2.2.22"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.21').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.22').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

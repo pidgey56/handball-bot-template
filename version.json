@@ -1,12 +1,12 @@
 {
-  "version": "2.2.21",
+  "version": "2.2.22",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.21 — Pack Graphique Option 3 : Icônes Playbook SVG & Animation Roucoulette",
+  "title": "Handball Manager 2.2.22 — Optimisation Grand Écran PC & Desktop Widescreen",
   "changelog": [
-    "Remplacement des émojis système par un ensemble d'icônes vectorielles SVG 'Playbook & Carnet Tactique' (sprite SVG haute performance)",
-    "Animation interactive 'Roucoulette' sur les boutons d'action (ballon de handball réaliste roulant au survol avec rotation dynamique)",
-    "Transitions de pages et vues fluides (App-like Smooth Transitions avec glissement et fondu)",
-    "Amélioration des micro-interactions : cartes joueurs surélevées au Drag & Drop, retour animé sur la copie presse-papier",
-    "Bascule de thème Carnet / Ardoise avec icônes Soleil / Lune vectorielles"
+    "Suppression du bridage étroit (800px) sur grand écran PC au profit d'une mise en page large fluide (jusqu'à 1440px / 96%)",
+    "En-tête de club et barre d'onglets intercalaires élargies et confortables sur desktop",
+    "Dashboard joueur réorganisé en grille 2 colonnes spacieuse (380-400px à gauche, stats & matchs à droite)",
+    "Grille d'équipe étendue sur 4 colonnes sur PC (Trophée MVP, Chèvre, Covoiturage, Absence, Caisse)",
+    "Tableau de bord coach et module d'aperçu adaptés aux résolutions Full HD, 2K et 4K"
   ]
 }

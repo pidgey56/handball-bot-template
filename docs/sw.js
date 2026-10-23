@@ -1,17 +1,17 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - SERVICE WORKER
-// Gestion du cache hors-ligne et fonctionnement PWA (v2.2.21)
+// Gestion du cache hors-ligne et fonctionnement PWA (v2.2.22)
 // ============================================================================
 
-const CACHE_NAME = 'handball-app-v2.2.21';
+const CACHE_NAME = 'handball-app-v2.2.22';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './css/style.css?v=2.2.21',
-  './js/api.js?v=2.2.21',
-  './js/spakta-data.js?v=2.2.21',
-  './js/spakta-data.json?v=2.2.21',
-  './js/app.js?v=2.2.21',
+  './css/style.css?v=2.2.22',
+  './js/api.js?v=2.2.22',
+  './js/spakta-data.js?v=2.2.22',
+  './js/spakta-data.json?v=2.2.22',
+  './js/app.js?v=2.2.22',
   './manifest.json',
   './images/logo.png',
   './images/logo.svg',
