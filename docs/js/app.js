@@ -1,7 +1,8 @@
-﻿// ============================================================================
+// ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
 var APP_VERSION = '2.0.0';
+var UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 var CLUB_CONFIG = window.CLUB_CONFIG || {
   nomClub: 'Mon Club Handball',
   githubRepo: '',
@@ -67,7 +68,7 @@ function formaterNomPourMessage(nom){
   }
   return s;
 }
-var SEANCES_TRAIN = ' + JSON.stringify(((cfg.seancesTrain && cfg.seancesTrain.length) ? cfg.seancesTrain : [{ id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi (20h30)", actif: true }, { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi (20h30)", actif: true }]).filter(function(s){ return s.actif !== false && s.actif !== 'NON' && !/match|poule|coupe|championnat/i.test(s.label || ''); })) + ';
+var SEANCES_TRAIN = [{ id: "lun", jour: "Lundi", horaire: "20h30", label: "Lundi (20h30)", actif: true }, { id: "mer", jour: "Mercredi", horaire: "20h30", label: "Mercredi (20h30)", actif: true }];
 var DERNIERE_COMPO = null;
 var EQUIPE_TACTIQUE_COURANTE = "1B";
 var COMPOSITIONS_TACTIQUES = { "1B": {}, "1C": {}, "1D": {} };
@@ -337,11 +338,11 @@ var prevE3 = document.getElementById("prevBadgeE3"); if(prevE3) prevE3.style.dis
 var prevE2 = document.getElementById("prevBadgeE2"); if(prevE2) prevE2.style.display = (num >= 2) ? "inline-block" : "none";
 }
 function ouvrirModalCouleurs(){
-var cp = CLUB_CONFIG.couleurPrimaire || "' + cfg.couleurPrimaire + '";
-var cs = CLUB_CONFIG.couleurSecondaire || "' + cfg.couleurSecondaire + '";
-var c1 = CLUB_CONFIG.couleurEquipe1 || "' + cfg.couleurEquipe1 + '";
-var c2 = CLUB_CONFIG.couleurEquipe2 || "' + cfg.couleurEquipe2 + '";
-var c3 = CLUB_CONFIG.couleurEquipe3 || "' + (cfg.couleurEquipe3 || '#10b981') + '";
+var cp = (CLUB_CONFIG && CLUB_CONFIG.couleurPrimaire) || "#1e293b";
+var cs = (CLUB_CONFIG && CLUB_CONFIG.couleurSecondaire) || "#f59e0b";
+var c1 = (CLUB_CONFIG && CLUB_CONFIG.couleurEquipe1) || "#3b82f6";
+var c2 = (CLUB_CONFIG && CLUB_CONFIG.couleurEquipe2) || "#f59e0b";
+var c3 = (CLUB_CONFIG && CLUB_CONFIG.couleurEquipe3) || "#10b981";
 document.getElementById("inpColPrimaire").value = cp;
 document.getElementById("txtColPrimaire").value = cp.toUpperCase();
 document.getElementById("inpColSecondaire").value = cs;
@@ -355,7 +356,7 @@ document.getElementById("statusModalCouleurs").textContent = "";
 document.getElementById("modalLogoStatus").textContent = "";
 if(document.getElementById("inpFfhbClubUrl")) document.getElementById("inpFfhbClubUrl").value = CLUB_CONFIG.urlFfhbClub || "";
 if(document.getElementById("ffhbImportStatus")) document.getElementById("ffhbImportStatus").innerHTML = "";
-if(document.getElementById("modalClubLogoPreview")) document.getElementById("modalClubLogoPreview").src = CLUB_CONFIG.logoUrl || "' + cfg.logoUrl + '";
+if(document.getElementById("modalClubLogoPreview")) document.getElementById("modalClubLogoPreview").src = (CLUB_CONFIG && CLUB_CONFIG.logoUrl) || "images/logo.png";
 if(document.getElementById("inpClubLogoUrl")) document.getElementById("inpClubLogoUrl").value = "";
 var curNb = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 3;
 var cEqs = (CLUB_CONFIG && CLUB_CONFIG.equipes) || [];
@@ -1634,7 +1635,7 @@ if(res && res.disponible){
 UPDATE_INFO = res;
 ouvrirModalMiseAJour();
 } else {
-afficherToast("Votre Handball Bot est parfaitement à jour (Version v" + (res ? res.versionActuelle : "' + APP_VERSION + '") + ") !", "succes");
+afficherToast("Votre Handball Bot est parfaitement à jour (Version v" + (res ? res.versionActuelle : APP_VERSION) + ") !", "succes");
 }
 }).withFailureHandler(function(err){
 if(btn) btn.textContent = "Vérifier les mises à jour";
@@ -1658,7 +1659,7 @@ function fermerModalMiseAJour(){ document.getElementById("modalMiseAJourBg").sty
 function fermerModalMiseAJourSurBg(e){ if(e.target.id === "modalMiseAJourBg") fermerModalMiseAJour(); }
 function masquerBanniereUpdate(){ var b = document.getElementById("updateBannerBox"); if(b) b.style.display = "none"; }
 function copierLienCodeGs(){
-var url = (UPDATE_INFO && UPDATE_INFO.codeGsUrl) ? UPDATE_INFO.codeGsUrl : "https://raw.githubusercontent.com/' + UPSTREAM_TEMPLATE_REPO + '/main/code.gs";
+var url = (UPDATE_INFO && UPDATE_INFO.codeGsUrl) ? UPDATE_INFO.codeGsUrl : "https://raw.githubusercontent.com/" + UPSTREAM_TEMPLATE_REPO + "/main/code.gs";
 if(navigator.clipboard && navigator.clipboard.writeText){
 navigator.clipboard.writeText(url).then(function(){
 var b = document.getElementById("btnCopierCodeGs");
