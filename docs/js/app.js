@@ -1622,8 +1622,8 @@ function rendreOngletsTrain(){
     btn.type = "button";
     btn.className = "train-tab-btn tab-btn" + (s.id === SEANCE_COURANTE ? " active tab-active" : "");
     btn.id = "tab_" + s.id;
-    var icon = (s.jour && /samedi|dimanche/i.test(s.jour)) ? "🏃 " : "🏐 ";
-    btn.innerHTML = '<span class="train-tab-icon">' + icon + '</span><span class="train-tab-label">' + (s.jour || ("Séance " + (idx + 1))) + (s.horaire ? (" " + s.horaire) : "") + '</span>';
+    var icon = (s.jour && /samedi|dimanche/i.test(s.jour)) ? '<svg class="hb-icon"><use href="#icon-running"></use></svg>' : '<svg class="hb-icon"><use href="#icon-ball"></use></svg>';
+    btn.innerHTML = '<span class="train-tab-icon">' + icon + '</span> <span class="train-tab-label">' + (s.jour || ("Séance " + (idx + 1))) + (s.horaire ? (" " + s.horaire) : "") + '</span>';
     btn.onclick = function(){ changerSeance(s.id); };
     cont.appendChild(btn);
   });
@@ -1760,14 +1760,14 @@ function copierMessageApercu(btnTrigger){
     if(btn){
       btn.classList.add("copied");
       var isTopBtn = btn.classList.contains("btn-copy-wa");
-      btn.innerHTML = isTopBtn ? "✅ Copié !" : "<span class='wa-btn-icon'>✅</span> Message copié !";
+      btn.innerHTML = isTopBtn ? '<svg class="hb-icon"><use href="#icon-check"></use></svg> Copié !' : '<svg class="hb-icon"><use href="#icon-check"></use></svg> Message copié !';
       setTimeout(function(){
         btn.classList.remove("copied");
         btn.innerHTML = oldHtml;
       }, 2000);
     }
     var st = document.getElementById("previewStatus");
-    if(st) st.textContent = "📋 Message copié dans le presse-papier ! Vous pouvez le coller sur WhatsApp.";
+    if(st) st.innerHTML = '<svg class="hb-icon" style="color:#16a34a;"><use href="#icon-check"></use></svg> Message copié dans le presse-papier ! Vous pouvez le coller sur WhatsApp.';
   }
 
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -5730,15 +5730,15 @@ window.basculerThemeCarnet = function() {
   if (isSlate) {
     document.body.classList.remove('theme-slate');
     try { localStorage.setItem('hb_da_theme', 'paper'); } catch(e){}
-    if (ic) ic.textContent = '📄';
+    if (ic) ic.innerHTML = '<svg class="hb-icon"><use href="#icon-sun"></use></svg>';
     if (tx) tx.textContent = 'Carnet';
-    if (typeof afficherToast === 'function') afficherToast('Mode Carnet Moleskine activé 📄', 'info');
+    if (typeof afficherToast === 'function') afficherToast('Mode Carnet Papier activé', 'info');
   } else {
     document.body.classList.add('theme-slate');
     try { localStorage.setItem('hb_da_theme', 'slate'); } catch(e){}
-    if (ic) ic.textContent = '📋';
+    if (ic) ic.innerHTML = '<svg class="hb-icon"><use href="#icon-moon"></use></svg>';
     if (tx) tx.textContent = 'Ardoise';
-    if (typeof afficherToast === 'function') afficherToast('Mode Ardoise Vestiaire activé 📋', 'info');
+    if (typeof afficherToast === 'function') afficherToast('Mode Ardoise Vestiaire activé', 'info');
   }
 };
 
@@ -5749,11 +5749,11 @@ function initialiserThemeCarnet() {
     var tx = document.getElementById('txtTheme');
     if (savedTheme === 'slate') {
       document.body.classList.add('theme-slate');
-      if (ic) ic.textContent = '📋';
+      if (ic) ic.innerHTML = '<svg class="hb-icon"><use href="#icon-moon"></use></svg>';
       if (tx) tx.textContent = 'Ardoise';
     } else {
       document.body.classList.remove('theme-slate');
-      if (ic) ic.textContent = '📄';
+      if (ic) ic.innerHTML = '<svg class="hb-icon"><use href="#icon-sun"></use></svg>';
       if (tx) tx.textContent = 'Carnet';
     }
   } catch(e) {}

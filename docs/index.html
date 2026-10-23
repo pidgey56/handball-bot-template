@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.20">
+  <link rel="stylesheet" href="css/style.css?v=2.2.21">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -31,6 +31,153 @@
 <div id="loadingScreenSub" style="font-size:0.78rem;color:var(--text-muted);">Synchronisation FFHB & WhatsApp</div>
 </div>
 <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true"><defs><clipPath id="svgHeartClip" clipPathUnits="objectBoundingBox"><path d="M 0.5, 0.90 C 0.25, 0.70, 0, 0.48, 0, 0.26 C 0, 0.10, 0.12, 0, 0.30, 0 C 0.42, 0, 0.48, 0.06, 0.5, 0.14 C 0.52, 0.06, 0.58, 0, 0.70, 0 C 0.88, 0, 1, 0.10, 1, 0.26 C 1, 0.48, 0.75, 0.70, 0.5, 0.90 Z" /></clipPath></defs></svg>
+<!-- SPRITE SVG DU CARNET TACTIQUE (OPTION 3 : PLAYBOOK & HANDBALL ICONS) -->
+<svg style="display:none;" id="hbSvgSprite" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Ballon de handball (coutures courbes caractéristiques) -->
+    <g id="icon-ball" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M4.93 4.93l14.14 14.14"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </g>
+    <!-- Terrain de handball -->
+    <g id="icon-court" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="18" height="14" x="3" y="5" rx="2"/>
+      <line x1="12" x2="12" y1="5" y2="19"/>
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M3 8a4 4 0 0 1 4 4 4 4 0 0 1-4 4"/>
+      <path d="M21 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4"/>
+    </g>
+    <!-- Presse-papier tactique -->
+    <g id="icon-clipboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+      <path d="M9 12h6"/>
+      <path d="M9 16h4"/>
+    </g>
+    <!-- Copie / Duplication -->
+    <g id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="13" height="13" x="9" y="9" rx="2" ry="2"/>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </g>
+    <!-- Coche de validation -->
+    <g id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </g>
+    <!-- Profil / Joueur -->
+    <g id="icon-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </g>
+    <!-- Équipe / Deux joueurs -->
+    <g id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </g>
+    <!-- Entraînement / Course / Chrono -->
+    <g id="icon-running" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </g>
+    <!-- Trophée / MVP -->
+    <g id="icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+      <path d="M4 22h16"/>
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+    </g>
+    <!-- Sifflet Coach / Réglages -->
+    <g id="icon-whistle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </g>
+    <!-- Sauvegarde Disquette -->
+    <g id="icon-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+      <polyline points="17 21 17 13 7 13 7 21"/>
+      <polyline points="7 3 7 8 15 8"/>
+    </g>
+    <!-- Cible / Format -->
+    <g id="icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <circle cx="12" cy="12" r="6"/>
+      <circle cx="12" cy="12" r="2"/>
+    </g>
+    <!-- Ampoule Conseil / Info -->
+    <g id="icon-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+      <path d="M9 18h6"/>
+      <path d="M10 22h4"/>
+    </g>
+    <!-- Calendrier -->
+    <g id="icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+      <line x1="16" x2="16" y1="2" y2="6"/>
+      <line x1="8" x2="8" y1="2" y2="6"/>
+      <line x1="3" x2="21" y1="10" y2="10"/>
+    </g>
+    <!-- Partage mobile -->
+    <g id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="18" cy="5" r="3"/>
+      <circle cx="6" cy="12" r="3"/>
+      <circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/>
+      <line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>
+    </g>
+    <!-- Rafraîchir / Synchroniser -->
+    <g id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+      <path d="M21 3v5h-5"/>
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+      <path d="M3 21v-5h5"/>
+    </g>
+    <!-- Soleil (Carnet papier clair) -->
+    <g id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+    </g>
+    <!-- Lune (Ardoise sombre) -->
+    <g id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+    </g>
+    <!-- Caisse Noire / Monnaie -->
+    <g id="icon-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="20" height="14" x="2" y="5" rx="2"/>
+      <line x1="2" x2="22" y1="10" y2="10"/>
+    </g>
+    <!-- Trêve / Vacances Parasol -->
+    <g id="icon-umbrella" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 12a10.06 10.06 0 0 0-20 0Z"/>
+      <path d="M12 12v8a2 2 0 0 0 4 0"/>
+      <path d="M12 2v1"/>
+    </g>
+    <!-- Guide Coach / Livre -->
+    <g id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+      <path d="M6 6h10"/>
+      <path d="M6 10h10"/>
+    </g>
+    <!-- Banc / Remplaçants -->
+    <g id="icon-bench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      <rect width="18" height="5" x="3" y="11" rx="1"/>
+      <line x1="5" x2="5" y1="16" y2="20"/>
+      <line x1="19" x2="19" y1="16" y2="20"/>
+    </g>
+    <!-- Message bulle -->
+    <g id="icon-message" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+    </g>
+    <!-- Éclair / Flash -->
+    <g id="icon-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </g>
+  </defs>
+</svg>
 <div id="homeView">
 <div class="home-card">
 <div class="home-header-wrapper">
@@ -51,7 +198,7 @@
       <span id="apiStatusText" class="status-pill-text">Google Sheet Connecté</span>
     </div>
     <div id="btnThemeToggle" class="status-pill" onclick="basculerThemeCarnet()" title="Changer le style (Carnet Papier / Ardoise Vestiaire)">
-      <span id="iconTheme">📄</span>
+      <span id="iconTheme"><svg class="hb-icon"><use href="#icon-sun"></use></svg></span>
       <span id="txtTheme" class="status-pill-text">Carnet</span>
     </div>
     <div id="badgeStatusWhatsApp" class="status-pill" style="display:none;" title="WhatsApp Connecté & Synchronisé" onclick="if(typeof afficherToast==='function') afficherToast('WhatsApp Connecté & Synchronisé', 'succes');">
@@ -71,23 +218,23 @@
 <!-- BARRE D'ONGLETS INTERCALAIRES DU CARNET (affichée une fois connecté) -->
 <nav id="carnetNavTabs" class="carnet-nav-tabs" style="display:none;">
   <button type="button" class="carnet-tab active" data-tab="profil" onclick="basculerOngletCarnet('profil')">
-    <span class="carnet-tab-icon">👤</span>
+    <span class="carnet-tab-icon"><svg class="hb-icon"><use href="#icon-user"></use></svg></span>
     <span class="carnet-tab-label"><span class="nav-label-desktop">Mon Profil</span><span class="nav-label-mobile">Profil</span></span>
   </button>
   <button type="button" class="carnet-tab" data-tab="matchs" onclick="basculerOngletCarnet('matchs')">
-    <span class="carnet-tab-icon">🤾</span>
+    <span class="carnet-tab-icon"><svg class="hb-icon"><use href="#icon-court"></use></svg></span>
     <span class="carnet-tab-label">Matchs</span>
   </button>
   <button type="button" class="carnet-tab" data-tab="train" onclick="basculerOngletCarnet('train')">
-    <span class="carnet-tab-icon">🏃</span>
+    <span class="carnet-tab-icon"><svg class="hb-icon"><use href="#icon-running"></use></svg></span>
     <span class="carnet-tab-label"><span class="nav-label-desktop">Entraînements</span><span class="nav-label-mobile">Séances</span></span>
   </button>
   <button type="button" class="carnet-tab" data-tab="club" onclick="basculerOngletCarnet('club')">
-    <span class="carnet-tab-icon">🏆</span>
+    <span class="carnet-tab-icon"><svg class="hb-icon"><use href="#icon-trophy"></use></svg></span>
     <span class="carnet-tab-label"><span class="nav-label-desktop">Vie d'Équipe</span><span class="nav-label-mobile">Équipe</span></span>
   </button>
   <button type="button" class="carnet-tab" data-tab="coach" id="btnTabCoach" style="display:none;" onclick="basculerOngletCarnet('coach')">
-    <span class="carnet-tab-icon">⚙️</span>
+    <span class="carnet-tab-icon"><svg class="hb-icon"><use href="#icon-whistle"></use></svg></span>
     <span class="carnet-tab-label">Coach</span>
   </button>
 </nav>
@@ -371,9 +518,9 @@
 <button class="btn-reset" id="btnCollectifsAppHeader" onclick="ouvrirModalCollectifs()">Collectifs ▾</button>
 <button class="btn-reset" onclick="entrerEffectif()">Effectif & Notes</button>
 <button class="btn-reset" onclick="ouvrirModalCouleurs()">Couleurs & Équipes</button>
-<button class="btn-reset" id="btnHeaderCaisseNoire" onclick="ouvrirModalAdminCaisseNoire()" title="Caisse Noire & Amendes">💰 Caisse Noire</button>
-<button class="btn-reset" onclick="ouvrirModalGuideCoach()" title="Guide des fonctionnalités coach">📖 Guide</button>
-<button class="btn-sync js-sync-wa" onclick="forcerActualisationWhatsApp()">Actualiser WhatsApp</button>
+<button class="btn-reset" id="btnHeaderCaisseNoire" onclick="ouvrirModalAdminCaisseNoire()" title="Caisse Noire & Amendes"><svg class="hb-icon"><use href="#icon-wallet"></use></svg> Caisse Noire</button>
+<button class="btn-reset" onclick="ouvrirModalGuideCoach()" title="Guide des fonctionnalités coach"><svg class="hb-icon"><use href="#icon-book"></use></svg> Guide</button>
+<button class="btn-sync js-sync-wa" onclick="forcerActualisationWhatsApp()"><svg class="hb-icon"><use href="#icon-refresh"></use></svg> Actualiser</button>
 <button class="btn-tinder" id="btnSwitchMode" onclick="basculerMode()">Mode Tinder</button>
 <span class="badge-mode js-statut" id="statutChargement">Chargement...</span>
 </div>
@@ -384,7 +531,7 @@
 </div>
 <div id="banniereVacancesMatch" class="banner-vacances" style="display:none;">
   <div style="display:flex;align-items:center;gap:10px;">
-    <span style="font-size:1.3rem;">🏖️</span>
+    <svg class="hb-icon" style="font-size:1.3rem;stroke:#0284c7;"><use href="#icon-umbrella"></use></svg>
     <span id="txtBanniereVacancesMatch" class="banner-vacances-text">Semaine en période de vacances scolaires. Aucun match officiel programmé.</span>
   </div>
   <button type="button" class="btn-reset banner-vacances-btn" onclick="ouvrirModalVacances()">Gérer vacances</button>
@@ -447,11 +594,11 @@
 <div class="tinder-kbd-hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ↑ ou 1 / 2 / 3 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
 </div>
 <footer id="appFooter" style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:22px auto 36px auto;padding:12px 20px;">
-<button type="button" class="btn-reset btn-footer-action" onclick="recommencerSelection()">↺ Réinitialiser</button>
-<button type="button" class="btn-save btn-footer-draft" onclick="sauvegarderBrouillonLocal(true)">💾 Sauvegarder Brouillon</button>
-<button type="button" class="btn-reset btn-footer-action" id="btnChargerCompoPrec" onclick="rechargerCompoPrecedente()">📋 Charger compo précédente</button>
-<button type="button" class="btn-save btn-footer-save" onclick="sauvegarder(false)">✅ Sauvegarder</button>
-<button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuMatch()">🏟️ Aperçu & Terrain tactique</button>
+<button type="button" class="btn-reset btn-footer-action" onclick="recommencerSelection()"><svg class="hb-icon"><use href="#icon-refresh"></use></svg> Réinitialiser</button>
+<button type="button" class="btn-save btn-footer-draft" onclick="sauvegarderBrouillonLocal(true)"><svg class="hb-icon"><use href="#icon-save"></use></svg> Sauvegarder Brouillon</button>
+<button type="button" class="btn-reset btn-footer-action" id="btnChargerCompoPrec" onclick="rechargerCompoPrecedente()"><svg class="hb-icon"><use href="#icon-refresh"></use></svg> Charger compo précédente</button>
+<button type="button" class="btn-save btn-footer-save" onclick="sauvegarder(false)"><svg class="hb-icon"><use href="#icon-check"></use></svg> Sauvegarder</button>
+<button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuMatch()"><svg class="hb-icon"><use href="#icon-court"></use></svg> Aperçu & Terrain tactique</button>
 </footer>
 </div>
 <div id="trainView" style="display:none;">
@@ -462,8 +609,8 @@
 <button class="btn-reset" onclick="ouvrirModalCollectifs()">Collectifs ▾</button>
 <button class="btn-reset" onclick="entrerEffectif()">Effectif</button>
 <button class="btn-reset" onclick="ouvrirModalConfigEntrainements()">Créneaux & Horaires</button>
-<button class="btn-reset" onclick="ouvrirModalGuideCoach()" title="Guide des fonctionnalités coach">📖 Guide</button>
-<button class="btn-sync js-sync-wa" onclick="forcerActualisationWhatsApp()">Actualiser WA</button>
+<button class="btn-reset" onclick="ouvrirModalGuideCoach()" title="Guide des fonctionnalités coach"><svg class="hb-icon"><use href="#icon-book"></use></svg> Guide</button>
+<button class="btn-sync js-sync-wa" onclick="forcerActualisationWhatsApp()"><svg class="hb-icon"><use href="#icon-refresh"></use></svg> Actualiser WA</button>
 <button class="btn-tinder" id="btnSwitchModeTrain" onclick="basculerModeTrain()">Mode Tinder</button>
 <span class="badge-mode js-statut" id="statutTrain"></span>
 </div>
@@ -471,7 +618,7 @@
 <div class="train-dashboard-card">
   <div class="train-card-section">
     <div class="train-section-label">
-      <span class="train-section-icon">📅</span>
+      <span class="train-section-icon"><svg class="hb-icon"><use href="#icon-calendar"></use></svg></span>
       <span>Créneau d'entraînement</span>
     </div>
     <div class="train-tabs-container tabs" id="trainTabsContainer"></div>
@@ -481,24 +628,24 @@
 
   <div class="train-card-section">
     <div class="train-section-label">
-      <span class="train-section-icon">🎯</span>
+      <span class="train-section-icon"><svg class="hb-icon"><use href="#icon-target"></use></svg></span>
       <span>Format de la séance</span>
     </div>
     <div class="train-type-pills">
       <button type="button" class="train-type-pill active" id="pillSepare" onclick="changerTypeSeance('separe')">
-        <span class="pill-icon">👥</span><span>2 Groupes</span>
+        <span class="pill-icon"><svg class="hb-icon"><use href="#icon-users"></use></svg></span><span>2 Groupes</span>
       </button>
       <button type="button" class="train-type-pill" id="pillReduit" onclick="changerTypeSeance('reduit')">
-        <span class="pill-icon">⚡</span><span>Effectif réduit</span>
+        <span class="pill-icon"><svg class="hb-icon"><use href="#icon-zap"></use></svg></span><span>Effectif réduit</span>
       </button>
       <button type="button" class="train-type-pill" id="pillComplet" onclick="changerTypeSeance('complet')">
-        <span class="pill-icon">🤾</span><span>Effectif complet</span>
+        <span class="pill-icon"><svg class="hb-icon"><use href="#icon-ball"></use></svg></span><span>Effectif complet</span>
       </button>
     </div>
   </div>
 
   <div class="train-hint-row">
-    <span class="train-hint-icon">💡</span>
+    <span class="train-hint-icon"><svg class="hb-icon"><use href="#icon-lightbulb"></use></svg></span>
     <span id="trainExplication" class="train-hint-text">Séance séparée : 2 groupes de travail + repos</span>
     <label id="lblMaxJoueurs" class="train-max-label" style="display:none;">
       <span>Limite :</span>
@@ -513,7 +660,7 @@
 </div>
 <div id="banniereVacancesTrain" class="banner-vacances" style="display:none;">
   <div style="display:flex;align-items:center;gap:10px;">
-    <span style="font-size:1.3rem;">🏖️</span>
+    <svg class="hb-icon" style="font-size:1.3rem;stroke:#0284c7;"><use href="#icon-umbrella"></use></svg>
     <span id="txtBanniereVacancesTrain" class="banner-vacances-text">Semaine en période de vacances scolaires. Les entraînements habituels sont suspendus.</span>
   </div>
   <button type="button" class="btn-reset banner-vacances-btn" onclick="ouvrirModalVacances()">Gérer vacances</button>
@@ -543,9 +690,9 @@
 <div class="tinder-kbd-hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ou 1 / 2 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
 </div>
 <footer id="trainFooter" style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:22px auto 36px auto;padding:12px 20px;">
-<button type="button" class="btn-reset btn-footer-action" onclick="reinitialiserSeance()">↺ Réinitialiser</button>
-<button type="button" class="btn-save btn-footer-save" onclick="sauvegarderEntrainement(false)">✅ Sauvegarder la séance</button>
-<button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuEntrainement()">📋 Message & Partage</button>
+<button type="button" class="btn-reset btn-footer-action" onclick="reinitialiserSeance()"><svg class="hb-icon"><use href="#icon-refresh"></use></svg> Réinitialiser</button>
+<button type="button" class="btn-save btn-footer-save" onclick="sauvegarderEntrainement(false)"><svg class="hb-icon"><use href="#icon-check"></use></svg> Sauvegarder la séance</button>
+<button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuEntrainement()"><svg class="hb-icon"><use href="#icon-clipboard"></use></svg> Message & Partage</button>
 </footer>
 </div>
 <div id="rosterView" style="display:none;">
@@ -1569,7 +1716,7 @@
   </div>
   <div class="tactical-bench-wrap">
     <div id="tacticalBenchTitle" class="tactical-bench-title">
-      <span>🛋️ Remplaçants & Rotation</span>
+      <span><svg class="hb-icon"><use href="#icon-bench"></use></svg> Remplaçants & Rotation</span>
       <span class="bench-count-badge">0 sur le banc</span>
     </div>
     <div id="tacticalBenchList" class="bench-chips-list"></div>
@@ -1578,24 +1725,24 @@
 <div id="previewWhatsAppBlock" class="preview-wa-block">
 <div class="preview-wa-header">
   <div class="preview-wa-title">
-    <span class="preview-wa-icon">💬</span>
+    <span class="preview-wa-icon"><svg class="hb-icon"><use href="#icon-message"></use></svg></span>
     <span>Message de convocation</span>
     <span class="preview-wa-badge">Prêt à copier</span>
   </div>
   <button type="button" class="btn-copy-wa" id="btnCopyPreviewTop" onclick="copierMessageApercu(this)" title="Copier le texte dans le presse-papiers">
-    📋 Copier le texte
+    <svg class="hb-icon"><use href="#icon-copy"></use></svg> Copier le texte
   </button>
 </div>
 <div id="previewMessages"></div>
 <div class="preview-status" id="previewStatus"></div>
 <div class="preview-actions">
   <button type="button" class="btn-reset" onclick="retourApercu()">← Retour</button>
-  <button type="button" class="btn-enter btn-preview-save" id="btnSavePreview" onclick="sauvegarderApercuDepuisTerrain()">💾 Sauvegarder</button>
+  <button type="button" class="btn-enter btn-preview-save" id="btnSavePreview" onclick="sauvegarderApercuDepuisTerrain()"><svg class="hb-icon"><use href="#icon-save"></use></svg> Sauvegarder</button>
   <button type="button" class="btn-share-native" id="btnSharePreviewNative" onclick="partagerMessageApercu()" style="display:none;" title="Partager directement via WhatsApp ou vos applications">
-    <span class="wa-btn-icon">📲</span> Partager...
+    <svg class="hb-icon"><use href="#icon-share"></use></svg> Partager...
   </button>
   <button type="button" class="btn-preview-copy" id="btnCopyPreviewBottom" onclick="copierMessageApercu(this)" title="Copier le message pour le coller sur WhatsApp">
-    <span class="wa-btn-icon">📋</span> Copier le message
+    <svg class="hb-icon"><use href="#icon-copy"></use></svg> Copier le message
   </button>
 </div>
 </div>
@@ -1622,13 +1769,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.20"></script>
-  <script src="js/api.js?v=2.2.20"></script>
-  <script src="js/app.js?v=2.2.20"></script>
+  <script src="js/spakta-data.js?v=2.2.21"></script>
+  <script src="js/api.js?v=2.2.21"></script>
+  <script src="js/app.js?v=2.2.21"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.20').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.21').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

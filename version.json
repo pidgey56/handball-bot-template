@@ -1,12 +1,12 @@
 {
-  "version": "2.2.20",
+  "version": "2.2.21",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.20 — Copie et Partage Direct des Convocations et Séances",
+  "title": "Handball Manager 2.2.21 — Pack Graphique Option 3 : Icônes Playbook SVG & Animation Roucoulette",
   "changelog": [
-    "Suppression de l'envoi automatisé par bot WhatsApp au profit d'un flux de copie et partage 100% direct et universel",
-    "Bouton 'Copier le message' rapide avec retour visuel immédiat (copié dans le presse-papier, animation et confetti)",
-    "Support du partage natif (navigator.share) sur mobile pour partager directement sur WhatsApp ou toute application",
-    "Simplification de la barre d'action de l'aperçu avec 'Copier le message', 'Sauvegarder' et 'Retour'",
-    "Élimination des déclenchements de dispatch GitHub Actions lors de la publication"
+    "Remplacement des émojis système par un ensemble d'icônes vectorielles SVG 'Playbook & Carnet Tactique' (sprite SVG haute performance)",
+    "Animation interactive 'Roucoulette' sur les boutons d'action (ballon de handball réaliste roulant au survol avec rotation dynamique)",
+    "Transitions de pages et vues fluides (App-like Smooth Transitions avec glissement et fondu)",
+    "Amélioration des micro-interactions : cartes joueurs surélevées au Drag & Drop, retour animé sur la copie presse-papier",
+    "Bascule de thème Carnet / Ardoise avec icônes Soleil / Lune vectorielles"
   ]
 }
