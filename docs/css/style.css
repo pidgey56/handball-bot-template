@@ -2451,38 +2451,110 @@ body.user-logged-in .carnet-tab-label {
   box-shadow: 0 0 18px rgba(16, 185, 129, 0.6);
 }
 
-/* Boutons de contrôle Tinder */
+/* ==============================================================================
+ * CONSOLE DE CONTRÔLES TINDER (BOUTONS DÉCISIONNELS & UTILITAIRES)
+ * Design moderne, contrasté, tactile et équilibré
+ * ============================================================================== */
 .tcontrols {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 12px;
-  margin: 12px auto;
-  flex-wrap: wrap;
-  max-width: 380px;
+  margin: 14px auto 10px auto;
+  flex-wrap: nowrap;
+  max-width: 440px;
+  user-select: none;
 }
 
+/* Boutons Utilitaires (Annuler / Réinitialiser) */
+.tbtn-undo {
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  background: var(--card-bg);
+  color: var(--text-main);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  padding: 2px;
+}
+
+.tbtn-undo:hover {
+  transform: scale(1.08) translateY(-2px);
+  border-color: var(--color-primary, #ea580c);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.14);
+}
+
+.tbtn-undo:active {
+  transform: scale(0.92);
+}
+
+.tbtn-undo .tbtn-util-icon {
+  font-size: 1.18rem;
+  line-height: 1;
+}
+
+.tbtn-undo .tbtn-util-label {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1;
+}
+
+body.theme-slate .tbtn-undo {
+  background: #1e2530;
+  border-color: #3b4758;
+  color: #f8fafc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.theme-slate .tbtn-undo:hover {
+  background: #283344;
+  border-color: #64748b;
+}
+
+body.theme-slate .tbtn-undo .tbtn-util-label {
+  color: #94a3b8;
+}
+
+/* Boutons Décisionnels Principaux (Équipes, Groupes, Présent) */
 .tbtn-circle {
-  width: 62px;
-  height: 62px;
+  width: 66px;
+  height: 66px;
+  min-width: 66px;
+  min-height: 66px;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #fff;
-  box-shadow: var(--card-shadow);
-  border: 1.5px solid var(--card-border);
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px -2px rgba(0, 0, 0, 0.28);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  letter-spacing: 0.4px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .tbtn-circle:hover {
-  transform: scale(1.08) translateY(-2px);
-  box-shadow: var(--card-shadow-hover);
+  transform: scale(1.1) translateY(-3px);
+  box-shadow: 0 14px 28px -2px rgba(0, 0, 0, 0.38);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .tbtn-circle:active {
@@ -2490,57 +2562,60 @@ body.user-logged-in .carnet-tab-label {
 }
 
 .tbtn-circle span {
-  font-size: 1.25rem;
-  line-height: 1.1;
+  font-size: 1.35rem;
+  line-height: 1;
+  margin-bottom: 2px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
+/* Thème Décisionnel Équipe 1 (Bleu éclatant) */
 .tbtn-1b {
-  background: var(--color-team1);
-  color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.42) !important;
 }
 
+/* Thème Décisionnel Équipe 2 (Orange ACBB vif avec contraste garanti) */
 .tbtn-1c {
-  background: var(--color-team2);
-  color: #fff;
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(234, 88, 12, 0.42) !important;
 }
 
+/* Thème Décisionnel Équipe 3 (Vert émeraude vif) */
 .tbtn-1d {
-  background: var(--color-team3);
-  color: #fff;
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.42) !important;
 }
 
+/* Bouton Repos / Non retenus / Ménagés */
 .tbtn-out {
-  width: 52px;
-  height: 52px;
-  background: #334155;
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  min-height: 60px;
   border-radius: 18px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+  color: #fca5a5 !important;
+  border: 2px solid rgba(239, 68, 68, 0.45) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.45) !important;
 }
 
-.tbtn-retenu {
-  background: #10b981;
-  color: #fff;
+.tbtn-out span {
+  color: #ef4444 !important;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
 }
 
-.tbtn-undo {
-  width: 42px;
-  height: 42px;
-  background: var(--card-bg);
-  color: var(--text-main);
-  border: 1.5px solid var(--card-border);
-  border-radius: 50%;
-  font-size: 1rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: var(--card-shadow);
-  transition: all 0.15s ease;
+.tbtn-out:hover {
+  border-color: #ef4444 !important;
+  box-shadow: 0 12px 26px rgba(239, 68, 68, 0.3) !important;
 }
 
-.tbtn-undo:hover {
-  transform: scale(1.06);
-  background: var(--card-border);
+/* Boutons Retenu / Présent */
+.tbtn-retenu, .tbtn-actif {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%) !important;
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.42) !important;
 }
 
 /* En-tête et Boutons d'action du Mode Tinder avec fort contraste */
@@ -2744,13 +2819,33 @@ body.train-tinder-mode-active #trainFooter {
     max-width: 340px !important;
     padding: 14px 12px;
   }
+  .tcontrols {
+    gap: 8px;
+  }
   .tbtn-circle {
-    width: 52px;
-    height: 52px;
-    font-size: 0.65rem;
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
+    min-height: 58px;
+    border-radius: 16px;
+    font-size: 0.78rem;
   }
   .tbtn-circle span {
-    font-size: 1.1rem;
+    font-size: 1.18rem;
+  }
+  .tbtn-out {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
+    border-radius: 14px;
+  }
+  .tbtn-undo {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 14px;
   }
 }
 

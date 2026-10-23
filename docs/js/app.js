@@ -596,7 +596,7 @@ if(!c) return;
 var eq1 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "Équipe 1";
 var eq2 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "Équipe 2";
 var eq3 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "Équipe 3";
-var html = '<button type="button" class="tbtn-undo" title="Annuler le dernier choix" onclick="annulerDernierSwipe()">↩</button>';
+var html = '<button type="button" class="tbtn-undo" title="Annuler le dernier choix" onclick="annulerDernierSwipe()"><span class="tbtn-util-icon">↩</span><span class="tbtn-util-label">Annuler</span></button>';
 if(nbEq === 1){
 html += '<button type="button" class="tbtn-circle tbtn-out" data-choix="OUT" onclick="animerVoteBouton(\'OUT\')"><span>←</span>Repos</button>';
 html += '<button type="button" class="tbtn-circle tbtn-1b" data-choix="1B" onclick="animerVoteBouton(\'1B\')"><span>→</span>' + eq1 + '</button>';
@@ -610,7 +610,7 @@ html += '<button type="button" class="tbtn-circle tbtn-1c" data-choix="1C" oncli
 html += '<button type="button" class="tbtn-circle tbtn-out" data-choix="OUT" onclick="animerVoteBouton(\'OUT\')"><span>↓</span>Repos</button>';
 html += '<button type="button" class="tbtn-circle tbtn-1d" data-choix="1D" onclick="animerVoteBouton(\'1D\')"><span>→</span>' + eq3 + '</button>';
 }
-html += '<button type="button" class="tbtn-undo" title="Recommencer à zéro" onclick="recommencerSelection()">Réinit</button>';
+html += '<button type="button" class="tbtn-undo" title="Recommencer à zéro" onclick="recommencerSelection()"><span class="tbtn-util-icon">↻</span><span class="tbtn-util-label">Réinit</span></button>';
 c.innerHTML = html;
 }
 function appliquerDonneesRecues(data, conserverSelection){
@@ -630,12 +630,18 @@ if(CLUB_CONFIG.modeFonctionnement){
 }
 var nbEq = Math.min(3, Math.max(1, CLUB_CONFIG.nbEquipes || 2));
 CLUB_CONFIG.nbEquipes = nbEq;
+var col1 = CLUB_CONFIG.couleurEquipe1 || CLUB_CONFIG.couleurPrimaire || "#2563eb";
+var col2 = CLUB_CONFIG.couleurEquipe2;
+if (!col2 || col2.toLowerCase() === "#ffffff" || col2.toLowerCase() === "#d0d0d0" || col2.toLowerCase() === "#cbd5e1" || col2.toLowerCase() === "#e2e8f0" || col2.toLowerCase() === "#cccccc") {
+  col2 = (col1.toLowerCase() === "#ea580c" || col1.toLowerCase() === "#f97316") ? "#2563eb" : "#ea580c";
+}
+var col3 = CLUB_CONFIG.couleurEquipe3 || "#10b981";
 appliquerVariablesCss(
-CLUB_CONFIG.couleurPrimaire,
-CLUB_CONFIG.couleurSecondaire,
-CLUB_CONFIG.couleurEquipe1 || CLUB_CONFIG.couleurPrimaire,
-CLUB_CONFIG.couleurEquipe2 || CLUB_CONFIG.couleurSecondaire,
-CLUB_CONFIG.couleurEquipe3 || "#10b981"
+  CLUB_CONFIG.couleurPrimaire || "#ea580c",
+  CLUB_CONFIG.couleurSecondaire || "#0284c7",
+  col1,
+  col2,
+  col3
 );
 if(CLUB_CONFIG.nomClub){
 document.getElementById("homeClubName").textContent = CLUB_CONFIG.nomClub;
@@ -4016,7 +4022,7 @@ function basculerModeTrain(){ choisirModeTrain(!TRAIN_MODE_TINDER); }
 function rendreControlesTrainTinder(){
 var c = document.getElementById("trainTControlsContainer"); if(!c) return;
 var cfgS = TRAIN_CONFIG[SEANCE_COURANTE] || { type: "separe" };
-var html = '<button type="button" class="tbtn-undo" title="Annuler le dernier choix" onclick="annulerDernierSwipeTrain()">↩</button>';
+var html = '<button type="button" class="tbtn-undo" title="Annuler le dernier choix" onclick="annulerDernierSwipeTrain()"><span class="tbtn-util-icon">↩</span><span class="tbtn-util-label">Annuler</span></button>';
 if(cfgS.type === "separe"){
 html += '<button type="button" class="tbtn-circle tbtn-1b" data-choix="G1" onclick="animerVoteBoutonTrain(\'G1\')"><span>←</span>Groupe 1</button>';
 html += '<button type="button" class="tbtn-circle tbtn-out" data-choix="OUT" onclick="animerVoteBoutonTrain(\'OUT\')"><span>↓</span>Repos</button>';
@@ -4028,7 +4034,7 @@ html += '<button type="button" class="tbtn-circle tbtn-1b" data-choix="RETENU" o
 html += '<button type="button" class="tbtn-circle tbtn-out" data-choix="MENAGE" onclick="animerVoteBoutonTrain(\'MENAGE\')"><span>←</span>Ménagé</button>';
 html += '<button type="button" class="tbtn-circle tbtn-1b" data-choix="ACTIF" onclick="animerVoteBoutonTrain(\'ACTIF\')"><span>→</span>Présent</button>';
 }
-html += '<button type="button" class="tbtn-undo" title="Recommencer la séance" onclick="recommencerTrainSelection()">Réinit</button>';
+html += '<button type="button" class="tbtn-undo" title="Recommencer la séance" onclick="recommencerTrainSelection()"><span class="tbtn-util-icon">↻</span><span class="tbtn-util-label">Réinit</span></button>';
 c.innerHTML = html;
 }
 function afficherCarteTrainTinder(){
