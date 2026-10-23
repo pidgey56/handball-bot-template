@@ -509,7 +509,25 @@ function getClubConfig(ss) {
     try { chevreConfig = PropertiesService.getScriptProperties().getProperty('CHEVRE_NOM') || ''; } catch (e) {}
   }
 
-    let modeFonctionnement = String(getVal('C35', '')).toUpperCase().trim();
+    let modeFonctionnement = '';
+  try {
+    modeFonctionnement = PropertiesService.getScriptProperties().getProperty('MODE_FONCTIONNEMENT') || '';
+  } catch (eProp) {}
+  if (!modeFonctionnement && classeur) {
+    try {
+      const shCfg = classeur.getSheetByName('Configuration');
+      if (shCfg) {
+        const rows = shCfg.getRange('B18:B45').getValues();
+        for (let i = 0; i < rows.length; i++) {
+          const lbl = String(rows[i][0] || '').toLowerCase();
+          if (lbl.includes('mode') && (lbl.includes('fonctionnement') || lbl.includes('bot'))) {
+            modeFonctionnement = String(shCfg.getRange('C' + (18 + i)).getValue() || '').toUpperCase().trim();
+            break;
+          }
+        }
+      }
+    } catch (eSh) {}
+  }
   if (!['COMPLET', 'FFHB_ONLY', 'PRESENCES_ONLY'].includes(modeFonctionnement)) {
     if (!githubRepo && !githubToken) {
       modeFonctionnement = urlFfhbClub ? 'FFHB_ONLY' : 'PRESENCES_ONLY';
@@ -6974,12 +6992,31 @@ function comparerVersionsSemver(v1, v2) {
  */
 function enregistrerModeFonctionnement(mode) {
   const ss = getSpreadsheet();
-  const shCfg = ss.getSheetByName('Configuration');
+  const shCfg = ss ? ss.getSheetByName('Configuration') : null;
   const m = String(mode || 'COMPLET').toUpperCase().trim();
   if (shCfg) {
-    shCfg.getRange('C35').setValue(m);
+    try {
+      const rows = shCfg.getRange('B18:B45').getValues();
+      let rowMode = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const lbl = String(rows[i][0] || '').toLowerCase();
+        if (lbl.includes('mode') && (lbl.includes('fonctionnement') || lbl.includes('bot'))) {
+          rowMode = 18 + i;
+          break;
+        }
+      }
+      if (rowMode === -1) {
+        rowMode = 39;
+        shCfg.getRange('B39:D39').setValues([['Mode de Fonctionnement', m, 'Mode actif : COMPLET, FFHB_ONLY ou PRESENCES_ONLY']]);
+      } else {
+        shCfg.getRange('C' + rowMode).setValue(m);
+      }
+    } catch (eSheet) {
+      Logger.log('Erreur écriture mode dans feuille : ' + eSheet.message);
+    }
   }
   try {
+    PropertiesService.getScriptProperties().setProperty('MODE_FONCTIONNEMENT', m);
     CacheService.getScriptCache().remove('COACH_DATA_CACHE');
     CacheService.getScriptCache().remove('CLUB_CONFIG_CACHE');
   } catch (e) {}
