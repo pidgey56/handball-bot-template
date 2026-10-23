@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.19">
+  <link rel="stylesheet" href="css/style.css?v=2.2.20">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -538,14 +538,14 @@
 <div class="tinder-actions-bar" style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
 <button type="button" class="btn-reset" style="font-size:0.8rem;padding:7px 12px;" onclick="choisirModeTrain(false)">Revenir au Mode Tactique</button>
 <button type="button" class="btn-save" style="font-size:0.8rem;padding:7px 12px;" onclick="sauvegarderEntrainement(false)">Sauvegarder la Séance</button>
-<button type="button" class="btn-wa" style="font-size:0.8rem;padding:7px 12px;" onclick="ouvrirApercuEntrainement()">Aperçu WhatsApp</button>
+<button type="button" class="btn-wa" style="font-size:0.8rem;padding:7px 12px;" onclick="ouvrirApercuEntrainement()">📋 Voir le message</button>
 </div>
 <div class="tinder-kbd-hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ou 1 / 2 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
 </div>
 <footer id="trainFooter" style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:22px auto 36px auto;padding:12px 20px;">
 <button type="button" class="btn-reset btn-footer-action" onclick="reinitialiserSeance()">↺ Réinitialiser</button>
 <button type="button" class="btn-save btn-footer-save" onclick="sauvegarderEntrainement(false)">✅ Sauvegarder la séance</button>
-<button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuEntrainement()">📲 Aperçu WhatsApp</button>
+<button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuEntrainement()">📋 Message & Partage</button>
 </footer>
 </div>
 <div id="rosterView" style="display:none;">
@@ -1579,19 +1579,24 @@
 <div class="preview-wa-header">
   <div class="preview-wa-title">
     <span class="preview-wa-icon">💬</span>
-    <span>Message de convocation WhatsApp</span>
-    <span class="preview-wa-badge">Modifiable</span>
+    <span>Message de convocation</span>
+    <span class="preview-wa-badge">Prêt à copier</span>
   </div>
-  <button type="button" class="btn-copy-wa" onclick="copierMessageApercu()" title="Copier le texte du message">
+  <button type="button" class="btn-copy-wa" id="btnCopyPreviewTop" onclick="copierMessageApercu(this)" title="Copier le texte dans le presse-papiers">
     📋 Copier le texte
   </button>
 </div>
 <div id="previewMessages"></div>
 <div class="preview-status" id="previewStatus"></div>
 <div class="preview-actions">
-  <button type="button" class="btn-reset" onclick="retourApercu()">Retour</button>
-  <button type="button" class="btn-enter btn-preview-save" id="btnSavePreview" onclick="sauvegarderApercuDepuisTerrain()">💾 Sauvegarder la composition</button>
-  <button type="button" class="btn-wa btn-preview-publish" id="btnPublishPreview" onclick="publierApercu()"><span class="wa-btn-icon">📲</span> Publier sur WhatsApp</button>
+  <button type="button" class="btn-reset" onclick="retourApercu()">← Retour</button>
+  <button type="button" class="btn-enter btn-preview-save" id="btnSavePreview" onclick="sauvegarderApercuDepuisTerrain()">💾 Sauvegarder</button>
+  <button type="button" class="btn-share-native" id="btnSharePreviewNative" onclick="partagerMessageApercu()" style="display:none;" title="Partager directement via WhatsApp ou vos applications">
+    <span class="wa-btn-icon">📲</span> Partager...
+  </button>
+  <button type="button" class="btn-preview-copy" id="btnCopyPreviewBottom" onclick="copierMessageApercu(this)" title="Copier le message pour le coller sur WhatsApp">
+    <span class="wa-btn-icon">📋</span> Copier le message
+  </button>
 </div>
 </div>
 <div class="preview-actions" id="previewPlayerBottomActions" style="display:none;margin-top:14px;"><button class="btn-reset" onclick="retourApercu()">← Retour à l'accueil</button></div>
@@ -1617,13 +1622,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.19"></script>
-  <script src="js/api.js?v=2.2.19"></script>
-  <script src="js/app.js?v=2.2.19"></script>
+  <script src="js/spakta-data.js?v=2.2.20"></script>
+  <script src="js/api.js?v=2.2.20"></script>
+  <script src="js/app.js?v=2.2.20"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.19').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.20').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

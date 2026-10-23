@@ -1706,6 +1706,10 @@ if(bWaBlock) bWaBlock.style.display = EST_COACH ? "block" : "none";
 if(bPlBottom) bPlBottom.style.display = EST_COACH ? "none" : "flex";
 var bSav = document.getElementById("btnSavePreview");
 if(bSav) bSav.style.display = EST_COACH ? "inline-block" : "none";
+var bShare = document.getElementById("btnSharePreviewNative");
+if(bShare) bShare.style.display = (EST_COACH && !!navigator.share) ? "inline-flex" : "none";
+var bCopyB = document.getElementById("btnCopyPreviewBottom");
+if(bCopyB) bCopyB.style.display = EST_COACH ? "inline-flex" : "none";
 var eqCible = "1B";
 if(SESSION_NOM){
 var sNom = String(SESSION_NOM).toLowerCase().trim();
@@ -1734,27 +1738,78 @@ function creerTextareaPreview(id, value){
   txt.className = "preview-text";
   txt.id = id;
   txt.value = value || "";
-  txt.placeholder = "Rédigez ou personnalisez votre message WhatsApp avant diffusion...";
+  txt.placeholder = "Personnalisez votre message avant de le copier ou le partager...";
   txt.addEventListener("input", function(){ autoAjusterTextarea(txt); });
   setTimeout(function(){ autoAjusterTextarea(txt); }, 50);
   return txt;
 }
-function copierMessageApercu(){
+function copierMessageApercu(btnTrigger){
   var txt = document.getElementById("txtPreviewMatch") || document.getElementById("txtPreviewTrain");
   if(!txt || !txt.value){
     afficherToast("Aucun message à copier.", "info");
     return;
   }
+  var btn = btnTrigger || document.getElementById("btnCopyPreviewBottom") || document.getElementById("btnCopyPreviewTop");
+  var oldHtml = btn ? btn.innerHTML : "";
+
+  function onSuccesCopie(){
+    afficherToast("Message copié ! Prêt à être collé sur WhatsApp 📋", "succes");
+    if(typeof confetti === "function") {
+      try { confetti({ particleCount: 35, spread: 50, origin: { y: 0.8 } }); } catch(e){}
+    }
+    if(btn){
+      btn.classList.add("copied");
+      var isTopBtn = btn.classList.contains("btn-copy-wa");
+      btn.innerHTML = isTopBtn ? "✅ Copié !" : "<span class='wa-btn-icon'>✅</span> Message copié !";
+      setTimeout(function(){
+        btn.classList.remove("copied");
+        btn.innerHTML = oldHtml;
+      }, 2000);
+    }
+    var st = document.getElementById("previewStatus");
+    if(st) st.textContent = "📋 Message copié dans le presse-papier ! Vous pouvez le coller sur WhatsApp.";
+  }
+
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt.value).then(function(){
-      afficherToast("Message copié dans le presse-papiers ! 📋", "succes");
-    }).catch(function(){
-      txt.select(); document.execCommand("copy");
-      afficherToast("Message copié ! 📋", "succes");
+    navigator.clipboard.writeText(txt.value).then(onSuccesCopie).catch(function(){
+      try {
+        txt.select();
+        document.execCommand("copy");
+        onSuccesCopie();
+      } catch(e){
+        afficherToast("Impossible de copier automatiquement, sélectionnez le texte manuellement.", "info");
+      }
     });
   } else {
-    txt.select(); document.execCommand("copy");
-    afficherToast("Message copié ! 📋", "succes");
+    try {
+      txt.select();
+      document.execCommand("copy");
+      onSuccesCopie();
+    } catch(e){
+      afficherToast("Impossible de copier automatiquement, sélectionnez le texte manuellement.", "info");
+    }
+  }
+}
+function partagerMessageApercu(){
+  var txt = document.getElementById("txtPreviewMatch") || document.getElementById("txtPreviewTrain");
+  if(!txt || !txt.value){
+    afficherToast("Aucun message à partager.", "info");
+    return;
+  }
+  var titre = (CONTEXTE_APERCU && CONTEXTE_APERCU.type === "train") ? "Entraînement Handball" : "Convocation Match Handball";
+  if(navigator.share){
+    navigator.share({
+      title: titre,
+      text: txt.value
+    }).then(function(){
+      afficherToast("Message partagé avec succès ! 📲", "succes");
+    }).catch(function(e){
+      if(e.name !== "AbortError"){
+        copierMessageApercu();
+      }
+    });
+  } else {
+    copierMessageApercu();
   }
 }
 function sauvegarderApercuDepuisTerrain(){
@@ -1793,40 +1848,7 @@ afficherToast(err.message, "erreur");
 }
 }
 function publierApercu(){
-if(!CONTEXTE_APERCU) return;
-var btnPub = document.getElementById("btnPublishPreview");
-if(btnPub){ btnPub.disabled = true; btnPub.innerHTML = "<span class='spinner-inline'></span>Publication..."; }
-document.getElementById("previewStatus").textContent = "Publication en cours sur WhatsApp...";
-afficherLoading("Publication WhatsApp...", "Diffusion du message sur le groupe...");
-if(CONTEXTE_APERCU.type === "match"){
-var txt = document.getElementById("txtPreviewMatch").value;
-google.script.run.withSuccessHandler(function(res){
-masquerLoading();
-if(btnPub){ btnPub.disabled = false; btnPub.textContent = "Publier sur WhatsApp"; }
-document.getElementById("previewStatus").textContent = "Publié avec succès (" + res.date + ") !";
-if(typeof confetti === "function") confetti({ particleCount: 90, spread: 70 });
-setTimeout(function(){ retourApercu(); }, 1800);
-}).withFailureHandler(function(err){
-masquerLoading();
-if(btnPub){ btnPub.disabled = false; btnPub.textContent = "Publier sur WhatsApp"; }
-document.getElementById("previewStatus").textContent = "Erreur : " + err.message;
-afficherToast(err.message, "erreur");
-}).enregistrerCompoEtPublier(CONTEXTE_APERCU.compo, true, txt);
-} else {
-var txtTr = document.getElementById("txtPreviewTrain").value;
-google.script.run.withSuccessHandler(function(res){
-masquerLoading();
-if(btnPub){ btnPub.disabled = false; btnPub.textContent = "Publier sur WhatsApp"; }
-document.getElementById("previewStatus").textContent = "Entraînement publié avec succès !";
-if(typeof confetti === "function") confetti({ particleCount: 90, spread: 70 });
-setTimeout(function(){ retourApercu(); }, 1800);
-}).withFailureHandler(function(err){
-masquerLoading();
-if(btnPub){ btnPub.disabled = false; btnPub.textContent = "Publier sur WhatsApp"; }
-document.getElementById("previewStatus").textContent = "Erreur : " + err.message;
-afficherToast(err.message, "erreur");
-}).enregistrerEntrainementEtPublier(CONTEXTE_APERCU.donnees.seance, CONTEXTE_APERCU.donnees.typeSeance, CONTEXTE_APERCU.donnees.groupes, CONTEXTE_APERCU.donnees.nonRetenus, true, txtTr);
-}
+  copierMessageApercu();
 }
 function retourApercu(){ basculerVue(EST_COACH ? VUE_PRECEDENTE_APERCU : "homeView"); }
 function basculerVue(nomVue){
@@ -2108,6 +2130,8 @@ var bWa = document.getElementById("previewWhatsAppBlock"); if(bWa) bWa.style.dis
 var bPl = document.getElementById("previewPlayerBottomActions"); if(bPl) bPl.style.display = "flex";
 var bSav = document.getElementById("btnSavePreview"); if(bSav) bSav.style.display = "none";
 var bPub = document.getElementById("btnPublishPreview"); if(bPub) bPub.style.display = "none";
+var bCopyB = document.getElementById("btnCopyPreviewBottom"); if(bCopyB) bCopyB.style.display = "none";
+var bShare = document.getElementById("btnSharePreviewNative"); if(bShare) bShare.style.display = "none";
 var txtM = document.getElementById("txtPreviewMatch"); if(txtM) txtM.readOnly = true;
 var hSwap = document.getElementById("tacticalSwapHint");
 if(hSwap){
@@ -4509,6 +4533,16 @@ function ouvrirApercuEntrainement(){
 var d = preparerDonneesEntrainement();
 CONTEXTE_APERCU = { type: "train", donnees: d };
 document.getElementById("previewTitle").textContent = "Aperçu - Entraînement " + d.seance;
+var bWaBlock = document.getElementById("previewWhatsAppBlock");
+var bPlBottom = document.getElementById("previewPlayerBottomActions");
+if(bWaBlock) bWaBlock.style.display = EST_COACH ? "block" : "none";
+if(bPlBottom) bPlBottom.style.display = EST_COACH ? "none" : "flex";
+var bSav = document.getElementById("btnSavePreview");
+if(bSav) bSav.style.display = EST_COACH ? "inline-block" : "none";
+var bShare = document.getElementById("btnSharePreviewNative");
+if(bShare) bShare.style.display = (EST_COACH && !!navigator.share) ? "inline-flex" : "none";
+var bCopyB = document.getElementById("btnCopyPreviewBottom");
+if(bCopyB) bCopyB.style.display = EST_COACH ? "inline-flex" : "none";
 var tWrap = document.getElementById("tacticalPreviewWrap"); if(tWrap) tWrap.style.display = "none";
 var div = document.getElementById("previewMessages"); div.innerHTML = "";
 var txt = creerTextareaPreview("txtPreviewTrain", creerMessageEntrainement(d)); div.appendChild(txt);

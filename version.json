@@ -1,12 +1,12 @@
 {
-  "version": "2.2.19",
+  "version": "2.2.20",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.19 — Refonte Graphique du Tableau de Bord Entraînements",
+  "title": "Handball Manager 2.2.20 — Copie et Partage Direct des Convocations et Séances",
   "changelog": [
-    "Refonte complète de l'en-tête d'entraînement avec carte unifiée moderne (.train-dashboard-card)",
-    "Créneaux d'entraînement transformés en badges sportifs interactifs avec état actif bleu éclatant et icônes",
-    "Format de séance (2 Groupes, Effectif réduit, Effectif complet) avec pills stylisées et surbrillance orange ACBB",
-    "Encadré d'explication et réglage du quota de joueurs fluide et parfaitement intégré",
-    "Harmonisation totale en thèmes Clair et Sombre (Ardoise Vestiaire) et responsive mobile"
+    "Suppression de l'envoi automatisé par bot WhatsApp au profit d'un flux de copie et partage 100% direct et universel",
+    "Bouton 'Copier le message' rapide avec retour visuel immédiat (copié dans le presse-papier, animation et confetti)",
+    "Support du partage natif (navigator.share) sur mobile pour partager directement sur WhatsApp ou toute application",
+    "Simplification de la barre d'action de l'aperçu avec 'Copier le message', 'Sauvegarder' et 'Retour'",
+    "Élimination des déclenchements de dispatch GitHub Actions lors de la publication"
   ]
 }

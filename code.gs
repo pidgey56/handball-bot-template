@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '2.2.19';
+const APP_VERSION = '2.2.20';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 const LOGO_OFFICIEL_ACBB = 'https://media-logos-clubs.ffhandball.fr/256/2023-06-03-e7b37b0d-abbc-4623-9d38-ce7840be40f7.webp';
@@ -5503,7 +5503,7 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'ping') {
-      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.19' }))
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.20' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'getDonneesCoach') {
@@ -6108,10 +6108,7 @@ function enregistrerCompoEtPublier(compo, envoyerWhatsApp, messageWhatsApp) {
     }
   }
 
-  if (envoyerWhatsApp) {
-    declencherActionGitHub('send_whatsapp_text', { text_message: messageWhatsApp });
-  }
-
+  // Note : La diffusion automatique via bot WhatsApp a été remplacée par la copie instantanée presse-papier / partage natif
   return { ok: true, date: horodatage };
 }
 
@@ -6129,10 +6126,7 @@ function enregistrerEntrainementEtPublier(seance, typeSeance, groupes, nonRetenu
     shTrain.appendRow([horodatage, labelSeance, g1, g2, nr]);
   }
 
-  if (envoyerWhatsApp) {
-    declencherActionGitHub('send_whatsapp_text', { text_message: messageWhatsApp });
-  }
-
+  // Note : La diffusion automatique via bot WhatsApp a été remplacée par la copie instantanée presse-papier / partage natif
   return { ok: true, date: horodatage };
 }
 
