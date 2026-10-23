@@ -768,25 +768,34 @@ ptags.appendChild(bEdit); card.appendChild(ptags);
 return card;
 }
 function forcerActualisationWhatsApp(){
-var stC = document.getElementById("statutChargement");
-if(stC) stC.innerHTML = "<span class='spinner-badge'></span>Lecture WhatsApp...";
-var stT = document.getElementById("statutTrain");
-if(stT) stT.innerHTML = "<span class='spinner-badge'></span>Lecture WhatsApp...";
-afficherLoading("Actualisation WhatsApp...", "Lecture des votes du sondage et synchronisation...");
-google.script.run.withSuccessHandler(function(res){
-google.script.run.withSuccessHandler(function(data){
-appliquerDonneesRecues(data, true);
-afficherToast("Synchronisation WhatsApp effectuée avec succès !", "succes");
-}).withFailureHandler(function(err){
-masquerLoading();
-afficherToast("Erreur lors de la synchronisation : " + err.message, "erreur");
-}).getDonneesCoach();
-}).withFailureHandler(function(err){
-masquerLoading();
-if(stC) stC.textContent = "Erreur WhatsApp";
-if(stT) stT.textContent = "Erreur WhatsApp";
-afficherToast("Erreur WhatsApp : " + err.message, "erreur");
-}).declencherLectureVotes();
+  var stC = document.getElementById("statutChargement");
+  if(stC) stC.innerHTML = "<span class='spinner-badge'></span>Lecture WhatsApp...";
+  var stT = document.getElementById("statutTrain");
+  if(stT) stT.innerHTML = "<span class='spinner-badge'></span>Lecture WhatsApp...";
+  afficherLoading("Actualisation WhatsApp...", "Lecture des votes du sondage et synchronisation...");
+
+  function rechargerDonneesApresSynchro(msgSucces){
+    google.script.run.withSuccessHandler(function(data){
+      appliquerDonneesRecues(data, true);
+      masquerLoading();
+      if(stC) stC.textContent = "";
+      if(stT) stT.textContent = "";
+      afficherToast(msgSucces || "Synchronisation WhatsApp effectuée avec succès !", "succes");
+    }).withFailureHandler(function(err){
+      masquerLoading();
+      if(stC) stC.textContent = "Erreur lecture";
+      if(stT) stT.textContent = "Erreur lecture";
+      afficherToast("Erreur lors de la lecture des données : " + (err.message || err), "erreur");
+    }).getDonneesCoach();
+  }
+
+  google.script.run.withSuccessHandler(function(res){
+    rechargerDonneesApresSynchro("Pipeline WhatsApp exécuté & données synchronisées !");
+  }).withFailureHandler(function(err){
+    console.warn("[WhatsApp] declencherLectureVotes indisponible (" + (err.message || err) + "), repli sur lecture directe des données...");
+    // Fallback gracieux : si le script déployé n'a pas encore l'action declencherLectureVotes, on recharge les données directement
+    rechargerDonneesApresSynchro("Données actualisées depuis Google Sheets !");
+  }).declencherLectureVotes();
 }
 function choisirMode(isTinder){
 MODE_TINDER = !!isTinder;

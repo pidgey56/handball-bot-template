@@ -16,7 +16,7 @@
 const SPREADSHEET_ID_DEFAULT = '';
 
 // Version actuelle de Handball Bot
-const APP_VERSION = '2.2.11';
+const APP_VERSION = '2.2.12';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
 const LOGO_OFFICIEL_ACBB = 'https://media-logos-clubs.ffhandball.fr/256/2023-06-03-e7b37b0d-abbc-4623-9d38-ce7840be40f7.webp';
@@ -5503,7 +5503,7 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'ping') {
-      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.11' }))
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.12' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'getDonneesCoach') {
@@ -5604,7 +5604,8 @@ function doPost(e) {
       'verifierMiseAJour': verifierMiseAJour,
       'enregistrerModeFonctionnement': enregistrerModeFonctionnement,
       'recupererStatsSpaktaClub': recupererStatsSpaktaClub,
-      'associerIdsSpakta': function(forcer) { return preRemplirIdsSpaktaEffectif(null, forcer); }
+      'associerIdsSpakta': function(forcer) { return preRemplirIdsSpaktaEffectif(null, forcer); },
+      'declencherLectureVotes': declencherLectureVotes
     };
 
     if (typeof router[action] === 'function') {
@@ -6311,10 +6312,29 @@ function declencherLectureVotes() {
   if (!webappUrl) {
     try { webappUrl = ScriptApp.getService().getUrl() || ''; } catch (e) {}
   }
-  if (sheetConfig && webappUrl) sheetConfig.getRange('C21').setValue(webappUrl);
-  declencherActionGitHub('sync_whatsapp_votes', { webapp_url: webappUrl });
-  synchroniserDepuisGitHub();
-  return { launched: true };
+  if (sheetConfig && webappUrl) {
+    try { sheetConfig.getRange('C21').setValue(webappUrl); } catch (e) {}
+  }
+
+  let ghTriggered = false;
+  try {
+    if (cfg.githubRepo && cfg.githubToken) {
+      declencherActionGitHub('sync_whatsapp_votes', { webapp_url: webappUrl });
+      ghTriggered = true;
+    }
+  } catch (ge) {
+    console.warn('Dispatch GitHub non exécuté : ' + ge.message);
+  }
+
+  try {
+    synchroniserDepuisGitHub();
+  } catch (se) {}
+
+  try {
+    CacheService.getScriptCache().remove('COACH_DATA_CACHE');
+  } catch (ce) {}
+
+  return { launched: true, githubTriggered: ghTriggered };
 }
 
 /**

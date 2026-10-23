@@ -1,13 +1,11 @@
 {
-  "version": "2.2.11",
+  "version": "2.2.12",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.11 — Lisibilité Maximale de l'En-tête et des Compteurs en Mode Tinder (Match & Entraînement)",
+  "title": "Handball Manager 2.2.12 — Prise en charge de declencherLectureVotes dans l'API Backend & Synchro WhatsApp résiliente",
   "changelog": [
-    "Refonte visuelle complète de l'en-tête du Mode Sélection Tinder pour éliminer tout manque de contraste et de lisibilité",
-    "Titre du mode Tinder structuré sous forme de badge capsule contrasté et net ('🎴 MODE SÉLECTION TINDER' / '🏃 MODE ENTRAÎNEMENT TINDER')",
-    "Bouton d'ajout de renfort (+ Ajouter un renfort dans la sélection) transformé en bouton d'action net, visible et élégant (fini le bouton fantôme délavé)",
-    "Barre des scores et compteurs modernisée en capsules individuelles (pills) avec puces de couleur dédiées par équipe (Équipe 1 bleue, Équipe 2 orange, Équipe 3 verte, Restants ardoise, Repos rouge)",
-    "Verrouillage 'white-space: nowrap' pour interdire strictement la coupure et le passage à la ligne du ratio de joueurs (/12)",
-    "Adaptation parfaite en thèmes Clair (Carnet moderne) et Sombre (Ardoise vestiaire)"
+    "Prise en charge officielle de l'action 'declencherLectureVotes' dans la table de routage doPost de code.gs",
+    "Sécurisation de la méthode declencherLectureVotes avec gestion des exceptions pour garantir l'exécution même sans configuration GitHub externe",
+    "Mécanisme de repli fluide dans api.js et app.js : en cas d'appel de l'actualisation WhatsApp sur un script déployé antérieur, l'application bascule automatiquement sur la lecture directe des données Google Sheets sans afficher d'erreur rouge",
+    "Invalidation automatique du cache serveur pour assurer l'immédiateté de la synchronisation des votes"
   ]
 }

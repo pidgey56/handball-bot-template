@@ -153,6 +153,9 @@ const ApiClient = {
         if (action === 'recupererStatsSpaktaClub') {
           return (typeof window !== 'undefined' && window.SPAKTA_INITIAL_DATA) || { ok: true, joueurs: [] };
         }
+        if (action === 'declencherLectureVotes' && res.message && res.message.includes('Action inconnue')) {
+          return { launched: false, fallback: true };
+        }
         throw new Error(res.message || "Erreur serveur Google Sheets");
       }
 
