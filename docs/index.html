@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.15">
+  <link rel="stylesheet" href="css/style.css?v=2.2.16">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -1542,11 +1542,24 @@
 <div id="tacticalBenchList" class="bench-chips-list"></div>
 </div>
 </div>
-<div id="previewWhatsAppBlock">
-<div style="font-weight:800;font-size:0.88rem;color:var(--text-muted);margin:14px 0 6px 0;text-align:left;">Message de convocation WhatsApp (modifiable) :</div>
+<div id="previewWhatsAppBlock" class="preview-wa-block">
+<div class="preview-wa-header">
+  <div class="preview-wa-title">
+    <span class="preview-wa-icon">💬</span>
+    <span>Message de convocation WhatsApp</span>
+    <span class="preview-wa-badge">Modifiable</span>
+  </div>
+  <button type="button" class="btn-copy-wa" onclick="copierMessageApercu()" title="Copier le texte du message">
+    📋 Copier le texte
+  </button>
+</div>
 <div id="previewMessages"></div>
 <div class="preview-status" id="previewStatus"></div>
-<div class="preview-actions"><button class="btn-reset" onclick="retourApercu()">Retour</button><button type="button" class="btn-enter" id="btnSavePreview" style="background:#2563eb;color:#fff;font-weight:700;padding:8px 14px;font-size:0.82rem;width:auto;margin:0;" onclick="sauvegarderApercuDepuisTerrain()">💾 Sauvegarder la composition</button><button class="btn-wa" id="btnPublishPreview" onclick="publierApercu()">Publier sur WhatsApp</button></div>
+<div class="preview-actions">
+  <button type="button" class="btn-reset" onclick="retourApercu()">Retour</button>
+  <button type="button" class="btn-enter btn-preview-save" id="btnSavePreview" onclick="sauvegarderApercuDepuisTerrain()">💾 Sauvegarder la composition</button>
+  <button type="button" class="btn-wa btn-preview-publish" id="btnPublishPreview" onclick="publierApercu()"><span class="wa-btn-icon">📲</span> Publier sur WhatsApp</button>
+</div>
 </div>
 <div class="preview-actions" id="previewPlayerBottomActions" style="display:none;margin-top:14px;"><button class="btn-reset" onclick="retourApercu()">← Retour à l'accueil</button></div>
 </main>
@@ -1571,13 +1584,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.15"></script>
-  <script src="js/api.js?v=2.2.15"></script>
-  <script src="js/app.js?v=2.2.15"></script>
+  <script src="js/spakta-data.js?v=2.2.16"></script>
+  <script src="js/api.js?v=2.2.16"></script>
+  <script src="js/app.js?v=2.2.16"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.15').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.16').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

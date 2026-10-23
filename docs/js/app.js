@@ -1678,8 +1678,42 @@ rendreTabsTactique();
 afficherApercuTactique(eqCible);
 }
 var div = document.getElementById("previewMessages"); div.innerHTML = "";
-var txt = document.createElement("textarea"); txt.className = "preview-text"; txt.id = "txtPreviewMatch"; txt.value = creerMessageMatch(compo); div.appendChild(txt);
+var txt = creerTextareaPreview("txtPreviewMatch", creerMessageMatch(compo)); div.appendChild(txt);
 basculerVue("previewView");
+setTimeout(function(){ autoAjusterTextarea(txt); }, 80);
+}
+function autoAjusterTextarea(el){
+  if(!el) return;
+  el.style.height = "auto";
+  el.style.height = Math.max(220, el.scrollHeight + 14) + "px";
+}
+function creerTextareaPreview(id, value){
+  var txt = document.createElement("textarea");
+  txt.className = "preview-text";
+  txt.id = id;
+  txt.value = value || "";
+  txt.placeholder = "Rédigez ou personnalisez votre message WhatsApp avant diffusion...";
+  txt.addEventListener("input", function(){ autoAjusterTextarea(txt); });
+  setTimeout(function(){ autoAjusterTextarea(txt); }, 50);
+  return txt;
+}
+function copierMessageApercu(){
+  var txt = document.getElementById("txtPreviewMatch") || document.getElementById("txtPreviewTrain");
+  if(!txt || !txt.value){
+    afficherToast("Aucun message à copier.", "info");
+    return;
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt.value).then(function(){
+      afficherToast("Message copié dans le presse-papiers ! 📋", "succes");
+    }).catch(function(){
+      txt.select(); document.execCommand("copy");
+      afficherToast("Message copié ! 📋", "succes");
+    });
+  } else {
+    txt.select(); document.execCommand("copy");
+    afficherToast("Message copié ! 📋", "succes");
+  }
 }
 function sauvegarderApercuDepuisTerrain(){
 if(!CONTEXTE_APERCU) return;
@@ -4435,8 +4469,9 @@ CONTEXTE_APERCU = { type: "train", donnees: d };
 document.getElementById("previewTitle").textContent = "Aperçu - Entraînement " + d.seance;
 var tWrap = document.getElementById("tacticalPreviewWrap"); if(tWrap) tWrap.style.display = "none";
 var div = document.getElementById("previewMessages"); div.innerHTML = "";
-var txt = document.createElement("textarea"); txt.className = "preview-text"; txt.id = "txtPreviewTrain"; txt.value = creerMessageEntrainement(d); div.appendChild(txt);
+var txt = creerTextareaPreview("txtPreviewTrain", creerMessageEntrainement(d)); div.appendChild(txt);
 basculerVue("previewView");
+setTimeout(function(){ autoAjusterTextarea(txt); }, 80);
 }
 function initSortables(){
   if(typeof Sortable === "undefined") return;
@@ -5035,7 +5070,7 @@ function toggleMvpCourant(){
   initialiserColonnes();
   if(MODE_TINDER) afficherCarteTinder();
   if(typeof afficherApercuTactique === "function" && typeof EQUIPE_TACTIQUE_COURANTE !== "undefined" && EQUIPE_TACTIQUE_COURANTE){ afficherApercuTactique(EQUIPE_TACTIQUE_COURANTE); }
-  var txtM1 = document.getElementById("txtPreviewMatch"); if(txtM1 && CONTEXTE_APERCU && CONTEXTE_APERCU.type === "match" && CONTEXTE_APERCU.compo){ txtM1.value = creerMessageMatch(CONTEXTE_APERCU.compo); }
+  var txtM1 = document.getElementById("txtPreviewMatch"); if(txtM1 && CONTEXTE_APERCU && CONTEXTE_APERCU.type === "match" && CONTEXTE_APERCU.compo){ txtM1.value = creerMessageMatch(CONTEXTE_APERCU.compo); autoAjusterTextarea(txtM1); }
   if(devientMvp){
     declencherAnimationMvp(cibleNom);
     afficherToast(cibleNom + " est désigné(e) MVP du match ! 🏆", "succes");
@@ -5060,7 +5095,7 @@ function toggleChevreCourant(){
   initialiserColonnes();
   if(MODE_TINDER) afficherCarteTinder();
   if(typeof afficherApercuTactique === "function" && typeof EQUIPE_TACTIQUE_COURANTE !== "undefined" && EQUIPE_TACTIQUE_COURANTE){ afficherApercuTactique(EQUIPE_TACTIQUE_COURANTE); }
-  var txtM2 = document.getElementById("txtPreviewMatch"); if(txtM2 && CONTEXTE_APERCU && CONTEXTE_APERCU.type === "match" && CONTEXTE_APERCU.compo){ txtM2.value = creerMessageMatch(CONTEXTE_APERCU.compo); }
+  var txtM2 = document.getElementById("txtPreviewMatch"); if(txtM2 && CONTEXTE_APERCU && CONTEXTE_APERCU.type === "match" && CONTEXTE_APERCU.compo){ txtM2.value = creerMessageMatch(CONTEXTE_APERCU.compo); autoAjusterTextarea(txtM2); }
   if(devientChevre){
     declencherAnimationChevre(cibleNom);
     afficherToast(cibleNom + " est désigné(e) Chèvre du match ! 🐐", "warning");

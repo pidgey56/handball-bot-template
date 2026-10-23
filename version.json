@@ -1,13 +1,13 @@
 {
-  "version": "2.2.15",
+  "version": "2.2.16",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.15 — Optimisation Mobile Complète & Correction Navigation Onglets",
+  "title": "Handball Manager 2.2.16 — Refonte Complète du Bloc d'Envoi et de l'Aperçu WhatsApp",
   "changelog": [
-    "Résolution du débordement de l'onglet 'Entraînements' sur les autres options dans la barre de navigation du carnet",
-    "Labels d'onglets responsifs et harmonieux (Profil, Matchs, Séances, Équipe, Coach) sur smartphone évitant tout chevauchement",
-    "Restructuration mobile du bandeau d'en-tête coach en barre d'actions défilante horizontale (scroll chip bar)",
-    "Suppression des boutons redondants de bascule de mode pour libérer plus de 150px de hauteur utile sur smartphone",
-    "Ajustement compact des bandeaux vacances, titres et compteurs de sélection en mode mobile",
-    "Redimensionnement ergonomique de la carte Tinder (385px) et des commandes pour tenir intégralement dans l'écran sans défilement"
+    "Résolution du bug de la prévisualisation du message WhatsApp réduite à un rectangle minuscule inexploitable",
+    "Nouveau design de carte de prévisualisation WhatsApp moderne avec en-tête dédié, icône et badge de statut",
+    "Zone de texte (textarea) pleine largeur, responsive et auto-ajustable automatiquement à la hauteur du message",
+    "Bouton d'action rapide 'Copier le texte' avec confirmation toast pour faciliter le partage direct",
+    "Barre d'actions d'envoi élégante et ergonomique avec boutons tactiles modernes (Retour, Sauvegarder, Publier sur WhatsApp)",
+    "Prise en charge responsive optimisée sur smartphone avec boutons pleine largeur faciles d'accès au pouce"
   ]
 }
