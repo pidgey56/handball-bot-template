@@ -2,7 +2,7 @@
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
 var APP_VERSION = '2.2.0';
-var STATS_SPAKTA = null;
+var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
   if (storedSpakta) STATS_SPAKTA = JSON.parse(storedSpakta);
@@ -4869,6 +4869,8 @@ function demarrerApp(){
   try { rendreOngletsTrain(); } catch(e){}
   try { majAffichageModesParDefaut(); } catch(e){}
   window.addEventListener("resize", majAffichageModesParDefaut);
+  if (!STATS_SPAKTA && typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) STATS_SPAKTA = window.SPAKTA_INITIAL_DATA;
+  if (typeof synchroniserStatsSpakta === "function") synchroniserStatsSpakta();
   var aChargeDepuisCache = false;
   try {
     var rawCache = localStorage.getItem("hb_cache_data");

@@ -24,7 +24,7 @@
 
   /* Thème Carnet Tactique Moderne (Clair) par défaut */
   --bg-page: #f8fafc;
-  --bg-grid-color: rgba(226, 232, 240, 0.6);
+  --bg-grid-color: rgba(148, 163, 184, 0.22);
   --card-bg: #ffffff;
   --card-border: #e2e8f0;
   --card-border-focus: #cbd5e1;
@@ -73,10 +73,10 @@ body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-page);
   background-image: 
-    radial-gradient(var(--bg-grid-color) 0.85px, transparent 0.85px),
-    radial-gradient(var(--bg-grid-color) 0.85px, var(--bg-page) 0.85px);
-  background-size: 22px 22px;
-  background-position: 0 0, 11px 11px;
+    radial-gradient(var(--bg-grid-color) 0.75px, transparent 0.75px),
+    radial-gradient(var(--bg-grid-color) 0.75px, var(--bg-page) 0.75px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
   color: var(--text-main);
   margin: 0;
   padding: 0;
@@ -1097,15 +1097,22 @@ body.theme-slate .handball-field-wrapper {
 }
 .modal-box {
   background: var(--card-bg);
-  border: 2.5px solid var(--card-border);
-  border-radius: 22px;
-  max-width: 460px;
+  border: 2px solid var(--card-border);
+  border-radius: 20px;
+  max-width: 480px;
   width: 100%;
-  padding: 24px;
+  padding: 22px;
   max-height: 90vh;
   overflow-y: auto;
   box-sizing: border-box;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  color: var(--text-main);
+}
+.modal-box h2, .modal-box h3, .modal-box .modal-title {
+  color: var(--text-main)!important;
+}
+.modal-box label {
+  color: var(--text-muted)!important;
 }
 
 /* Toasts */
@@ -1535,37 +1542,45 @@ body.user-logged-in .carnet-tab-label {
   font-size: 0.7rem!important;
 }
 
-/* Grille 2 colonnes pour Mon Profil (No-Scroll) */
+/* Grille Dashboard Athlète pour Mon Profil (Desktop & Mobile) */
 .profil-grid-layout {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  max-width: 780px;
+  max-width: 1240px;
   margin: 0 auto;
 }
 
-@media(min-width: 640px) {
+@media(min-width: 860px) {
   .profil-grid-layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 16px;
-    align-items: stretch;
+    grid-template-columns: 330px 1fr;
+    gap: 20px;
+    align-items: start;
+    width: 100%;
+  }
+}
+
+@media(min-width: 1200px) {
+  .profil-grid-layout {
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
   }
 }
 
 .profil-card-col {
   display: flex;
   flex-direction: column;
+  gap: 12px;
   width: 100%;
 }
 
 .profil-actions-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   width: 100%;
-  justify-content: space-between;
 }
 
 .profil-side-box {
@@ -2227,4 +2242,101 @@ body.train-tinder-mode-active #trainFooter {
 .spakta-perf-badge {
   font-weight: 800;
   color: var(--color-primary, #ea580c);
+}
+
+
+/* ==============================================================================
+ * BANNIÈRES D'INFORMATION HAUTE LISIBILITÉ (CLAIRE & SOMBRE)
+ * ============================================================================== */
+.banner-vacances {
+  background: #e0f2fe!important;
+  border: 1.5px solid #0284c7!important;
+  border-radius: 12px!important;
+  padding: 10px 16px!important;
+  max-width: 1680px;
+  margin: 8px auto 12px auto!important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.12)!important;
+  color: #0369a1!important;
+  box-sizing: border-box;
+}
+
+.banner-vacances-text {
+  color: #0369a1!important;
+  font-weight: 700!important;
+  font-size: 0.85rem!important;
+  line-height: 1.35;
+}
+
+.banner-vacances-btn {
+  background: #ffffff!important;
+  color: #0284c7!important;
+  border: 1.5px solid #0284c7!important;
+  font-weight: 800!important;
+  padding: 6px 14px!important;
+  border-radius: 8px!important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08)!important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.banner-vacances-btn:hover {
+  background: #0284c7!important;
+  color: #ffffff!important;
+}
+
+.banner-brouillon {
+  background: #eff6ff!important;
+  border: 1.5px solid #2563eb!important;
+  border-radius: 12px!important;
+  padding: 10px 16px!important;
+  max-width: 1680px;
+  margin: 8px auto 12px auto!important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #1e40af!important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12)!important;
+  box-sizing: border-box;
+}
+
+.banner-brouillon-text {
+  color: #1e40af!important;
+  font-weight: 700!important;
+}
+
+.banner-caisse-fermee {
+  background: #fef3c7!important;
+  border: 1.5px solid #d97706!important;
+  color: #92400e!important;
+  border-radius: 12px!important;
+  padding: 10px 14px!important;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+body.theme-slate .banner-vacances {
+  background: rgba(14, 165, 233, 0.15)!important;
+  border-color: #0284c7!important;
+  color: #bae6fd!important;
+}
+
+body.theme-slate .banner-vacances-text {
+  color: #bae6fd!important;
+}
+
+body.theme-slate .banner-vacances-btn {
+  background: rgba(14, 165, 233, 0.25)!important;
+  color: #e0f2fe!important;
+  border-color: #38bdf8!important;
 }

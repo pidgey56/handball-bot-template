@@ -95,10 +95,11 @@
 <div id="playerBox" style="display:none;flex-direction:column;align-items:center;gap:14px;width:100%;">
 
   <!-- ONGLET 1 : MON PROFIL -->
-  <div id="panelProfil" class="carnet-panel active" style="display:flex;width:100%;max-width:780px;margin:0 auto;">
+  <div id="panelProfil" class="carnet-panel active" style="display:flex;width:100%;max-width:1240px;margin:0 auto;">
     <div class="profil-grid-layout">
-      <!-- Colonne Gauche : Carte Joueur Athlète -->
+      <!-- Colonne Gauche (330px sur desktop) : Carte Joueur Athlète & Identité -->
       <div class="profil-card-col">
+        <!-- Carte Joueur Athlète -->
         <div id="playerPreviewCard" class="player-athlete-card">
           <div class="masking-tape masking-tape-orange"></div>
           <div class="player-photo-container">
@@ -118,39 +119,13 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Colonne Droite : Préférences & Actions Rapides -->
-      <div class="profil-actions-col">
-        <!-- Tuile Spakta Stats Officielles -->
-        <div id="playerStatsBox" class="profil-side-box" style="display:none;">
-          <div class="profil-side-title" style="display:flex;justify-content:space-between;align-items:center;">
-            <span>📊 Mes Stats Officielles (2026-2027)</span>
-            <span id="playerStatsTeamsBadge" class="spakta-team-pill">1C</span>
-          </div>
-          
-          <!-- Grille des statistiques Clés -->
-          <div id="playerStatsGrid" class="spakta-stats-grid">
-            <!-- Rempli dynamiquement en JS -->
-          </div>
-
-          <!-- Bouton déroulant Historique des Matchs -->
-          <button type="button" id="btnToggleMatchLog" class="btn-reset btn-spakta-history" onclick="toggleSpaktaMatchLog()">
-            <span>📅 Historique match par match</span>
-            <span id="iconToggleMatchLog">▾</span>
-          </button>
-
-          <!-- Liste déroulante des matchs -->
-          <div id="playerMatchLog" class="spakta-match-list" style="display:none;">
-            <!-- Rempli dynamiquement en JS -->
-          </div>
-        </div>
-
+        <!-- Boîte Préférences & Actions Rapides -->
         <div class="profil-side-box">
           <div class="profil-side-title">⚙️ Mes Préférences Joueur</div>
-          <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <button type="button" class="btn-reset" style="flex:1;padding:8px;font-size:0.78rem;font-weight:700;" onclick="togglePhotoSelect()">📸 Photo ▾</button>
-            <button type="button" class="btn-reset" style="flex:1;padding:8px;font-size:0.78rem;font-weight:700;" onclick="togglePosteSelect()">🎯 Poste ▾</button>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <button type="button" class="btn-reset" style="flex:1;padding:7px;font-size:0.76rem;font-weight:700;" onclick="togglePhotoSelect()">📸 Photo ▾</button>
+            <button type="button" class="btn-reset" style="flex:1;padding:7px;font-size:0.76rem;font-weight:700;" onclick="togglePosteSelect()">🎯 Poste ▾</button>
           </div>
           <div id="photoSelectBox" style="width:100%;text-align:left;display:none;background:var(--card-bg);padding:10px;border-radius:12px;border:1.5px solid var(--card-border);margin-bottom:8px;">
             <div style="font-size:0.75rem;color:var(--text-main);font-weight:700;margin-bottom:4px;">Changer ma photo :</div>
@@ -176,13 +151,80 @@
           <input type="file" id="filePhoto" accept="image/*" style="display:none;" onchange="chargerFichierPhoto(event)">
           <div class="home-status" id="photoStatus"></div>
           
-          <button type="button" class="btn-reset" style="width:100%;padding:10px;font-size:0.8rem;border:1.5px solid var(--card-border);border-radius:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--card-bg);box-shadow:1.5px 1.5px 0px var(--card-border);" onclick="ouvrirModalAbsence()">📅 Signaler une absence / Indisponibilité</button>
+          <button type="button" class="btn-reset" style="width:100%;padding:9px;font-size:0.78rem;border:1.5px solid var(--card-border);border-radius:10px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--card-bg);box-shadow:1.5px 1.5px 0px var(--card-border);margin-bottom:8px;" onclick="ouvrirModalAbsence()">📅 Signaler absence / Indisponibilité</button>
+
+          <div style="display:flex;gap:6px;">
+            <button type="button" class="btn-reset" style="flex:1;padding:7px;font-size:0.74rem;color:var(--text-muted);border:1px dashed var(--card-border);border-radius:8px;font-weight:700;" onclick="ouvrirModalPwa()">📲 App PWA</button>
+            <button id="btnDeconnexion" class="btn-reset btn-deconnexion" style="flex:1;padding:7px;font-size:0.74rem;font-weight:800;border-radius:8px;color:#dc2626;" onclick="seDeconnecter()">🚪 Déconnexion</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne Droite (1fr) : Dashboard Athlète Complet -->
+      <div class="profil-actions-col">
+        <!-- 1. Tuile Spakta Stats Officielles -->
+        <div id="playerStatsBox" class="profil-side-box" style="display:none;">
+          <div class="profil-side-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>📊 Mes Stats Officielles (2026-2027)</span>
+            <span id="playerStatsTeamsBadge" class="spakta-team-pill">1C</span>
+          </div>
+          
+          <!-- Grille des statistiques Clés -->
+          <div id="playerStatsGrid" class="spakta-stats-grid">
+            <!-- Rempli dynamiquement en JS -->
+          </div>
+
+          <!-- Bouton déroulant Historique des Matchs -->
+          <button type="button" id="btnToggleMatchLog" class="btn-reset btn-spakta-history" onclick="toggleSpaktaMatchLog()">
+            <span>📅 Historique match par match</span>
+            <span id="iconToggleMatchLog">▾</span>
+          </button>
+
+          <!-- Liste déroulante des matchs -->
+          <div id="playerMatchLog" class="spakta-match-list" style="display:none;">
+            <!-- Rempli dynamiquement en JS -->
+          </div>
         </div>
 
+        <!-- 2. Convocation & Match de la semaine -->
+        <div id="matchHubBanner" class="match-hub-banner" onclick="ouvrirApercuCompoJoueur()" style="width:100%;box-sizing:border-box;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span id="matchHubStatutBadge" class="coach-badge-caisse">⏳ MATCH DU WEEK-END</span>
+            <span id="matchHubEquipeBadge" style="font-size:0.75rem;font-weight:700;color:var(--text-muted);"></span>
+          </div>
+          <div id="matchHubAdversaire" style="font-weight:800;font-size:1.05rem;color:var(--text-main);margin-bottom:3px;">Consultez vos convocations</div>
+          <div id="matchHubDetails" style="font-size:0.82rem;color:var(--text-muted);line-height:1.4;margin-bottom:8px;">Détails des matchs et convocations officiels du club.</div>
+          <div id="matchHubActions" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+            <button type="button" class="btn-reset" style="padding:5px 10px;font-size:0.74rem;background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;font-weight:700;" onclick="event.stopPropagation();ouvrirGpsGymnase('waze')">🚗 Waze</button>
+            <button type="button" class="btn-reset" style="padding:5px 10px;font-size:0.74rem;background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;font-weight:700;" onclick="event.stopPropagation();ouvrirGpsGymnase('maps')">📍 Maps</button>
+            <button type="button" class="btn-wa" style="padding:5px 12px;font-size:0.74rem;flex:1;" onclick="event.stopPropagation();ouvrirApercuCompoJoueur()">📐 Voir Compo & Terrain</button>
+          </div>
+          <div style="font-size:0.72rem;color:var(--color-primary);font-weight:700;display:flex;align-items:center;gap:4px;margin-top:4px;">📐 Toucher pour ouvrir le terrain tactique →</div>
+        </div>
+
+        <!-- 3. Raccourcis Vie du Club (4 tuiles interactives) -->
         <div class="profil-side-box">
-          <div style="display:flex;gap:8px;">
-            <button type="button" class="btn-reset" style="flex:1;padding:8px;font-size:0.75rem;color:var(--text-muted);border:1px dashed var(--card-border);border-radius:10px;font-weight:700;" onclick="ouvrirModalPwa()">📲 App PWA</button>
-            <button id="btnDeconnexion" class="btn-reset btn-deconnexion" style="flex:1;padding:8px;font-size:0.75rem;font-weight:800;border-radius:10px;color:#dc2626;" onclick="seDeconnecter()">🚪 Déconnexion</button>
+          <div class="profil-side-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span>🌟 La Vie de l'Équipe</span>
+            <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">Accès direct</span>
+          </div>
+          <div class="player-hub-grid" style="grid-template-columns:repeat(2, 1fr);gap:8px;">
+            <div class="player-tile tile-mvp" onclick="ouvrirModalMvp()">
+              <div class="player-tile-top"><span class="player-tile-icon">🏆</span><span id="tileBadgeMvp" class="player-tile-badge badge-mvp">Vote ouvert</span></div>
+              <div><div class="player-tile-title">Élection MVP</div><div id="tileSubMvp" class="player-tile-sub">Élisez le joueur du match</div></div>
+            </div>
+            <div class="player-tile tile-chevre" onclick="ouvrirModalChevre()">
+              <div class="player-tile-top"><span class="player-tile-icon">🐐</span><span id="tileBadgeChevre" class="player-tile-badge badge-chevre">Bêtisier</span></div>
+              <div><div class="player-tile-title">Trophée Chèvre</div><div id="tileSubChevre" class="player-tile-sub">Proposez vos casseroles</div></div>
+            </div>
+            <div class="player-tile tile-covoit" onclick="ouvrirModalCovoiturage()">
+              <div class="player-tile-top"><span class="player-tile-icon">🚗</span><span id="tileBadgeCovoit" class="player-tile-badge badge-covoit">Trajets</span></div>
+              <div><div class="player-tile-title">Covoiturage</div><div id="tileSubCovoit" class="player-tile-sub">Proposer ou trouver 1 place</div></div>
+            </div>
+            <div class="player-tile tile-caisse" onclick="ouvrirModalCaisseNoire()">
+              <div class="player-tile-top"><span class="player-tile-icon">💰</span><span id="tileBadgeCaisse" class="player-tile-badge badge-caisse">À jour 🟢</span></div>
+              <div><div class="player-tile-title">Caisse Noire & Amendes</div><div id="tileCaisseCagnotte" class="player-tile-sub">Cagnotte : 0 € • Barème</div></div>
+            </div>
           </div>
         </div>
       </div>
@@ -190,21 +232,7 @@
   </div>
 
   <!-- ONGLET 2 : MATCHS & COMPOSITIONS -->
-  <div id="panelMatchs" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
-    <div id="matchHubBanner" class="match-hub-banner" onclick="ouvrirApercuCompoJoueur()" style="width:100%;box-sizing:border-box;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <span id="matchHubStatutBadge" class="coach-badge-caisse">⏳ MATCH DU WEEK-END</span>
-        <span id="matchHubEquipeBadge" style="font-size:0.75rem;font-weight:700;color:var(--text-muted);"></span>
-      </div>
-      <div id="matchHubAdversaire" style="font-weight:800;font-size:1.1rem;color:var(--text-main);margin-bottom:3px;">Consultez vos convocations</div>
-      <div id="matchHubDetails" style="font-size:0.84rem;color:var(--text-muted);line-height:1.4;margin-bottom:8px;">Détails des matchs et convocations officiels du club.</div>
-      <div id="matchHubActions" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-        <button type="button" class="btn-reset" style="padding:6px 12px;font-size:0.76rem;background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;font-weight:700;" onclick="event.stopPropagation();ouvrirGpsGymnase('waze')">🚗 Waze</button>
-        <button type="button" class="btn-reset" style="padding:6px 12px;font-size:0.76rem;background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;font-weight:700;" onclick="event.stopPropagation();ouvrirGpsGymnase('maps')">📍 Maps</button>
-        <button type="button" class="btn-wa" style="padding:6px 12px;font-size:0.76rem;flex:1;" onclick="event.stopPropagation();ouvrirApercuCompoJoueur()">📐 Voir Terrain Tactique</button>
-      </div>
-      <div style="font-size:0.74rem;color:var(--color-primary);font-weight:700;display:flex;align-items:center;gap:4px;">📐 Toucher pour ouvrir le terrain tactique & compositions →</div>
-    </div>
+  <div id="panelMatchs" class="carnet-panel" style="display:none;width:100%;max-width:1240px;margin:0 auto;">
     
     <div class="dash-tile" style="width:100%;box-sizing:border-box;margin-top:6px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -221,7 +249,7 @@
   </div>
 
   <!-- ONGLET 3 : ENTRAÎNEMENTS -->
-  <div id="panelTrain" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
+  <div id="panelTrain" class="carnet-panel" style="display:none;width:100%;max-width:1240px;margin:0 auto;">
     <div class="dash-tile" style="width:100%;box-sizing:border-box;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <div class="dash-tile-title">🏃 Séances d'Entraînement de la Semaine</div>
@@ -237,7 +265,7 @@
   </div>
 
   <!-- ONGLET 4 : VIE D'ÉQUIPE -->
-  <div id="panelClub" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
+  <div id="panelClub" class="carnet-panel" style="display:none;width:100%;max-width:1240px;margin:0 auto;">
     <div class="player-hub-grid" style="width:100%;">
       <div class="player-tile tile-mvp" onclick="ouvrirModalMvp()">
         <div class="player-tile-top"><span class="player-tile-icon">🏆</span><span id="tileBadgeMvp" class="player-tile-badge badge-mvp">Vote ouvert</span></div>
@@ -263,7 +291,7 @@
   </div>
 
   <!-- ONGLET 5 : GESTION COACH -->
-  <div id="panelCoach" class="carnet-panel" style="display:none;width:100%;max-width:760px;">
+  <div id="panelCoach" class="carnet-panel" style="display:none;width:100%;max-width:1240px;margin:0 auto;">
     <div id="coachMenuBox" style="width:100%;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <span style="font-size:0.85rem;color:var(--color-secondary);font-weight:900;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">ESPACE COACH</span>
@@ -372,19 +400,19 @@
 <button type="button" class="view-mode-tab active" id="tabClassicMode" onclick="choisirMode(false)">Mode Tactique</button>
 <button type="button" class="view-mode-tab" id="tabTinderMode" onclick="choisirMode(true)">Mode Tinder</button>
 </div>
-<div id="banniereVacancesMatch" style="display:none;background:rgba(14,165,233,0.18);border:1px solid #0ea5e9;border-radius:12px;padding:9px 14px;max-width:1680px;margin:8px auto;align-items:center;justify-content:space-between;font-size:0.83rem;">
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="font-size:1.15rem;">🏖️</span>
-<span id="txtBanniereVacancesMatch" style="color:#e0f2fe;font-weight:600;">Semaine en période de vacances scolaires. Aucun match officiel programmé.</span>
+<div id="banniereVacancesMatch" class="banner-vacances" style="display:none;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:1.3rem;">🏖️</span>
+    <span id="txtBanniereVacancesMatch" class="banner-vacances-text">Semaine en période de vacances scolaires. Aucun match officiel programmé.</span>
+  </div>
+  <button type="button" class="btn-reset banner-vacances-btn" onclick="ouvrirModalVacances()">Gérer vacances</button>
 </div>
-<button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.75rem;border-color:rgba(14,165,233,0.4);color:#7dd3fc;" onclick="ouvrirModalVacances()">Gérer vacances</button>
-</div>
-<div id="banniereBrouillon" style="display:none;background:rgba(2,132,199,0.18);border:1px solid #0284c7;border-radius:12px;padding:9px 14px;max-width:1680px;margin:8px auto;align-items:center;justify-content:space-between;font-size:0.83rem;">
-<span style="color:#e0f2fe;font-weight:600;">Brouillon de sélection détecté pour ce week-end</span>
-<div style="display:flex;gap:8px;">
-<button type="button" class="btn-save" style="padding:5px 12px;font-size:0.75rem;" onclick="restaurerBrouillon()">Reprendre ma sélection</button>
-<button type="button" class="btn-reset" style="padding:5px 10px;font-size:0.75rem;color:#f87171;" onclick="effacerBrouillon()">Ignorer</button>
-</div>
+<div id="banniereBrouillon" class="banner-brouillon" style="display:none;">
+  <span class="banner-brouillon-text">📋 Brouillon de sélection détecté pour ce week-end</span>
+  <div style="display:flex;gap:8px;">
+    <button type="button" class="btn-save" style="padding:6px 14px;font-size:0.78rem;font-weight:800;" onclick="restaurerBrouillon()">Reprendre ma sélection</button>
+    <button type="button" class="btn-reset" style="padding:6px 10px;font-size:0.75rem;color:#f87171;" onclick="effacerBrouillon()">Ignorer</button>
+  </div>
 </div>
 <div class="board" id="classicView">
 <div class="col col-1b" id="colBox1B">
@@ -421,7 +449,7 @@
 <button type="button" class="btn-mini-edit tinder-btn-renfort" style="color:var(--color-secondary);border-color:var(--color-secondary);font-weight:700;margin:0 auto 8px auto;display:block;" onclick="ouvrirModalRenfort(false)">+ Ajouter un renfort dans la sélection</button>
 <div class="tscore-bar" id="tscoreBar">
 <span id="tBox1B"><span class="team-dot team-dot-1"></span><span id="labelTinder1B">Équipe 1</span> : <b id="tCount1B">0</b>/12</span>
-<span id="tBoxPool" style="color:#d4d4d4;">Restants : <b id="tCountPool">0</b></span>
+<span id="tBoxPool" style="color:var(--text-muted);">Restants : <b id="tCountPool">0</b></span>
 <span id="tBox1C"><span class="team-dot team-dot-2"></span><span id="labelTinder1C">Équipe 2</span> : <b id="tCount1C">0</b>/12</span>
 <span id="tBox1D" style="display:none;"><span class="team-dot team-dot-3"></span><span id="labelTinder1D">Équipe 3</span> : <b id="tCount1D">0</b>/12</span>
 <span id="tBoxRepos" style="color:#f87171;"><span class="team-dot team-dot-repos"></span>Repos : <b id="tCountRepos">0</b></span>
@@ -477,12 +505,12 @@
 <button type="button" class="view-mode-tab active" id="tabTrainClassicMode" onclick="choisirModeTrain(false)">Mode Tactique</button>
 <button type="button" class="view-mode-tab" id="tabTrainTinderMode" onclick="choisirModeTrain(true)">Mode Tinder</button>
 </div>
-<div id="banniereVacancesTrain" style="display:none;background:rgba(14,165,233,0.18);border:1px solid #0ea5e9;border-radius:12px;padding:9px 14px;max-width:1680px;margin:8px auto;align-items:center;justify-content:space-between;font-size:0.83rem;">
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="font-size:1.15rem;">🏖️</span>
-<span id="txtBanniereVacancesTrain" style="color:#e0f2fe;font-weight:600;">Semaine en période de vacances scolaires. Les entraînements habituels sont suspendus.</span>
-</div>
-<button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.75rem;border-color:rgba(14,165,233,0.4);color:#7dd3fc;" onclick="ouvrirModalVacances()">Gérer vacances</button>
+<div id="banniereVacancesTrain" class="banner-vacances" style="display:none;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:1.3rem;">🏖️</span>
+    <span id="txtBanniereVacancesTrain" class="banner-vacances-text">Semaine en période de vacances scolaires. Les entraînements habituels sont suspendus.</span>
+  </div>
+  <button type="button" class="btn-reset banner-vacances-btn" onclick="ouvrirModalVacances()">Gérer vacances</button>
 </div>
 <div class="board" id="trainBoardClassic">
 <div class="col col-pool" id="trColPool">
@@ -562,10 +590,10 @@
 </div>
 <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-<div><label style="font-size:0.75rem;color:#d4d4d4;display:block;margin-bottom:3px;">Téléphone :</label><input type="tel" id="modalJoueurTel" class="inp-field" placeholder="06..."></div>
-<div><label style="font-size:0.75rem;color:#d4d4d4;display:block;margin-bottom:3px;">Équipe :</label><select id="modalJoueurEquipe" class="inp-field"></select></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:3px;">Téléphone :</label><input type="tel" id="modalJoueurTel" class="inp-field" placeholder="06..."></div>
+<div><label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:3px;">Équipe :</label><select id="modalJoueurEquipe" class="inp-field"></select></div>
 </div>
-<label style="font-size:0.8rem;color:#d4d4d4;">Poste sur le terrain :</label>
+<label style="font-size:0.8rem;color:var(--text-muted);">Poste sur le terrain :</label>
 <select id="modalJoueurPoste" class="inp-field">
 <option value="Gardien">Gardien</option>
 <option value="Ailier Gauche">Ailier Gauche</option>
@@ -575,7 +603,7 @@
 <option value="Arrière Droit">Arrière Droit</option>
 <option value="Ailier Droit">Ailier Droit</option>
 </select>
-<label style="font-size:0.8rem;color:#d4d4d4;">Notes du Coach (privé) :</label>
+<label style="font-size:0.8rem;color:var(--text-muted);">Notes du Coach (privé) :</label>
 <textarea id="modalJoueurNote" class="inp-field" rows="3" placeholder="Ex : Blessé au genou, revient semaine prochaine..."></textarea>
 <div id="boxModalJoueurTresorier" style="display:flex;align-items:center;gap:8px;background:rgba(234,179,8,0.12);padding:8px 12px;border-radius:10px;border:1px solid rgba(234,179,8,0.25);margin-top:2px;">
 <input type="checkbox" id="modalJoueurTresorier" style="width:18px;height:18px;accent-color:#eab308;cursor:pointer;">
@@ -585,7 +613,7 @@
 <!-- Section Stats Spakta Coach -->
 <div id="modalJoueurSpaktaBox" style="display:none;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px;margin-top:8px;">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-    <span style="font-size:0.8rem;font-weight:800;color:#f8fafc;">📊 Stats Spakta 2026-2027</span>
+    <span style="font-size:0.8rem;font-weight:800;color:var(--text-main);">📊 Stats Spakta 2026-2027</span>
     <span id="modalJoueurSpaktaTeamBadge" class="spakta-team-pill">--</span>
   </div>
   <div id="modalJoueurSpaktaGrid" class="spakta-stats-grid"></div>
@@ -610,7 +638,7 @@
 <div class="modal-bg" id="modalNouveauJoueurBg" onclick="fermerModalNouveauJoueurSurBg(event)">
 <div class="modal-box" style="max-width:440px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-<h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Ajouter un Nouveau Joueur</h2>
+<h2 style="margin:0;font-size:1.15rem;color:var(--text-main);">Ajouter un Nouveau Joueur</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalNouveauJoueur()">✕</button>
 </div>
 <div style="display:flex;flex-direction:column;gap:10px;text-align:left;">
@@ -637,7 +665,7 @@
 <div class="modal-bg" id="modalRenfortBg" onclick="fermerModalRenfortSurBg(event)">
 <div class="modal-box" style="max-width:480px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-<h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Ajouter un Renfort / Hors sondage</h2>
+<h2 style="margin:0;font-size:1.15rem;color:var(--text-main);">Ajouter un Renfort / Hors sondage</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalRenfort()">✕</button>
 </div>
 <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 10px 0;text-align:left;">Sélectionnez un joueur de l'effectif absent du sondage (descente d'équipe, retardataire) ou ajoutez un joueur invité.</p>
@@ -656,14 +684,14 @@
 <div class="modal-bg" id="modalCollectifsBg" onclick="fermerModalCollectifsSurBg(event)">
 <div class="modal-box" style="max-width:480px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-<h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Collectifs & Multi-Groupes</h2>
+<h2 style="margin:0;font-size:1.15rem;color:var(--text-main);">Collectifs & Multi-Groupes</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalCollectifs()">✕</button>
 </div>
 <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 12px 0;text-align:left;">Gérez plusieurs collectifs (ex: SG1-SG2 et -15 Filles) et basculez instantanément de l'un à l'autre sans vous reconnecter.</p>
 <div style="font-size:0.8rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-align:left;">Collectifs enregistrés :</div>
 <div id="listeCollectifs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;text-align:left;"></div>
 <div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:12px;padding:12px;text-align:left;">
-<div style="font-size:0.8rem;font-weight:800;color:#f8fafc;margin-bottom:6px;">Lier un autre collectif / catégorie :</div>
+<div style="font-size:0.8rem;font-weight:800;color:var(--text-main);margin-bottom:6px;">Lier un autre collectif / catégorie :</div>
 <div style="display:flex;flex-direction:column;gap:8px;">
 <input type="text" id="inpNouvCollectifNom" class="inp-field" placeholder="Nom du collectif (ex : -15 Filles)">
 <input type="url" id="inpNouvCollectifUrl" class="inp-field" placeholder="URL de la WebApp Google Apps Script">
@@ -675,7 +703,7 @@
 <div class="modal-bg" id="modalPwaInstallBg" onclick="fermerModalPwaSurBg(event)">
 <div class="modal-box" style="max-width:440px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-<h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Installer sur votre smartphone</h2>
+<h2 style="margin:0;font-size:1.15rem;color:var(--text-main);">Installer sur votre smartphone</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;" onclick="fermerModalPwa()">✕</button>
 </div>
 <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 12px 0;text-align:left;">Installez Handball Bot sur votre écran d'accueil pour l'utiliser en plein écran sans barre d'adresse, comme une application native.</p>
@@ -714,7 +742,7 @@
 <div id="ffhbImportStatus" style="font-size:0.73rem;color:var(--color-secondary);min-height:1.2em;margin-top:6px;line-height:1.3;"></div>
 </div>
 <div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;">
-<div style="font-weight:800;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;color:#f8fafc;">Blason & Photo du Club</div>
+<div style="font-weight:800;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;color:var(--text-main);">Blason & Photo du Club</div>
 <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Téléversez le logo du club ou collez un lien URL direct.</div>
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
 <div style="width:68px;height:68px;border-radius:12px;background:#030712;border:1px solid rgba(148,163,184,0.25);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px;flex-shrink:0;">
@@ -734,7 +762,7 @@
 <div id="modalLogoStatus" style="font-size:0.75rem;color:var(--color-secondary);min-height:1.2em;margin-top:6px;text-align:center;"></div>
 </div>
 <div style="background:#0b1120;border:1px solid rgba(148,163,184,0.18);border-radius:14px;padding:12px;margin-bottom:14px;text-align:left;">
-<div style="font-weight:800;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;color:#f8fafc;">Nombre d'Équipes dans le groupe WhatsApp</div>
+<div style="font-weight:800;font-size:0.88rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;color:var(--text-main);">Nombre d'Équipes dans le groupe WhatsApp</div>
 <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">Adapte les colonnes de présence, les compositions et les sélections (1, 2 ou 3 équipes).</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
 <button type="button" class="btn-reset" id="btnNbEq1" style="padding:8px 4px;font-size:0.8rem;border:1px solid #334155;border-radius:8px;" onclick="choisirNbEquipesModal(1)">1 Équipe</button>
@@ -813,7 +841,7 @@
 </div>
 </div>
 <div style="text-align:left;margin-bottom:12px;">
-<div style="font-size:0.78rem;font-weight:700;color:#d4d4d4;margin-bottom:6px;">Palettes rapides (Clubs de Handball) :</div>
+<div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;">Palettes rapides (Clubs de Handball) :</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
 <button type="button" class="btn-reset" style="font-size:0.72rem;padding:6px;text-align:left;" onclick="appliquerPresetCouleurs('#f97316','#fbbf24','#3b82f6','#f97316','#10b981')">Orange & Ambre</button>
 <button type="button" class="btn-reset" style="font-size:0.72rem;padding:6px;text-align:left;" onclick="appliquerPresetCouleurs('#6b21a8','#eab308','#6b21a8','#eab308','#3b82f6')">Violet & Or (Nantes)</button>
@@ -843,13 +871,13 @@
 <div class="modal-bg" id="modalConfigEntrainementsBg" onclick="fermerModalConfigEntrainementsSurBg(event)">
 <div class="modal-box" style="max-width:480px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(148,163,184,0.15);padding-bottom:10px;">
-<h2 style="margin:0;font-size:1.15rem;color:#f8fafc;">Horaires des Entraînements</h2>
+<h2 style="margin:0;font-size:1.15rem;color:var(--text-main);">Horaires des Entraînements</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.85rem;" onclick="fermerModalConfigEntrainements()">✕</button>
 </div>
 <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;text-align:left;">Configurez les jours et horaires des créneaux d'entraînement (1 à 5 séances par semaine). Ils s'appliqueront aux sondages et aux convocations WhatsApp.</p>
 <div style="background:#0e1626;padding:12px;border-radius:12px;border:1px solid rgba(148,163,184,0.18);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;">
 <div>
-<div style="font-weight:800;font-size:0.88rem;color:#f8fafc;">Nombre d'entraînements par semaine</div>
+<div style="font-weight:800;font-size:0.88rem;color:var(--text-main);">Nombre d'entraînements par semaine</div>
 <div style="font-size:0.75rem;color:var(--text-muted);">Choisissez entre 1 et 5 créneaux hebdomadaires</div>
 </div>
 <select id="cfgNbSeancesTrain" class="inp-field" style="width:auto;padding:6px 12px;font-size:0.9rem;font-weight:700;border-color:var(--color-primary);" onchange="ajusterAffichageNombreSeances()">
@@ -1139,7 +1167,7 @@
 <div id="profilPublicBackdrop" style="position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(30px) brightness(0.28);z-index:0;pointer-events:none;"></div>
 <div style="position:relative;z-index:1;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-<div style="font-weight:900;font-size:1.1rem;color:#f8fafc;display:flex;align-items:center;gap:8px;">👤 Fiche Joueur</div>
+<div style="font-weight:900;font-size:1.1rem;color:var(--text-main);display:flex;align-items:center;gap:8px;">👤 Fiche Joueur</div>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerProfilJoueurPublic()">✕</button>
 </div>
 <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:14px;">
@@ -1158,7 +1186,7 @@
 <span id="profilPublicCaisseStatut" style="font-size:0.75rem;font-weight:800;padding:2px 8px;border-radius:99px;"></span>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-bottom:8px;">
-<div style="background:rgba(255,255,255,0.03);padding:6px;border-radius:8px;"><div style="font-size:0.7rem;color:var(--text-muted);">Amendes</div><div id="profilPublicTotalAmendes" style="font-weight:900;color:#f8fafc;font-size:0.95rem;">0 €</div></div>
+<div style="background:rgba(255,255,255,0.03);padding:6px;border-radius:8px;"><div style="font-size:0.7rem;color:var(--text-muted);">Amendes</div><div id="profilPublicTotalAmendes" style="font-weight:900;color:var(--text-main);font-size:0.95rem;">0 €</div></div>
 <div style="background:rgba(255,255,255,0.03);padding:6px;border-radius:8px;"><div style="font-size:0.7rem;color:var(--text-muted);">Reste dû</div><div id="profilPublicResteDu" style="font-weight:900;color:#f87171;font-size:0.95rem;">0 €</div></div>
 </div>
 <div id="profilPublicAmendesList" style="max-height:120px;overflow-y:auto;font-size:0.72rem;color:var(--text-muted);"></div>
@@ -1173,7 +1201,7 @@
 <div style="font-weight:900;font-size:1.18rem;color:#fef08a;display:flex;align-items:center;gap:8px;">💰 Caisse Noire & Amendes</div>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.8rem;" onclick="fermerModalCaisseNoire()">✕</button>
 </div>
-<div id="banniereCaisseFermee" style="display:none;background:rgba(245,158,11,0.2);border:1px solid #f59e0b;color:#fde68a;border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:0.78rem;font-weight:700;align-items:center;gap:8px;text-align:left;">🔒 La Caisse Noire est actuellement fermée par le coach. Les nouveaux signalements d'amendes sont suspendus.</div>
+<div id="banniereCaisseFermee" class="banner-caisse-fermee" style="display:none;">🔒 La Caisse Noire est actuellement fermée par le coach. Les nouveaux signalements d'amendes sont suspendus.</div>
 <div style="display:flex;gap:4px;background:#090d16;padding:4px;border-radius:12px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.08);">
 <button type="button" id="tabCaisseCagnotte" class="train-type-pill active" style="flex:1;" onclick="basculerTabCaisse('cagnotte')">📊 Cagnotte</button>
 <button type="button" id="tabCaisseArdoise" class="train-type-pill" style="flex:1;" onclick="basculerTabCaisse('ardoise')">🧾 Mon Ardoise</button>
@@ -1401,7 +1429,7 @@
 <div class="modal-bg" id="modalVacancesBg" onclick="fermerModalVacancesSurBg(event)">
 <div class="modal-box" style="border-top:4px solid #0ea5e9;max-width:540px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(148,163,184,0.15);padding-bottom:10px;">
-<h2 style="margin:0;font-size:1.15rem;color:#f8fafc;display:flex;align-items:center;gap:8px;">🏖️ Vacances & Trêves Scolaires</h2>
+<h2 style="margin:0;font-size:1.15rem;color:var(--text-main);display:flex;align-items:center;gap:8px;">🏖️ Vacances & Trêves Scolaires</h2>
 <button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.85rem;" onclick="fermerModalVacances()">✕</button>
 </div>
 <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px 0;text-align:left;line-height:1.45;">Pendant ces périodes, les entraînements et la détection de matchs sont suspendus, et aucun sondage WhatsApp n'est envoyé le lundi matin.</p>
@@ -1445,12 +1473,12 @@
 <div id="previewView" style="display:none;">
 <main class="preview-page">
 <div class="preview-header"><button class="btn-reset" onclick="retourApercu()">← Retour</button><h1 id="previewTitle" onclick="retourAccueil()" title="Retour à l'accueil" style="cursor:pointer;">Aperçu Convocations & Terrain Tactique</h1><button class="btn-reset" onclick="retourAccueil()">Accueil</button></div>
-<div id="banniereVacancesPreview" style="display:none;background:rgba(14,165,233,0.18);border:1px solid #0ea5e9;border-radius:12px;padding:9px 14px;max-width:1680px;margin:8px auto;align-items:center;justify-content:space-between;font-size:0.83rem;">
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="font-size:1.15rem;">🏖️</span>
-<span id="txtBanniereVacancesPreview" style="color:#e0f2fe;font-weight:600;">Période de vacances active : aucun entraînement ni match cette semaine. L'envoi automatique du sondage est suspendu.</span>
-</div>
-<button type="button" class="btn-reset" style="padding:4px 8px;font-size:0.75rem;border-color:rgba(14,165,233,0.4);color:#7dd3fc;" onclick="ouvrirModalVacances()">Gérer vacances</button>
+<div id="banniereVacancesPreview" class="banner-vacances" style="display:none;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:1.3rem;">🏖️</span>
+    <span id="txtBanniereVacancesPreview" class="banner-vacances-text">Période de vacances active : aucun entraînement ni match cette semaine. L'envoi automatique du sondage est suspendu.</span>
+  </div>
+  <button type="button" class="btn-reset banner-vacances-btn" onclick="ouvrirModalVacances()">Gérer vacances</button>
 </div>
 <div id="tacticalPreviewWrap" class="tactical-preview-wrap" style="display:none;">
 <div class="tactical-header">
@@ -1494,7 +1522,7 @@
   <!-- MODAL CONNEXION GOOGLE SHEETS API (v2.0) -->
   <div id="modalConfigApi" style="display:none;position:fixed;inset:0;background:rgba(5,7,13,0.85);backdrop-filter:blur(8px);z-index:999999;align-items:center;justify-content:center;padding:16px;">
     <div style="background:#111827;border:1px solid #1f2937;border-radius:16px;max-width:480px;width:100%;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
-      <h3 style="color:#f8fafc;font-size:1.15rem;margin-bottom:8px;font-weight:800;">Liaison Google Sheet</h3>
+      <h3 style="color:var(--text-main);font-size:1.15rem;margin-bottom:8px;font-weight:800;">Liaison Google Sheet</h3>
       <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.4;margin-bottom:16px;">
         Entrez l'URL WebApp de votre Google Sheet (déployée via Apps Script) pour connecter l'application.
       </p>
@@ -1507,6 +1535,7 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
+  <script src="js/spakta-data.js?v=2.2.0"></script>
   <script src="js/api.js?v=2.2.0"></script>
   <script src="js/app.js?v=2.2.0"></script>
   <script>
