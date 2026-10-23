@@ -106,8 +106,8 @@ img {
  * SYSTÈME D'ICÔNES VECTORIELLES DU CARNET TACTIQUE (OPTION 3 - PLAYBOOK SVG)
  * ============================================================================== */
 .hb-icon {
-  width: 1.15em;
-  height: 1.15em;
+  width: 1.2em;
+  height: 1.2em;
   display: inline-block;
   vertical-align: -0.16em;
   stroke: currentColor;
@@ -116,7 +116,11 @@ img {
   stroke-linecap: round;
   stroke-linejoin: round;
   flex-shrink: 0;
+  overflow: visible !important;
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.2s ease;
+}
+.hb-icon * {
+  vector-effect: non-scaling-stroke;
 }
 
 /* Agrandissement subtil de l'icône au survol du bouton */
