@@ -81,13 +81,19 @@ body {
 }
 
 /* Scrollbars dessinées */
-* { scrollbar-width: thin; scrollbar-color: var(--card-border) transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--card-border) transparent; box-sizing: border-box; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--text-muted);
   border-radius: 999px;
   border: 2px solid var(--bg-page);
+}
+
+/* Règle de sécurité globale pour les images */
+img {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Masking Tape (Morceau de scotch) */
@@ -663,13 +669,16 @@ body.theme-slate .handball-field-wrapper {
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);
   border-radius: 12px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   cursor: grab;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: 1.5px 2px 0px var(--card-border);
   transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .pcard:hover {
   transform: translate(-1px, -1px);
@@ -679,6 +688,392 @@ body.theme-slate .handball-field-wrapper {
   cursor: grabbing;
   transform: translate(1px, 1px);
   box-shadow: 0px 0px 0px var(--card-border);
+}
+
+/* Zone gauche de la carte joueur */
+.pleft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Vignette ronde de photo du joueur */
+.pmini {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  max-width: 38px;
+  max-height: 38px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden !important;
+  flex-shrink: 0;
+  border: 2px solid var(--card-border);
+  box-shadow: 1.5px 1.5px 0px var(--card-border);
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+.pmini img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 50% !important;
+}
+
+/* Nom, poste et notes */
+.pname {
+  font-weight: 800;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-main);
+}
+.pmeta {
+  font-family: 'Patrick Hand', cursive, sans-serif;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pnote-sub {
+  font-size: 0.72rem;
+  color: var(--color-secondary);
+  margin-top: 2px;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tags d'équipe et bouton fiche */
+.ptags {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.tag {
+  font-size: 0.68rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  border: 1px solid var(--card-border);
+  box-shadow: 1px 1px 0px var(--card-border);
+  white-space: nowrap;
+}
+.tag-1b { background: var(--color-team1); color: var(--color-team1-text); }
+.tag-1c { background: var(--color-team2); color: var(--color-team2-text); }
+.tag-1d { background: var(--color-team3); color: var(--color-team3-text); }
+.tag-tr { background: var(--card-bg); color: var(--color-secondary); }
+
+.btn-mini-edit {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  color: var(--text-main);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 1px 1px 0px var(--card-border);
+  white-space: nowrap;
+}
+.btn-mini-edit:hover {
+  background: var(--color-primary);
+  color: #fff;
+  transform: translate(-0.5px, -0.5px);
+}
+
+/* Dropzone et colonnes */
+.dropzone {
+  flex: 1;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 4px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+.dropzone.dragover {
+  background: rgba(234, 88, 12, 0.08);
+  outline: 2px dashed var(--color-primary);
+}
+.col-1b { border-top: 5px solid var(--color-team1); }
+.col-pool { border-top: 5px solid var(--card-border); }
+.col-1c { border-top: 5px solid var(--color-team2); }
+.col-1d { border-top: 5px solid var(--color-team3); }
+.col-repos { border-top: 5px solid #ef4444; }
+.col-retenu { border-top: 5px solid var(--color-primary); }
+
+/* Badges Chouchou, MVP, Chèvre, Renfort */
+.badge-renfort {
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+  border: 1px solid var(--card-border);
+}
+.chouchou-badge {
+  background: #f43f5e;
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+  border: 1px solid var(--card-border);
+}
+.mvp-badge {
+  background: #f59e0b;
+  color: #000;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+  border: 1px solid var(--card-border);
+}
+.chevre-badge {
+  background: #ea580c;
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+  border: 1px solid var(--card-border);
+}
+
+.pmini.is-chouchou, .court-player-avatar.is-chouchou, .modal-avatar-heart.is-chouchou {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.6) !important;
+}
+.pmini.is-mvp, .court-player-avatar.is-mvp {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6) !important;
+}
+.pmini.is-chevre, .court-player-avatar.is-chevre {
+  border-color: #ea580c !important;
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.6) !important;
+}
+
+/* Terrain tactique : pions et avatars */
+.court-player-avatar {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  max-width: 34px;
+  max-height: 34px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--card-border);
+  box-shadow: 1.5px 1.5px 0px var(--card-border);
+  overflow: hidden !important;
+  margin-bottom: 2px;
+  cursor: pointer;
+  position: relative;
+}
+.court-player-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 50% !important;
+}
+
+/* Banc tactique */
+.tactical-bench-wrap {
+  background: var(--card-bg);
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 2px solid var(--card-border);
+  box-shadow: 2px 2px 0px var(--card-border);
+  margin-top: 12px;
+}
+.bench-chips-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bench-chip {
+  background: var(--bg-page);
+  border: 1.5px solid var(--card-border);
+  border-radius: 10px;
+  padding: 5px 11px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+  user-select: none;
+  touch-action: manipulation;
+}
+.bench-chip:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* Roster / Trombinoscope (Vestiaire) */
+.rcard {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  box-shadow: 2px 2.5px 0px var(--card-border);
+  transition: all 0.15s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.rcard:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 4px 0px var(--card-border);
+}
+.rcard .pmini {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+  font-size: 1.2rem;
+  overflow: hidden !important;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.rcard .pmini img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 50% !important;
+}
+.rcard .pname {
+  font-size: 1.05rem;
+}
+.rcard .pmeta {
+  font-size: 0.85rem;
+}
+.rnote {
+  font-family: 'Patrick Hand', cursive, sans-serif;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Tinder Swipe Mode */
+.tcard {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 380px;
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 24px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--card-shadow);
+  touch-action: none;
+  cursor: grab;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.tcard .tavatar {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  min-height: 80px;
+  border-radius: 20px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--card-border);
+  margin-top: 10px;
+  overflow: hidden;
+}
+.tavatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 18px !important;
+}
+
+/* Avatars dans les Modales */
+.modal-avatar-preview, #modalJoueurAvatarWrap, #profilPublicAvatarWrap {
+  width: 110px;
+  height: 110px;
+  min-width: 110px;
+  min-height: 110px;
+  border-radius: 50%;
+  overflow: hidden !important;
+  position: relative;
+  border: 3px solid var(--card-border);
+  box-shadow: 2px 3px 0px var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-page);
+  flex-shrink: 0;
+}
+.modal-avatar-preview img, #modalJoueurAvatarWrap img, #profilPublicAvatarWrap img, #modalJoueurImg, #profilPublicImg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 50% !important;
 }
 
 /* Modales */
