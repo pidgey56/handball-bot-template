@@ -19,6 +19,7 @@ const SPREADSHEET_ID_DEFAULT = '';
 const APP_VERSION = '2.0.0';
 // Dépôt modèle officiel pour la vérification automatique des mises à jour
 const UPSTREAM_TEMPLATE_REPO = 'pidgey56/handball-bot-template';
+const LOGO_OFFICIEL_ACBB = 'https://media-logos-clubs.ffhandball.fr/256/2023-06-03-e7b37b0d-abbc-4623-9d38-ce7840be40f7.webp';
 
 // Logo de secours (Handball SVG moderne généré dynamiquement selon la couleur principale)
 function genererLogoDefaut(couleur) {
@@ -433,7 +434,7 @@ function getClubConfig(ss) {
   const couleurEquipe2 = normaliserCouleurHex(getVal('C29', c2Def), c2Def);
   const couleurEquipe3 = normaliserCouleurHex(getVal('C30', c3Def), c3Def);
 
-  const logoFinal = (logoUrlRaw && logoUrlRaw !== LOGO_DEFAULT && !logoUrlRaw.includes('data:image/svg+xml')) ? convertirUrlPhoto(logoUrlRaw) : genererLogoDefaut(couleurPrimaire);
+  const logoFinal = (logoUrlRaw && logoUrlRaw !== LOGO_DEFAULT && !logoUrlRaw.includes('data:image/svg+xml')) ? convertirUrlPhoto(logoUrlRaw) : LOGO_OFFICIEL_ACBB;
 
   const labelEq1 = (equipesActives[0] && equipesActives[0].labelSondage) ? equipesActives[0].labelSondage : 'Équipe 1';
   const labelEq2 = (equipesActives[1] && equipesActives[1].labelSondage) ? equipesActives[1].labelSondage : 'Équipe 2';
@@ -1453,7 +1454,9 @@ function reinitialiserLogoClub(telCoach, pinCoach) {
  */
 function normaliserUrlClubFFHB(urlBrute) {
   let str = String(urlBrute || '').trim();
-  if (!str) throw new Error('Veuillez saisir l\'adresse de la page FFHB de votre club.');
+  if (!str || str.toLowerCase() === 'acbb' || str.toLowerCase() === 'boulogne' || str.toLowerCase() === 'athletic') {
+    return 'https://monclub.ffhandball.fr/clubs/athletic-club-boulogne-billancourt/';
+  }
   if (!str.includes('/') && !str.includes('.')) {
     return 'https://monclub.ffhandball.fr/clubs/' + str + '/';
   }

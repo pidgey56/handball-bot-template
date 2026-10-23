@@ -185,6 +185,14 @@ document.getElementById("modalLogoStatus").textContent = "Erreur : " + err.messa
 };
 r.readAsDataURL(f);
 }
+
+function appliquerLogoOfficielAcbb(){
+  var url = "https://media-logos-clubs.ffhandball.fr/256/2023-06-03-e7b37b0d-abbc-4623-9d38-ce7840be40f7.webp";
+  var inp = document.getElementById("inpClubLogoUrl"); if(inp) inp.value = url;
+  var prv = document.getElementById("modalClubLogoPreview"); if(prv) prv.src = url;
+  sauvegarderLogoUrlClient(url);
+}
+
 function sauvegarderLogoUrlClient(){
 var url = document.getElementById("inpClubLogoUrl").value.trim();
 if(!url) return;
@@ -354,7 +362,7 @@ document.getElementById("txtColEq2").value = c2.toUpperCase();
 if(document.getElementById("inpColEq3")){ document.getElementById("inpColEq3").value = c3; document.getElementById("txtColEq3").value = c3.toUpperCase(); }
 document.getElementById("statusModalCouleurs").textContent = "";
 document.getElementById("modalLogoStatus").textContent = "";
-if(document.getElementById("inpFfhbClubUrl")) document.getElementById("inpFfhbClubUrl").value = CLUB_CONFIG.urlFfhbClub || "";
+if(document.getElementById("inpFfhbClubUrl")) document.getElementById("inpFfhbClubUrl").value = CLUB_CONFIG.urlFfhbClub || "https://monclub.ffhandball.fr/clubs/athletic-club-boulogne-billancourt/";
 if(document.getElementById("ffhbImportStatus")) document.getElementById("ffhbImportStatus").innerHTML = "";
 if(document.getElementById("modalClubLogoPreview")) document.getElementById("modalClubLogoPreview").src = (CLUB_CONFIG && CLUB_CONFIG.logoUrl) || "images/logo.png";
 if(document.getElementById("inpClubLogoUrl")) document.getElementById("inpClubLogoUrl").value = "";
