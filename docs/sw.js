@@ -7,9 +7,9 @@ const CACHE_NAME = 'handball-app-v2.0.2';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './css/style.css',
-  './js/api.js',
-  './js/app.js',
+  './css/style.css?v=2.0.2',
+  './js/api.js?v=2.0.2',
+  './js/app.js?v=2.0.2',
   './manifest.json',
   './images/logo.png',
   './images/icon-192.png',

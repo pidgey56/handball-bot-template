@@ -6281,7 +6281,7 @@ function construireHtmlWebApp() {
     '<p>Chargement de votre application nouvelle génération (PWA instantanée)...</p>' +
     '<a class="btn" href="' + webAppUrl + '">Ouvrir l\'application</a>' +
     '</div>' +
-    '<script>window.location.replace("' + webAppUrl + '");</script>' +
+    '<script>try{if(window.top){window.top.location.href="' + webAppUrl + '";}else{window.location.replace("' + webAppUrl + '");}}catch(e){window.location.replace("' + webAppUrl + '");}</script>' +
     '</body></html>';
 }
 
