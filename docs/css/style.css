@@ -3341,12 +3341,120 @@ body.theme-slate #tinderReposBar {
   color: #fca5a5 !important;
 }
 
+/* ==============================================================================
+ * BARRE D'ACTIONS FOOTER (MODE TACTIQUE MATCHS & ENTRAÎNEMENTS)
+ * ============================================================================== */
+
+#appFooter,
+#trainFooter {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  width: 100% !important;
+  max-width: 1680px !important;
+  margin: 22px auto 40px auto !important;
+  padding: 12px 24px !important;
+  box-sizing: border-box !important;
+}
+
 body.tinder-mode-active #appFooter,
 body.train-tinder-mode-active #trainFooter {
   display: none !important;
 }
 
+#appFooter button,
+#trainFooter button {
+  padding: 10px 18px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+#appFooter button:hover,
+#trainFooter button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+#appFooter button:active,
+#trainFooter button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.btn-footer-draft {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+}
+
+.btn-footer-draft:hover {
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45) !important;
+}
+
+.btn-footer-save {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+}
+
+.btn-footer-save:hover {
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45) !important;
+}
+
+.btn-footer-wa {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+
+.btn-footer-wa:hover {
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45) !important;
+}
+
+.btn-footer-action {
+  background: var(--card-bg) !important;
+  color: var(--text-main) !important;
+  border: 1.5px solid var(--card-border) !important;
+}
+
+.btn-footer-action:hover {
+  border-color: #0284c7 !important;
+  color: #0284c7 !important;
+}
+
+body.theme-slate .btn-footer-action:hover {
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+}
+
 @media(max-width: 640px) {
+  #appFooter,
+  #trainFooter {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 12px 14px 28px !important;
+    gap: 8px !important;
+    margin: 14px auto 24px auto !important;
+  }
+  #appFooter button,
+  #trainFooter button {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 11px 16px !important;
+    font-size: 0.88rem !important;
+  }
   #tinderView, #trainTinderView {
     padding: 2px;
     margin: 2px auto 10px auto;

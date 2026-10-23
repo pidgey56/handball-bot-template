@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.17">
+  <link rel="stylesheet" href="css/style.css?v=2.2.18">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -446,12 +446,12 @@
 </div>
 <div class="tinder-kbd-hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ↑ ou 1 / 2 / 3 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
 </div>
-<footer id="appFooter">
-<button class="btn-reset" onclick="recommencerSelection()">Réinitialiser</button>
-<button class="btn-save" style="background:#0284c7;" onclick="sauvegarderBrouillonLocal(true)">Sauvegarder Brouillon</button>
-<button class="btn-reset" id="btnChargerCompoPrec" onclick="rechargerCompoPrecedente()">↺ Charger compo précédente</button>
-<button class="btn-save" onclick="sauvegarder(false)">Sauvegarder</button>
-<button class="btn-wa" onclick="ouvrirApercuMatch()">Aperçu & Terrain tactique</button>
+<footer id="appFooter" style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:22px auto 36px auto;padding:12px 20px;">
+<button type="button" class="btn-reset btn-footer-action" onclick="recommencerSelection()">↺ Réinitialiser</button>
+<button type="button" class="btn-save btn-footer-draft" onclick="sauvegarderBrouillonLocal(true)">💾 Sauvegarder Brouillon</button>
+<button type="button" class="btn-reset btn-footer-action" id="btnChargerCompoPrec" onclick="rechargerCompoPrecedente()">📋 Charger compo précédente</button>
+<button type="button" class="btn-save btn-footer-save" onclick="sauvegarder(false)">✅ Sauvegarder</button>
+<button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuMatch()">🏟️ Aperçu & Terrain tactique</button>
 </footer>
 </div>
 <div id="trainView" style="display:none;">
@@ -518,10 +518,10 @@
 </div>
 <div class="tinder-kbd-hint" style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;"><span>⌨️ <b>Clavier :</b> Flèches ← ↓ → ou 1 / 2 / Espace</span><span>↺ <b>Retour</b> pour annuler</span></div>
 </div>
-<footer id="trainFooter">
-<button class="btn-reset" onclick="reinitialiserSeance()">Réinitialiser</button>
-<button class="btn-save" onclick="sauvegarderEntrainement(false)">Sauvegarder</button>
-<button class="btn-wa" onclick="ouvrirApercuEntrainement()">Aperçu WhatsApp</button>
+<footer id="trainFooter" style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:22px auto 36px auto;padding:12px 20px;">
+<button type="button" class="btn-reset btn-footer-action" onclick="reinitialiserSeance()">↺ Réinitialiser</button>
+<button type="button" class="btn-save btn-footer-save" onclick="sauvegarderEntrainement(false)">✅ Sauvegarder la séance</button>
+<button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuEntrainement()">📲 Aperçu WhatsApp</button>
 </footer>
 </div>
 <div id="rosterView" style="display:none;">
@@ -1593,13 +1593,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.17"></script>
-  <script src="js/api.js?v=2.2.17"></script>
-  <script src="js/app.js?v=2.2.17"></script>
+  <script src="js/spakta-data.js?v=2.2.18"></script>
+  <script src="js/api.js?v=2.2.18"></script>
+  <script src="js/app.js?v=2.2.18"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.17').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.18').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

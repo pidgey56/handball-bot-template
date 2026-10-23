@@ -1,13 +1,11 @@
 {
-  "version": "2.2.17",
+  "version": "2.2.18",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.17 — Refonte Visuelle Complète du Tableau & Terrain Tactique",
+  "title": "Handball Manager 2.2.18 — Recentrage et Harmonisation des Boutons d'Action du Mode Tactique",
   "changelog": [
-    "Transformation complète de la page d'effectif sélectionné et de composition en tableau de bord tactique moderne",
-    "Nouveaux onglets d'équipes (R1, R2, R3) sportifs et dynamiques avec badges de comptage d'effectif et couleurs d'équipe",
-    "Pions joueurs sur le terrain avec puces en verre dépoli, badges de poste colorés (GB, DC, ARG/ARD, ALG/ALD, PVT) et animation de sélection",
-    "Banc des remplaçants entièrement repensé avec avatars, noms, postes et indicateur d'échange instantané",
-    "État vide élégant lorsque tous les joueurs sélectionnés sont placés sur le terrain",
-    "Boutons de navigation d'en-tête modernisés et ergonomie tactile responsive sur smartphone"
+    "Recentrage parfait de la barre de boutons d'action (Réinitialiser, Brouillon, Charger compo, Sauvegarder, Aperçu) sous le tableau tactique",
+    "Harmonisation visuelle et tactile avec dégradés sportifs modernes et icônes d'action claires",
+    "Recentrage et adaptation responsive sous le tableau des entraînements",
+    "Support mobile optimisé avec boutons pleine largeur faciles d'accès au pouce"
   ]
 }
