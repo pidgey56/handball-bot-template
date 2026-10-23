@@ -1,14 +1,13 @@
 {
-  "version": "2.2.10",
+  "version": "2.2.11",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.10 — Fiche Joueur Tinder Optimisée Sélection (Présence Entraînement sur Ligne Dédiée & Stats Spakta)",
+  "title": "Handball Manager 2.2.11 — Lisibilité Maximale de l'En-tête et des Compteurs en Mode Tinder (Match & Entraînement)",
   "changelog": [
-    "Optimisation de la fiche joueur en mode Tinder (sélection Match et Entraînement) pour afficher exclusivement les critères pertinents pour le coach",
-    "Présence aux entraînements de la semaine affichée sur une ligne dédiée sous le poste avec badge lumineux jaune or ('⚡ 2 entraînements', '⚡ 1 entraînement', '⚡ 0 entraînement')",
-    "Nettoyage de l'intitulé de poste : affichage pur du poste sans le '• 2 tr' condensé",
-    "Contraste maximal : nom du joueur en blanc pur #ffffff avec ombre portée nette pour une lisibilité parfaite sur le fond sombre",
-    "Intégration systématique des statistiques Spakta officielles (Buts, Moyenne, % Réussite au tir pour les joueurs de champ / Arrêts, Moyenne, Matchs joués pour les gardiens)",
-    "Suppression des badges ludiques (Chouchou, MVP, Chèvre) des cartes Tinder pour concentrer l'évaluation sur les aspects sportifs et la disponibilité",
-    "Conservation des tags de disponibilité par équipe (1B ✓, 1C ✗) et des notes médicales/tactiques du coach"
+    "Refonte visuelle complète de l'en-tête du Mode Sélection Tinder pour éliminer tout manque de contraste et de lisibilité",
+    "Titre du mode Tinder structuré sous forme de badge capsule contrasté et net ('🎴 MODE SÉLECTION TINDER' / '🏃 MODE ENTRAÎNEMENT TINDER')",
+    "Bouton d'ajout de renfort (+ Ajouter un renfort dans la sélection) transformé en bouton d'action net, visible et élégant (fini le bouton fantôme délavé)",
+    "Barre des scores et compteurs modernisée en capsules individuelles (pills) avec puces de couleur dédiées par équipe (Équipe 1 bleue, Équipe 2 orange, Équipe 3 verte, Restants ardoise, Repos rouge)",
+    "Verrouillage 'white-space: nowrap' pour interdire strictement la coupure et le passage à la ligne du ratio de joueurs (/12)",
+    "Adaptation parfaite en thèmes Clair (Carnet moderne) et Sombre (Ardoise vestiaire)"
   ]
 }

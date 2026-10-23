@@ -3964,18 +3964,26 @@ var zG1 = document.getElementById("trZone_g1"), zG2 = document.getElementById("t
 var nG1 = zG1 ? zG1.children.length : 0, nG2 = zG2 ? zG2.children.length : 0;
 var cG1 = document.getElementById("trCount_g1"); if(cG1) cG1.textContent = nG1;
 var cG2 = document.getElementById("trCount_g2"); if(cG2) cG2.textContent = nG2;
-if(scoreBar) scoreBar.innerHTML = '<span><span class="team-dot team-dot-1"></span>Groupe 1 : <b>' + nG1 + '</b></span><span style="color:#cbd5e1;">Restants : <b>' + nPool + '</b></span><span><span class="team-dot team-dot-2"></span>Groupe 2 : <b>' + nG2 + '</b></span>';
+if(scoreBar) scoreBar.innerHTML =
+  '<span class="tscore-pill tscore-pill-1b"><span class="team-dot team-dot-1"></span>Groupe 1 : <b>' + nG1 + '</b></span>' +
+  '<span class="tscore-pill tscore-pill-pool"><span class="team-dot team-dot-pool"></span>Restants : <b>' + nPool + '</b></span>' +
+  '<span class="tscore-pill tscore-pill-1c"><span class="team-dot team-dot-2"></span>Groupe 2 : <b>' + nG2 + '</b></span>';
 } else if(cfgS.type === "reduit"){
 var zRet = document.getElementById("trZone_retenus");
 var nRet = zRet ? zRet.children.length : 0;
 var cRet = document.getElementById("trCount_retenus"); if(cRet) cRet.textContent = nRet + "/" + (cfgS.max || 20);
-if(scoreBar) scoreBar.innerHTML = '<span>Retenus : <b>' + nRet + '</b>/' + (cfgS.max || 20) + '</span><span style="color:#cbd5e1;">Restants : <b>' + nPool + '</b></span>';
+if(scoreBar) scoreBar.innerHTML =
+  '<span class="tscore-pill tscore-pill-1b"><span class="team-dot team-dot-1"></span>Retenus : <b>' + nRet + '</b>/' + (cfgS.max || 20) + '</span>' +
+  '<span class="tscore-pill tscore-pill-pool"><span class="team-dot team-dot-pool"></span>Restants : <b>' + nPool + '</b></span>';
 } else {
 var zAct = document.getElementById("trZone_actifs"), zMen = document.getElementById("trZone_menages");
 var nAct = zAct ? zAct.children.length : 0, nMen = zMen ? zMen.children.length : 0;
 var cAct = document.getElementById("trCount_actifs"); if(cAct) cAct.textContent = nAct;
 var cMen = document.getElementById("trCount_menages"); if(cMen) cMen.textContent = nMen;
-if(scoreBar) scoreBar.innerHTML = '<span>Plein entraînement : <b>' + nAct + '</b></span><span style="color:#cbd5e1;">Restants : <b>' + nPool + '</b></span><span>Ménagés : <b>' + nMen + '</b></span>';
+if(scoreBar) scoreBar.innerHTML =
+  '<span class="tscore-pill tscore-pill-1b"><span class="team-dot team-dot-1"></span>Présents : <b>' + nAct + '</b></span>' +
+  '<span class="tscore-pill tscore-pill-pool"><span class="team-dot team-dot-pool"></span>Restants : <b>' + nPool + '</b></span>' +
+  '<span class="tscore-pill tscore-pill-1c"><span class="team-dot team-dot-2"></span>Ménagés : <b>' + nMen + '</b></span>';
 }
 }
 function choisirModeTrain(isTinder){

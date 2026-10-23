@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.10">
+  <link rel="stylesheet" href="css/style.css?v=2.2.11">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -427,14 +427,14 @@
 </div>
 </div>
 <div id="tinderView">
-<div class="tinder-header-title" style="margin-bottom:6px;color:var(--color-secondary);font-weight:800;letter-spacing:0.5px;">MODE SÉLECTION TINDER</div>
-<button type="button" class="btn-mini-edit tinder-btn-renfort" style="color:var(--color-secondary);border-color:var(--color-secondary);font-weight:700;margin:0 auto 8px auto;display:block;" onclick="ouvrirModalRenfort(false)">+ Ajouter un renfort dans la sélection</button>
+<div class="tinder-header-title">🎴 MODE SÉLECTION TINDER</div>
+<button type="button" class="btn-mini-edit tinder-btn-renfort" onclick="ouvrirModalRenfort(false)">+ Ajouter un renfort dans la sélection</button>
 <div class="tscore-bar" id="tscoreBar">
-<span id="tBox1B"><span class="team-dot team-dot-1"></span><span id="labelTinder1B">Équipe 1</span> : <b id="tCount1B">0</b>/12</span>
-<span id="tBoxPool" style="color:var(--text-muted);">Restants : <b id="tCountPool">0</b></span>
-<span id="tBox1C"><span class="team-dot team-dot-2"></span><span id="labelTinder1C">Équipe 2</span> : <b id="tCount1C">0</b>/12</span>
-<span id="tBox1D" style="display:none;"><span class="team-dot team-dot-3"></span><span id="labelTinder1D">Équipe 3</span> : <b id="tCount1D">0</b>/12</span>
-<span id="tBoxRepos" style="color:#f87171;"><span class="team-dot team-dot-repos"></span>Repos : <b id="tCountRepos">0</b></span>
+<span id="tBox1B" class="tscore-pill tscore-pill-1b"><span class="team-dot team-dot-1"></span><span id="labelTinder1B">Équipe 1</span> : <b id="tCount1B">0</b>/12</span>
+<span id="tBoxPool" class="tscore-pill tscore-pill-pool"><span class="team-dot team-dot-pool"></span>Restants : <b id="tCountPool">0</b></span>
+<span id="tBox1C" class="tscore-pill tscore-pill-1c"><span class="team-dot team-dot-2"></span><span id="labelTinder1C">Équipe 2</span> : <b id="tCount1C">0</b>/12</span>
+<span id="tBox1D" class="tscore-pill tscore-pill-1d" style="display:none;"><span class="team-dot team-dot-3"></span><span id="labelTinder1D">Équipe 3</span> : <b id="tCount1D">0</b>/12</span>
+<span id="tBoxRepos" class="tscore-pill tscore-pill-repos"><span class="team-dot team-dot-repos"></span>Repos : <b id="tCountRepos">0</b></span>
 </div>
 <div id="tinderReposBar" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:0.76rem;text-align:left;"><span style="color:#fca5a5;font-weight:700;margin-right:6px;">Au Repos (clic pour rétablir) :</span><span id="tinderReposChips" style="display:inline-flex;gap:4px;flex-wrap:wrap;"></span></div>
 <div class="tdeck" id="tinderContainer"></div>
@@ -506,8 +506,8 @@
 <div id="trDynamicZones" style="display:contents;"></div>
 </div>
 <div id="trainTinderView" style="display:none;max-width:420px;margin:10px auto 30px auto;padding:12px;text-align:center;">
-<div class="tinder-header-title" style="margin-bottom:6px;color:var(--color-secondary);font-weight:800;letter-spacing:0.5px;">MODE ENTRAÎNEMENT TINDER</div>
-<button type="button" class="btn-mini-edit tinder-btn-renfort" style="color:var(--color-secondary);border-color:var(--color-secondary);font-weight:700;margin:0 auto 8px auto;display:block;" onclick="ouvrirModalRenfort(true)">+ Ajouter un renfort / hors sondage</button>
+<div class="tinder-header-title">🏃 MODE ENTRAÎNEMENT TINDER</div>
+<button type="button" class="btn-mini-edit tinder-btn-renfort" onclick="ouvrirModalRenfort(true)">+ Ajouter un renfort / hors sondage</button>
 <div class="tscore-bar" id="trainTscoreBar"></div>
 <div class="tdeck" id="trainTinderContainer"></div>
 <div class="tcontrols" id="trainTControlsContainer"></div>
@@ -1571,13 +1571,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.10"></script>
-  <script src="js/api.js?v=2.2.10"></script>
-  <script src="js/app.js?v=2.2.10"></script>
+  <script src="js/spakta-data.js?v=2.2.11"></script>
+  <script src="js/api.js?v=2.2.11"></script>
+  <script src="js/app.js?v=2.2.11"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.10').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.11').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>
