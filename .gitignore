@@ -23,3 +23,6 @@ Thumbs.db
 # pour maintenir la session WhatsApp et synchroniser les votes.
 
 todo.md
+# Clasp local config
+.clasp.json
+test_api.json
