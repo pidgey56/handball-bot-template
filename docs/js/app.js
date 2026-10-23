@@ -722,7 +722,8 @@ if(isMvp) pmini.classList.add("is-mvp");
 var isChevre = estJoueurChevre(j.nom);
 if(isChevre) pmini.classList.add("is-chevre");
 var initMini = (j.nom || "").trim().charAt(0).toUpperCase();
-if(j.photo){ var img = document.createElement("img"); img.src = j.photo; img.onerror = function(){ this.remove(); pmini.textContent = initMini; }; pmini.appendChild(img); }
+pmini.style.cssText = "width:38px;height:38px;min-width:38px;min-height:38px;max-width:38px;max-height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;";
+if(j.photo){ var img = document.createElement("img"); img.src = j.photo; img.style.cssText = "width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;border-radius:50%!important;display:block!important;"; img.onerror = function(){ this.remove(); pmini.textContent = initMini; }; pmini.appendChild(img); }
 else { pmini.textContent = initMini; }
 pmini.style.cursor = "pointer"; pmini.title = "Fiche de " + j.nom; pmini.onclick = function(e){ e.stopPropagation(); ouvrirModalJoueur(j.nom); };
 pleft.appendChild(pmini);
@@ -3670,8 +3671,9 @@ var isMvp = estJoueurMvp(p.nom);
 var isChevre = estJoueurChevre(p.nom);
 var avCls = "pmini"; if(isChou) avCls += " is-chouchou"; if(isMvp) avCls += " is-mvp"; if(isChevre) avCls += " is-chevre";
 var av = document.createElement("div"); av.className = avCls;
+av.style.cssText = "width:48px;height:48px;min-width:48px;min-height:48px;max-width:48px;max-height:48px;border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;";
 var rInit = (p.nom || "").trim().charAt(0).toUpperCase();
-if(p.photo){ var img = document.createElement("img"); img.src = p.photo; img.onerror = function(){ this.remove(); av.textContent = rInit; }; av.appendChild(img); }
+if(p.photo){ var img = document.createElement("img"); img.src = p.photo; img.style.cssText = "width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;border-radius:50%!important;display:block!important;"; img.onerror = function(){ this.remove(); av.textContent = rInit; }; av.appendChild(img); }
 else { av.textContent = rInit; }
 card.appendChild(av);
 var inf = document.createElement("div"); inf.style.flex = "1"; inf.style.minWidth = "0";

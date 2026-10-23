@@ -1,22 +1,21 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - SERVICE WORKER
-// Gestion du cache hors-ligne et fonctionnement PWA
+// Gestion du cache hors-ligne et fonctionnement PWA (v2.1.4)
 // ============================================================================
 
-const CACHE_NAME = 'handball-app-v2.1.3';
+const CACHE_NAME = 'handball-app-v2.1.4';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './css/style.css?v=2.1.3',
-  './js/api.js?v=2.1.3',
-  './js/app.js?v=2.1.3',
+  './css/style.css?v=2.1.4',
+  './js/api.js?v=2.1.4',
+  './js/app.js?v=2.1.4',
   './manifest.json',
   './images/logo.png',
   './images/icon-192.png',
   './images/icon-512.png'
 ];
 
-// Installation : mise en cache des ressources statiques
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -25,7 +24,6 @@ self.addEventListener('install', event => {
   );
 });
 
-// Activation : suppression des anciens caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -36,45 +34,49 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Stratégie de cache : Stale-While-Revalidate pour les fichiers statiques, Network-Only pour l'API
 self.addEventListener('fetch', event => {
   if (!event.request || !event.request.url || !event.request.url.startsWith('http')) {
     return;
   }
   const url = new URL(event.request.url);
 
-  // Ignorer les requêtes non HTTP / HTTPS (ex: extensions Chrome)
   if (!url.protocol.startsWith('http')) {
     return;
   }
 
-  // Pour les appels API (Google Apps Script), toujours utiliser le réseau
+  // Toujours réseau pour l'API Google Apps Script
   if (url.hostname.includes('script.google.com') || url.hostname.includes('googleusercontent.com')) {
     return;
   }
 
-  // Pour les requêtes POST, pas de cache
   if (event.request.method !== 'GET') {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then(cachedResponse => {
-      const fetchPromise = fetch(event.request).then(networkResponse => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+  // Network-First pour HTML, CSS, JS : garantit la réception immédiate de toute mise à jour
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('/')) {
+    event.respondWith(
+      fetch(event.request).then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            if (event.request.url.startsWith('http')) {
-              cache.put(event.request, responseToCache).catch(() => {});
-            }
-          }).catch(() => {});
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache)).catch(() => {});
         }
         return networkResponse;
-      }).catch(() => {
-        // En cas de perte de réseau, rien à faire, le cachedResponse sera utilisé
-      });
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
-      return cachedResponse || fetchPromise;
+  // Cache-First pour images et polices
+  event.respondWith(
+    caches.match(event.request).then(cachedResponse => {
+      return cachedResponse || fetch(event.request).then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache)).catch(() => {});
+        }
+        return networkResponse;
+      });
     })
   );
 });

@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.1.3">
+  <link rel="stylesheet" href="css/style.css?v=2.1.4">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -33,27 +33,33 @@
 <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true"><defs><clipPath id="svgHeartClip" clipPathUnits="objectBoundingBox"><path d="M 0.5, 0.90 C 0.25, 0.70, 0, 0.48, 0, 0.26 C 0, 0.10, 0.12, 0, 0.30, 0 C 0.42, 0, 0.48, 0.06, 0.5, 0.14 C 0.52, 0.06, 0.58, 0, 0.70, 0 C 0.88, 0, 1, 0.10, 1, 0.26 C 1, 0.48, 0.75, 0.70, 0.5, 0.90 Z" /></clipPath></defs></svg>
 <div id="homeView">
 <div class="home-card">
-<div class="home-top-bar">
-  <div id="apiStatusBadge" class="status-pill" onclick="ouvrirModalApi()" title="Liaison Google Sheet (Cliquez pour configurer)">
-    <span class="status-dot-wrap"><span class="status-dot-pulse"></span><span id="apiStatusDot" class="status-dot-core" style="background:#22c55e;"></span></span>
-    <span id="apiStatusText" class="status-pill-text">Google Sheet Connecté</span>
+<div class="home-header-wrapper">
+  <div class="home-header-main">
+    <div class="home-logo-wrap">
+      <div class="masking-tape masking-tape-orange"></div>
+      <div class="home-logo"><img id="homeLogoImg" src="images/logo.png" alt="Club"></div>
+      <button type="button" id="btnEditClubLogoBadge" class="btn-logo-edit-badge" title="Changer le blason du club" onclick="ouvrirModalCouleurs()" style="display:none;">✏️</button>
+    </div>
+    <div class="home-title-wrap">
+      <h1 id="homeClubName">Handball Club</h1>
+      <p class="home-sub" id="subPortail">Portail Joueurs & Coachs</p>
+    </div>
   </div>
-  <div id="btnThemeToggle" class="status-pill" onclick="basculerThemeCarnet()" title="Changer le style (Carnet Papier / Ardoise Vestiaire)">
-    <span id="iconTheme">📄</span>
-    <span id="txtTheme" class="status-pill-text">Carnet</span>
-  </div>
-  <div id="badgeStatusWhatsApp" class="status-pill" style="display:none;" title="WhatsApp Connecté & Synchronisé" onclick="if(typeof afficherToast==='function') afficherToast('WhatsApp Connecté & Synchronisé', 'succes');">
-    <span class="status-dot-wrap"><span class="status-dot-pulse"></span><span class="status-dot-core"></span></span>
-    <span id="txtStatusWhatsApp" class="status-pill-text">WhatsApp</span>
+  <div class="home-top-bar">
+    <div id="apiStatusBadge" class="status-pill" onclick="ouvrirModalApi()" title="Liaison Google Sheet (Cliquez pour configurer)">
+      <span class="status-dot-wrap"><span class="status-dot-pulse"></span><span id="apiStatusDot" class="status-dot-core" style="background:#22c55e;"></span></span>
+      <span id="apiStatusText" class="status-pill-text">Google Sheet Connecté</span>
+    </div>
+    <div id="btnThemeToggle" class="status-pill" onclick="basculerThemeCarnet()" title="Changer le style (Carnet Papier / Ardoise Vestiaire)">
+      <span id="iconTheme">📄</span>
+      <span id="txtTheme" class="status-pill-text">Carnet</span>
+    </div>
+    <div id="badgeStatusWhatsApp" class="status-pill" style="display:none;" title="WhatsApp Connecté & Synchronisé" onclick="if(typeof afficherToast==='function') afficherToast('WhatsApp Connecté & Synchronisé', 'succes');">
+      <span class="status-dot-wrap"><span class="status-dot-pulse"></span><span class="status-dot-core"></span></span>
+      <span id="txtStatusWhatsApp" class="status-pill-text">WhatsApp</span>
+    </div>
   </div>
 </div>
-<div class="home-logo-wrap">
-<div class="masking-tape masking-tape-orange"></div>
-<div class="home-logo"><img id="homeLogoImg" src="images/logo.png" alt="Club"></div>
-<button type="button" id="btnEditClubLogoBadge" class="btn-logo-edit-badge" title="Changer le blason du club" onclick="ouvrirModalCouleurs()" style="display:none;">✏️</button>
-</div>
-<h1 id="homeClubName">Handball Club</h1>
-<p class="home-sub" id="subPortail">Portail Joueurs & Coachs</p>
 <div id="loginBox" style="display:flex;flex-direction:column;gap:12px;text-align:left;">
 <label style="font-size:0.8rem;color:var(--text-muted);font-weight:700;">Votre numéro de téléphone :</label>
 <input id="inpTel" class="inp-field" type="tel" placeholder="Ex : 06 12 34 56 78">
@@ -89,62 +95,69 @@
 <div id="playerBox" style="display:none;flex-direction:column;align-items:center;gap:14px;width:100%;">
 
   <!-- ONGLET 1 : MON PROFIL -->
-  <div id="panelProfil" class="carnet-panel active" style="display:flex;width:100%;max-width:360px;">
-    <div class="player-box-left" style="width:100%;">
-      <div id="playerPreviewCard" class="player-athlete-card">
-        <div class="masking-tape masking-tape-orange"></div>
-        <div class="player-photo-container">
-          <img id="playerCardLogo" class="card-logo-watermark" src="images/logo.png" alt="Club">
-          <img id="playerImgPreview" class="player-photo-img" style="display:none;">
-          <div id="playerInitialPreview" class="player-photo-fallback">J</div>
-        </div>
-        <div class="player-details-container">
-          <div id="playerChouchouBadgeCard" style="display:none;margin-bottom:4px;"><span class="chouchou-badge">❤️ Chouchou du coach</span></div>
-          <div id="playerNomPreview" class="player-card-name">Joueur</div>
-          <div id="playerPostePreview" class="player-card-poste">Poste</div>
-          <div class="player-card-badges">
-            <span id="playerAssiduiteBadge" class="badge-pill-assiduite">⚡ Assiduité : --</span>
-            <span id="playerStatutPresenceBadge" class="badge-pill-actif">✓ Actif</span>
+  <div id="panelProfil" class="carnet-panel active" style="display:flex;width:100%;max-width:780px;margin:0 auto;">
+    <div class="profil-grid-layout">
+      <!-- Colonne Gauche : Carte Joueur Athlète -->
+      <div class="profil-card-col">
+        <div id="playerPreviewCard" class="player-athlete-card">
+          <div class="masking-tape masking-tape-orange"></div>
+          <div class="player-photo-container">
+            <img id="playerImgPreview" class="player-photo-img" style="display:none;">
+            <div id="playerInitialPreview" class="player-photo-fallback">J</div>
+          </div>
+          <div class="player-details-container">
+            <div id="playerChouchouBadgeCard" style="display:none;margin-bottom:3px;"><span class="chouchou-badge">❤️ Chouchou du coach</span></div>
+            <div id="playerNomPreview" class="player-card-name">Joueur</div>
+            <div id="playerPostePreview" class="player-card-poste">Poste</div>
+            <div class="player-card-badges">
+              <span id="playerAssiduiteBadge" class="badge-pill-assiduite">⚡ Assiduité : --</span>
+              <span id="playerStatutPresenceBadge" class="badge-pill-actif">✓ Actif</span>
+            </div>
           </div>
         </div>
       </div>
-      <div style="display:flex;gap:6px;width:100%;margin-top:4px;">
-        <button type="button" class="btn-reset" style="flex:1;padding:8px 10px;font-size:0.78rem;background:var(--card-bg);border:1.5px solid var(--card-border);box-shadow:1.5px 1.5px 0px var(--card-border);font-weight:700;" onclick="togglePhotoSelect()">📸 Photo ▾</button>
-        <button type="button" class="btn-reset" style="flex:1;padding:8px 10px;font-size:0.78rem;background:var(--card-bg);border:1.5px solid var(--card-border);box-shadow:1.5px 1.5px 0px var(--card-border);font-weight:700;" onclick="togglePosteSelect()">🎯 Poste ▾</button>
-      </div>
-      <div id="photoSelectBox" style="width:100%;text-align:left;display:none;background:var(--card-bg);padding:12px;border-radius:12px;border:2px solid var(--card-border);box-shadow:2px 2px 0px var(--card-border);margin-top:6px;">
-        <div style="font-size:0.78rem;color:var(--text-main);font-weight:700;margin-bottom:6px;">Photo de profil :</div>
-        <div style="display:flex;gap:6px;margin-bottom:8px;">
-          <button type="button" class="btn-wa" style="flex:1;font-size:0.76rem;padding:7px 10px;" onclick="ouvrirSelecteurPhotoJoueur()">📁 Parcourir un fichier / Appareil</button>
+
+      <!-- Colonne Droite : Préférences & Actions Rapides -->
+      <div class="profil-actions-col">
+        <div class="profil-side-box">
+          <div class="profil-side-title">⚙️ Mes Préférences Joueur</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <button type="button" class="btn-reset" style="flex:1;padding:8px;font-size:0.78rem;font-weight:700;" onclick="togglePhotoSelect()">📸 Photo ▾</button>
+            <button type="button" class="btn-reset" style="flex:1;padding:8px;font-size:0.78rem;font-weight:700;" onclick="togglePosteSelect()">🎯 Poste ▾</button>
+          </div>
+          <div id="photoSelectBox" style="width:100%;text-align:left;display:none;background:var(--card-bg);padding:10px;border-radius:12px;border:1.5px solid var(--card-border);margin-bottom:8px;">
+            <div style="font-size:0.75rem;color:var(--text-main);font-weight:700;margin-bottom:4px;">Changer ma photo :</div>
+            <button type="button" class="btn-wa" style="width:100%;font-size:0.75rem;padding:6px 10px;margin-bottom:6px;" onclick="ouvrirSelecteurPhotoJoueur()">📁 Choisir un fichier / Appareil</button>
+            <div style="display:flex;gap:6px;">
+              <input type="url" id="inpPhotoUrlJoueur" class="inp-field" style="font-size:0.75rem;padding:4px 8px;" placeholder="Ou URL image https://...">
+              <button type="button" class="btn-save" style="padding:4px 10px;font-size:0.75rem;" onclick="enregistrerPhotoUrlJoueur()">OK</button>
+            </div>
+            <button type="button" class="btn-reset" style="font-size:0.72rem;padding:2px 6px;color:#f87171;margin-top:4px;" onclick="supprimerMaPhotoJoueur()">Retirer ma photo</button>
+          </div>
+          <div id="posteSelectBox" style="width:100%;text-align:left;display:none;background:var(--card-bg);padding:10px;border-radius:12px;border:1.5px solid var(--card-border);margin-bottom:8px;">
+            <label style="font-size:0.75rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:4px;">Mon poste préféré :</label>
+            <select id="selPosteJoueur" class="inp-field" onchange="changerMonPoste()">
+              <option value="Gardien">Gardien</option>
+              <option value="Ailier Gauche">Ailier Gauche</option>
+              <option value="Arrière Gauche">Arrière Gauche</option>
+              <option value="Demi-Centre">Demi-Centre</option>
+              <option value="Pivot">Pivot</option>
+              <option value="Arrière Droit">Arrière Droit</option>
+              <option value="Ailier Droit">Ailier Droit</option>
+            </select>
+          </div>
+          <input type="file" id="filePhoto" accept="image/*" style="display:none;" onchange="chargerFichierPhoto(event)">
+          <div class="home-status" id="photoStatus"></div>
+          
+          <button type="button" class="btn-reset" style="width:100%;padding:10px;font-size:0.8rem;border:1.5px solid var(--card-border);border-radius:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--card-bg);box-shadow:1.5px 1.5px 0px var(--card-border);" onclick="ouvrirModalAbsence()">📅 Signaler une absence / Indisponibilité</button>
         </div>
-        <label for="inpPhotoUrlJoueur" style="font-size:0.73rem;color:var(--text-muted);display:block;margin-bottom:4px;">Ou coller une URL d'image (https://...) :</label>
-        <div style="display:flex;gap:6px;">
-          <input type="url" id="inpPhotoUrlJoueur" class="inp-field" style="font-size:0.78rem;padding:5px 8px;" placeholder="https://site.com/photo.jpg">
-          <button type="button" class="btn-save" style="padding:5px 12px;font-size:0.76rem;white-space:nowrap;" onclick="enregistrerPhotoUrlJoueur()">Valider</button>
+
+        <div class="profil-side-box">
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-reset" style="flex:1;padding:8px;font-size:0.75rem;color:var(--text-muted);border:1px dashed var(--card-border);border-radius:10px;font-weight:700;" onclick="ouvrirModalPwa()">📲 App PWA</button>
+            <button id="btnDeconnexion" class="btn-reset btn-deconnexion" style="flex:1;padding:8px;font-size:0.75rem;font-weight:800;border-radius:10px;color:#dc2626;" onclick="seDeconnecter()">🚪 Déconnexion</button>
+          </div>
         </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:6px;">
-          <button type="button" class="btn-reset" style="font-size:0.72rem;padding:3px 8px;color:#f87171;border-color:rgba(239,68,68,0.25);" onclick="supprimerMaPhotoJoueur()">Retirer ma photo</button>
-        </div>
-      </div>
-      <div id="posteSelectBox" style="width:100%;text-align:left;display:none;background:var(--card-bg);padding:12px;border-radius:12px;border:2px solid var(--card-border);box-shadow:2px 2px 0px var(--card-border);margin-top:6px;">
-        <label style="font-size:0.78rem;color:var(--text-muted);font-weight:600;display:block;margin-bottom:6px;">Mon poste préféré sur le terrain :</label>
-        <select id="selPosteJoueur" class="inp-field" onchange="changerMonPoste()">
-          <option value="Gardien">Gardien</option>
-          <option value="Ailier Gauche">Ailier Gauche</option>
-          <option value="Arrière Gauche">Arrière Gauche</option>
-          <option value="Demi-Centre">Demi-Centre</option>
-          <option value="Pivot">Pivot</option>
-          <option value="Arrière Droit">Arrière Droit</option>
-          <option value="Ailier Droit">Ailier Droit</option>
-        </select>
-      </div>
-      <input type="file" id="filePhoto" accept="image/*" style="display:none;" onchange="chargerFichierPhoto(event)">
-      <div class="home-status" id="photoStatus"></div>
-      
-      <div style="display:flex;flex-direction:column;gap:8px;width:100%;margin-top:12px;">
-        <button type="button" class="btn-reset" style="width:100%;padding:10px;font-size:0.8rem;background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:1.5px 1.5px 0px var(--card-border);" onclick="ouvrirModalAbsence()">📅 Signaler une absence / Indisponibilité</button>
-        <button type="button" class="btn-reset" style="width:100%;padding:9px;font-size:0.76rem;color:var(--text-muted);border:1px dashed var(--card-border);border-radius:12px;font-weight:700;" onclick="ouvrirModalPwa()">📲 Ajouter à l'écran d'accueil (PWA)</button>
-        <button id="btnDeconnexion" class="btn-reset btn-deconnexion" style="width:100%;padding:9px;font-size:0.82rem;font-weight:800;border-radius:12px;margin-top:4px;" onclick="seDeconnecter()">🚪 Déconnexion</button>
       </div>
     </div>
   </div>
@@ -1452,12 +1465,12 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/api.js?v=2.1.3"></script>
-  <script src="js/app.js?v=2.1.3"></script>
+  <script src="js/api.js?v=2.1.4"></script>
+  <script src="js/app.js?v=2.1.4"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.1.3').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.1.4').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

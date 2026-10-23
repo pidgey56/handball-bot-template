@@ -1282,16 +1282,7 @@ body.theme-slate .carnet-tab.active {
   align-items: center;
   justify-content: center;
 }
-.player-photo-container .card-logo-watermark {
-  position: absolute!important;
-  top: 8px!important;
-  left: 8px!important;
-  width: 32px!important;
-  height: 32px!important;
-  opacity: 0.75!important;
-  object-fit: contain!important;
-  z-index: 5!important;
-}
+
 .player-photo-img, .player-athlete-card .tbg-photo {
   width: 100%!important;
   height: 100%!important;
@@ -1412,4 +1403,279 @@ body.theme-slate .carnet-tab.active {
   color: #0369a1;
   border: 1px solid #bae6fd;
   font-weight: 700;
+}
+
+
+/* ==============================================================================
+ * STYLES COMPACTS & NO-SCROLL (FIT VIEWPORT) v2.1.4
+ * ============================================================================== */
+body.user-logged-in {
+  overflow-x: hidden;
+}
+
+body.user-logged-in #homeView {
+  min-height: 100vh;
+  padding: 8px 12px!important;
+  align-items: flex-start!important;
+  justify-content: flex-start!important;
+  box-sizing: border-box;
+}
+
+body.user-logged-in .home-card {
+  background: transparent!important;
+  border: none!important;
+  box-shadow: none!important;
+  max-width: 800px!important;
+  padding: 4px 8px!important;
+  margin: 0 auto!important;
+}
+
+/* En-tête compacte en mode connecté */
+.home-header-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0 auto 10px auto;
+  text-align: center;
+}
+
+body.user-logged-in .home-header-wrapper {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 780px;
+  padding: 8px 14px;
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+body.user-logged-in .home-header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+body.user-logged-in .home-logo-wrap {
+  margin: 0!important;
+  display: flex;
+  align-items: center;
+}
+
+body.user-logged-in .home-logo-wrap .masking-tape {
+  display: none!important;
+}
+
+body.user-logged-in .home-logo img {
+  width: 42px!important;
+  height: 42px!important;
+  object-fit: contain;
+}
+
+body.user-logged-in .btn-logo-edit-badge {
+  width: 22px!important;
+  height: 22px!important;
+  font-size: 0.68rem!important;
+  bottom: -2px!important;
+  right: -4px!important;
+}
+
+body.user-logged-in .home-title-wrap h1 {
+  font-size: 1.05rem!important;
+  font-weight: 800!important;
+  margin: 0!important;
+  color: var(--text-main)!important;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+body.user-logged-in .home-title-wrap .home-sub {
+  font-size: 0.74rem!important;
+  font-weight: 600!important;
+  margin: 0!important;
+  color: var(--text-muted)!important;
+}
+
+body.user-logged-in .home-top-bar {
+  margin: 0!important;
+  width: auto!important;
+  gap: 6px!important;
+}
+
+body.user-logged-in .status-pill {
+  padding: 5px 10px!important;
+  font-size: 0.72rem!important;
+}
+
+body.user-logged-in .carnet-nav-tabs {
+  margin: 2px auto 8px auto!important;
+  max-width: 780px!important;
+  padding: 4px!important;
+  border-radius: 14px!important;
+}
+
+body.user-logged-in .carnet-tab {
+  padding: 6px 8px!important;
+  gap: 2px!important;
+}
+
+body.user-logged-in .carnet-tab-icon {
+  font-size: 1rem!important;
+}
+
+body.user-logged-in .carnet-tab-label {
+  font-size: 0.7rem!important;
+}
+
+/* Grille 2 colonnes pour Mon Profil (No-Scroll) */
+.profil-grid-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+@media(min-width: 640px) {
+  .profil-grid-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+}
+
+.profil-card-col {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.profil-actions-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.profil-side-box {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: var(--card-shadow);
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.profil-side-title {
+  font-weight: 800;
+  font-size: 0.86rem;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+/* Carte athlète compacte */
+.player-athlete-card {
+  width: 100%!important;
+  max-width: 280px!important;
+  min-height: auto!important;
+  padding: 12px!important;
+  margin: 0 auto!important;
+  transform: none!important;
+}
+.player-athlete-card:hover {
+  transform: translateY(-2px)!important;
+}
+
+.player-photo-container {
+  width: 100%!important;
+  height: 190px!important;
+  border-radius: 12px!important;
+  overflow: hidden!important;
+  position: relative!important;
+  background: #f1f5f9!important;
+}
+
+.player-photo-img {
+  width: 100%!important;
+  height: 100%!important;
+  object-fit: cover!important;
+  display: block!important;
+}
+
+.player-card-name {
+  font-size: 1.22rem!important;
+  font-weight: 800!important;
+  color: var(--text-main)!important;
+  margin-top: 6px!important;
+}
+
+.player-card-poste {
+  font-size: 0.84rem!important;
+  font-weight: 700!important;
+  color: var(--color-primary)!important;
+  margin-top: 2px!important;
+}
+
+.player-card-badges {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+/* Strict photo protection across all cards */
+.pcard .pmini,
+.rcard .pmini,
+.pmini {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  max-width: 38px !important;
+  max-height: 38px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+}
+
+.pcard .pmini img,
+.rcard .pmini img,
+.pmini img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 50% !important;
+}
+
+@media(max-width: 639px) {
+  body.user-logged-in .home-header-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  body.user-logged-in .home-top-bar {
+    justify-content: space-between;
+    width: 100%!important;
+  }
+  .player-athlete-card {
+    max-width: 320px!important;
+  }
+  .player-photo-container {
+    height: 210px!important;
+  }
 }
