@@ -31,15 +31,15 @@
 <svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;" aria-hidden="true"><defs><clipPath id="svgHeartClip" clipPathUnits="objectBoundingBox"><path d="M 0.5, 0.90 C 0.25, 0.70, 0, 0.48, 0, 0.26 C 0, 0.10, 0.12, 0, 0.30, 0 C 0.42, 0, 0.48, 0.06, 0.5, 0.14 C 0.52, 0.06, 0.58, 0, 0.70, 0 C 0.88, 0, 1, 0.10, 1, 0.26 C 1, 0.48, 0.75, 0.70, 0.5, 0.90 Z" /></clipPath></defs></svg>
 <div id="homeView">
 <div class="home-card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-  <div id="apiStatusBadge" class="status-dot-corner" style="display:inline-flex;cursor:pointer;position:static;" onclick="ouvrirModalApi()" title="Statut Google Sheet (Cliquez pour configurer)">
+<div class="home-top-bar">
+  <div id="apiStatusBadge" class="status-pill" onclick="ouvrirModalApi()" title="Liaison Google Sheet (Cliquez pour configurer)">
     <span class="status-dot-wrap"><span class="status-dot-pulse"></span><span id="apiStatusDot" class="status-dot-core" style="background:#22c55e;"></span></span>
-    <span id="apiStatusText" class="status-dot-text">Google Sheet ConnectÃ©</span>
+    <span id="apiStatusText" class="status-pill-text">Google Sheet Connecté</span>
   </div>
-</div>
-<div id="badgeStatusWhatsApp" class="status-dot-corner" title="WhatsApp Connecté • Synchronisé" onclick="if(typeof afficherToast==='function') afficherToast('WhatsApp Connecté • Synchronisé', 'succes');">
-<span class="status-dot-wrap"><span class="status-dot-pulse"></span><span class="status-dot-core"></span></span>
-<span id="txtStatusWhatsApp" class="status-dot-text">WhatsApp Connecté • Synchronisé</span>
+  <div id="badgeStatusWhatsApp" class="status-pill" style="display:none;" title="WhatsApp Connecté & Synchronisé" onclick="if(typeof afficherToast==='function') afficherToast('WhatsApp Connecté & Synchronisé', 'succes');">
+    <span class="status-dot-wrap"><span class="status-dot-pulse"></span><span class="status-dot-core"></span></span>
+    <span id="txtStatusWhatsApp" class="status-pill-text">WhatsApp</span>
+  </div>
 </div>
 <div class="home-logo-wrap">
 <div class="home-logo"><img id="homeLogoImg" src="images/logo.png" alt="Club"></div>

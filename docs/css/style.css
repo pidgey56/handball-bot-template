@@ -1,4 +1,4 @@
-﻿:root{
+:root{
 --color-primary:var(--color-primary, #3b82f6);
 --color-primary-text:var(--color-primary-text, #ffffff);
 --color-secondary:var(--color-secondary, #f59e0b);
@@ -368,3 +368,8 @@ body.user-logged-in #playerBox{grid-template-columns:430px 1fr!important;gap:42p
 .player-athlete-card{max-width:430px!important;height:460px!important;}
 .roster-wrap, .board, .tabs, .train-config-bar, .view-mode-tabs{max-width:1920px!important;}
 }
+
+.home-top-bar{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:16px;gap:8px;position:relative;z-index:10;}
+.status-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:99px;background:rgba(15,23,42,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.12);font-size:0.72rem;font-weight:700;color:#cbd5e1;cursor:pointer;transition:all 0.2s ease;user-select:none;}
+.status-pill:hover{background:rgba(30,41,59,0.9);border-color:rgba(255,255,255,0.25);color:#fff;transform:translateY(-1px);}
+.status-pill-text{font-size:0.72rem;font-weight:700;color:#e2e8f0;white-space:nowrap;}
