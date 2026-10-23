@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
   './css/style.css?v=2.2.0',
   './js/api.js?v=2.2.0',
   './js/app.js?v=2.2.0',
+  './js/spakta-data.json?v=2.2.0',
   './manifest.json',
   './images/logo.png',
   './images/logo.svg',

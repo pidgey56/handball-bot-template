@@ -2054,8 +2054,27 @@ function synchroniserStatsSpakta(callback) {
         if (typeof callback === 'function') callback(res);
       }
     }).withFailureHandler(function(err) {
-      console.warn('Échec synchro Spakta :', err);
+      console.warn('Échec synchro Spakta backend :', err);
     }).recupererStatsSpaktaClub();
+  }
+
+  // Si pas encore de données, charger le snapshot local statique
+  if (!STATS_SPAKTA) {
+    try {
+      fetch('js/spakta-data.json?v=2.2.0')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!STATS_SPAKTA && data && data.joueurs) {
+            STATS_SPAKTA = data;
+            try { localStorage.setItem('hb_spakta_stats', JSON.stringify(STATS_SPAKTA)); } catch(e) {}
+            if (typeof SESSION_NOM !== 'undefined' && SESSION_NOM) majEspaceJoueur(SESSION_NOM);
+            if (typeof callback === 'function') callback(data);
+          }
+        })
+        .catch(function(e) {
+          console.warn('Snapshot Spakta local non chargé :', e);
+        });
+    } catch(errFetch) {}
   }
 }
 
