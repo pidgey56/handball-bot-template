@@ -1,6 +1,12 @@
+
+/* Masquage des vues secondaires par défaut (seul #homeView est actif au démarrage) */
+#appView, #trainView, #rosterView, #previewView {
+  display: none;
+}
+
 /* ==============================================================================
- * HANDBALL BOT 2.0 - DIRECTION ARTISTIQUE : « LE CARNET TACTIQUE DU COACH »
- * Style authentique : Papier millimétré, crayons, feutres, masking-tape & post-its
+ * HANDBALL BOT 2.0 - DIRECTION ARTISTIQUE : ? LE CARNET TACTIQUE DU COACH ?
+ * Style authentique : Papier millim?tr?, crayons, feutres, masking-tape & post-its
  * ============================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');
@@ -38,7 +44,7 @@
   --inp-bg: #f8fafc;
 }
 
-/* Thème Ardoise Vestiaire (Sombre) */
+/* Th?me Ardoise Vestiaire (Sombre) */
 body.theme-slate {
   --bg-page: #151a22;
   --bg-grid-color: rgba(255, 255, 255, 0.05);
@@ -59,7 +65,7 @@ body.theme-slate {
   --inp-bg: #141820;
 }
 
-/* Polices de caractères */
+/* Polices de caract?res */
 .font-hand { font-family: 'Caveat', cursive, sans-serif!important; }
 .font-note { font-family: 'Patrick Hand', cursive, sans-serif!important; }
 .font-ui { font-family: 'Plus Jakarta Sans', sans-serif!important; }
@@ -81,7 +87,7 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Scrollbars dessinées */
+/* Scrollbars dessin?es */
 * { scrollbar-width: thin; scrollbar-color: var(--card-border) transparent; box-sizing: border-box; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -91,7 +97,7 @@ body {
   border: 2px solid var(--bg-page);
 }
 
-/* Règle de sécurité globale pour les images */
+/* R?gle de s?curit? globale pour les images */
 img {
   max-width: 100%;
   box-sizing: border-box;
@@ -148,7 +154,7 @@ img {
   letter-spacing: 0.8px;
 }
 
-/* En-tête Clipboard */
+/* En-t?te Clipboard */
 header {
   background: var(--card-bg);
   padding: 10px 20px;
@@ -224,7 +230,7 @@ button:disabled { opacity: 0.65; cursor: wait; }
   color: #fff;
 }
 
-/* CARTE DU JOUEUR (STYLE POLAROÏD DE CARNET) */
+/* CARTE DU JOUEUR (STYLE POLARO?D DE CARNET) */
 .player-athlete-card {
   width: 100%;
   max-width: 340px;
@@ -385,7 +391,7 @@ button:disabled { opacity: 0.65; cursor: wait; }
   line-height: 1.25;
 }
 
-/* Bannière Match Hub */
+/* Banni?re Match Hub */
 .match-hub-banner {
   background: var(--card-bg);
   border: 1.5px solid var(--card-border);
@@ -673,7 +679,7 @@ body.theme-slate .handball-field-wrapper {
   text-overflow: ellipsis;
 }
 
-/* Tags d'équipe et bouton fiche */
+/* Tags d'?quipe et bouton fiche */
 .ptags {
   display: flex;
   gap: 5px;
@@ -735,7 +741,7 @@ body.theme-slate .handball-field-wrapper {
 .col-repos { border-top: 5px solid #ef4444; }
 .col-retenu { border-top: 5px solid var(--color-primary); }
 
-/* Badges Chouchou, MVP, Chèvre, Renfort */
+/* Badges Chouchou, MVP, Ch?vre, Renfort */
 .badge-renfort {
   background: #3b82f6;
   color: #fff;
@@ -998,15 +1004,15 @@ body.theme-slate .handball-field-wrapper {
 }
 .modal-box {
   background: var(--card-bg);
-  border: 1.5px solid var(--card-border);
-  border-radius: 20px;
-  max-width: 480px;
+  border: 2.5px solid var(--card-border);
+  border-radius: 22px;
+  max-width: 460px;
   width: 100%;
   padding: 24px;
   max-height: 90vh;
   overflow-y: auto;
   box-sizing: border-box;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
 }
 
 /* Toasts */
@@ -1127,7 +1133,7 @@ body.theme-slate .carnet-tab.active {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mode mobile pour la barre d'onglets : sticky en bas de l'écran façon App mobile native */
+/* Mode mobile pour la barre d'onglets : sticky en bas de l'?cran fa?on App mobile native */
 @media(max-width: 640px) {
   .carnet-nav-tabs {
     position: fixed;

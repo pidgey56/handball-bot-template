@@ -4591,6 +4591,7 @@ function initialiserThemeCarnet() {
 }
 
 function demarrerApp(){
+  try { basculerVue("homeView"); } catch(eVue){}
   try { initialiserThemeCarnet(); } catch(eTheme){}
 
   try {
