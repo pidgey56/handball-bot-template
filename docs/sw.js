@@ -3,13 +3,13 @@
 // Gestion du cache hors-ligne et fonctionnement PWA
 // ============================================================================
 
-const CACHE_NAME = 'handball-app-v2.0.4';
+const CACHE_NAME = 'handball-app-v2.0.5';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './css/style.css?v=2.0.4',
-  './js/api.js?v=2.0.4',
-  './js/app.js?v=2.0.4',
+  './css/style.css?v=2.0.5',
+  './js/api.js?v=2.0.5',
+  './js/app.js?v=2.0.5',
   './manifest.json',
   './images/logo.png',
   './images/icon-192.png',
@@ -40,6 +40,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
+  // Ignorer les requêtes non HTTP / HTTPS (ex: extensions Chrome)
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
   // Pour les appels API (Google Apps Script), toujours utiliser le réseau
   if (url.hostname.includes('script.google.com') || url.hostname.includes('googleusercontent.com')) {
     return;
@@ -68,4 +73,3 @@ self.addEventListener('fetch', event => {
     })
   );
 });
-

@@ -84,9 +84,9 @@ const ApiClient = {
 
     this.majBadgeStatut('syncing', 'Envoi...');
 
-    // Création d'un AbortController avec timeout de 8 secondes (évite tout blocage)
+    // Timeout de 45 secondes adapté aux temps de réponse de Google Apps Script (cold start)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     try {
       const response = await fetch(this.baseUrl, {
@@ -114,7 +114,8 @@ const ApiClient = {
       // Mise en cache des données lues
       if (action === 'getDonneesCoach' || action === 'authentifierUtilisateur') {
         try {
-          localStorage.setItem('hb_cache_data', JSON.stringify(res.data));
+          const donneesAStocker = (res.data && res.data.donnees) ? res.data.donnees : res.data;
+          localStorage.setItem('hb_cache_data', JSON.stringify(donneesAStocker));
           localStorage.setItem('hb_cache_timestamp', Date.now().toString());
         } catch (e) {}
       }
@@ -122,19 +123,26 @@ const ApiClient = {
       return res.data;
     } catch (err) {
       clearTimeout(timeoutId);
-      console.warn("[ApiClient] Appel réseau non disponible (" + err.message + "). Utilisation du cache.");
+      const isTimeout = err.name === 'AbortError' || (err.message && err.message.toLowerCase().includes('abort'));
+      const errorMsg = isTimeout
+        ? "Le serveur Google Sheets met trop de temps à répondre (délai dépassé). Veuillez réessayer."
+        : (err.message || "Erreur réseau inconnue");
+
+      console.warn("[ApiClient] Appel réseau non disponible (" + errorMsg + ").");
       this.majBadgeStatut('offline');
 
       // Fallback cache local en cas de coupure réseau
       if (action === 'getDonneesCoach') {
         const cached = localStorage.getItem('hb_cache_data');
         if (cached) {
-          return JSON.parse(cached);
+          try {
+            return JSON.parse(cached);
+          } catch(e) {}
         }
         return this.getDemoData();
       }
 
-      throw err;
+      throw new Error(errorMsg);
     }
   },
 

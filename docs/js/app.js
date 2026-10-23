@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
 var APP_VERSION = '2.0.0';
@@ -107,7 +107,7 @@ el.style.display = "flex";
 void el.offsetWidth;
 el.style.opacity = "1"; el.style.visibility = "visible";
 clearTimeout(window._loadingSafetyTimer);
-window._loadingSafetyTimer = setTimeout(masquerLoading, 3500);
+window._loadingSafetyTimer = setTimeout(masquerLoading, 45000);
 }
 function masquerLoading(){
 var el = document.getElementById("globalLoadingScreen"); if(!el) return;
@@ -1684,10 +1684,6 @@ if(!silencieux){
     btnLogin.textContent = "Vérification...";
   }
   afficherLoading("Connexion...", "Vérification de vos identifiants...");
-  setTimeout(function(){
-    if(btnLogin) { btnLogin.disabled = false; btnLogin.textContent = "Se connecter"; }
-    masquerLoading();
-  }, 4500);
 }
 google.script.run.withSuccessHandler(function(res){
 if(!silencieux) document.getElementById("btnLogin").disabled = false;
@@ -1720,7 +1716,7 @@ google.script.run.withSuccessHandler(function(data){ appliquerDonneesRecues(data
 }).withFailureHandler(function(err){
 masquerLoading();
 document.getElementById("btnLogin").disabled = false;
-document.getElementById("loginError").textContent = err.message;
+var bLogin = document.getElementById("btnLogin"); if(bLogin) { bLogin.disabled = false; bLogin.textContent = "Se connecter"; } document.getElementById("loginError").textContent = err.message || err;
 }).authentifierUtilisateur(tel, pin, true);
 }
 function seDeconnecter(){
