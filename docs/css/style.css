@@ -1036,8 +1036,12 @@ body.theme-slate .handball-field-wrapper {
   max-width: 100% !important;
   max-height: 100% !important;
   object-fit: cover !important;
-  display: block !important;
   border-radius: 50% !important;
+}
+#modalJoueurImg[style*="none"],
+#profilPublicImg[style*="none"],
+#playerImgPreview[style*="none"] {
+  display: none !important;
 }
 
 /* Modales */

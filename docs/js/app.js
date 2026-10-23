@@ -1,7 +1,7 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
-var APP_VERSION = '2.2.4';
+var APP_VERSION = '2.2.5';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -1721,7 +1721,7 @@ var navTabs = document.getElementById("carnetNavTabs"); if(navTabs) navTabs.styl
 document.getElementById("coachMenuBox").style.display = "none";
 document.getElementById("playerBox").style.display = "none";
 document.getElementById("loginBox").style.display = "flex";
-document.getElementById("inpPin").value = "";
+document.getElementById("inpPin").value = ""; var pPrv = document.getElementById("playerImgPreview"); if(pPrv){ pPrv.src = ""; pPrv.removeAttribute("src"); pPrv.style.setProperty("display", "none", "important"); }
 retourAccueil();
 }
 function changerMonPoste(){
@@ -2062,7 +2062,7 @@ function synchroniserStatsSpakta(callback) {
   // Si pas encore de données, charger le snapshot local statique
   if (!STATS_SPAKTA) {
     try {
-      fetch('js/spakta-data.json?v=2.2.4')
+      fetch('js/spakta-data.json?v=2.2.5')
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (!STATS_SPAKTA && data && data.joueurs) {
@@ -2100,7 +2100,7 @@ if(document.getElementById("selPosteJoueur")) document.getElementById("selPosteJ
 var pImg = document.getElementById("playerImgPreview"), pInit = document.getElementById("playerInitialPreview");
 var pLtr = (pObj.nom || "").trim().charAt(0).toUpperCase();
 if(pInit) pInit.textContent = pLtr;
-if(pObj.photo){
+if(pObj.photo && String(pObj.photo).trim().length > 0){
 if(pImg){
 pImg.src = pObj.photo;
 pImg.style.setProperty("display", "block", "important");
@@ -2109,7 +2109,7 @@ pImg.onerror = function(){ pImg.style.setProperty("display", "none", "important"
 if(pInit) pInit.style.setProperty("display", "none", "important");
 } else {
 if(pInit) pInit.style.setProperty("display", "flex", "important");
-if(pImg){ pImg.src = ""; pImg.style.setProperty("display", "none", "important"); }
+if(pImg){ pImg.src = ""; pImg.removeAttribute("src"); pImg.style.setProperty("display", "none", "important"); }
 }
 var isChou = estJoueurChouchou(nom);
 var chouBadge = document.getElementById("playerChouchouBadgeCard");
@@ -2841,12 +2841,12 @@ if(elAssid) elAssid.textContent = "⚡ " + nbTr + " séance" + (nbTr > 1 ? "s" :
 var jInitial = (jObj.nom || "").trim().charAt(0).toUpperCase() || "?";
 if(elInit) elInit.textContent = jInitial;
 if(jObj.photo){
-if(elImg){ elImg.src = jObj.photo; elImg.style.display = "block"; }
-if(elInit) elInit.style.display = "none";
+if(elImg){ elImg.src = jObj.photo; elImg.style.setProperty("display", "block", "important"); elImg.onerror = function(){ elImg.src = ""; elImg.removeAttribute("src"); elImg.style.setProperty("display", "none", "important"); if(elInit) elInit.style.setProperty("display", "flex", "important"); }; }
+if(elInit) elInit.style.setProperty("display", "none", "important");
 if(elBdrop){ elBdrop.style.display = "none"; }
 } else {
-if(elImg) elImg.style.display = "none";
-if(elInit) elInit.style.display = "flex";
+if(elImg){ elImg.src = ""; elImg.removeAttribute("src"); elImg.style.setProperty("display", "none", "important"); }
+if(elInit) elInit.style.setProperty("display", "flex", "important");
 if(elBdrop) elBdrop.style.display = "none";
 }
 var cData = CAISSE_NOIRE_DATA || {};
@@ -2900,7 +2900,7 @@ if(bg) bg.style.display = "flex";
 }
 function fermerProfilJoueurPublic(){
 var bg = document.getElementById("modalProfilJoueurPublicBg");
-if(bg) bg.style.display = "none";
+if(bg) bg.style.display = "none"; var elImg = document.getElementById("profilPublicImg"); if(elImg){ elImg.src = ""; elImg.removeAttribute("src"); elImg.style.setProperty("display", "none", "important"); } var elInit = document.getElementById("profilPublicInitiale"); if(elInit) elInit.style.setProperty("display", "flex", "important");
 }
 function fermerProfilJoueurPublicSurBg(e){
 if(e.target.id === "modalProfilJoueurPublicBg") fermerProfilJoueurPublic();
@@ -4011,12 +4011,12 @@ function ouvrirModalJoueur(nom){
   if(bdrop) bdrop.style.opacity = "0";
   var pInit = (p.nom || "").trim().charAt(0).toUpperCase();
   mInit.textContent = pInit;
-  if(p.photo){
-    mImg.src = p.photo; mImg.style.display = "block"; mInit.style.display = "none";
+  if(p.photo && String(p.photo).trim().length > 0){
+    mImg.src = p.photo; mImg.style.setProperty("display", "block", "important"); if(mInit) mInit.style.setProperty("display", "none", "important");
     if(bdrop){ bdrop.style.display = "none"; }
-    mImg.onerror = function(){ mImg.style.display = "none"; mInit.style.display = "flex"; };
+    mImg.onerror = function(){ mImg.src = ""; mImg.removeAttribute("src"); mImg.style.setProperty("display", "none", "important"); if(mInit) mInit.style.setProperty("display", "flex", "important"); };
   } else {
-    mImg.style.display = "none"; mInit.style.display = "flex";
+    mImg.src = ""; mImg.removeAttribute("src"); mImg.style.setProperty("display", "none", "important"); if(mInit) mInit.style.setProperty("display", "flex", "important");
     if(bdrop){ bdrop.style.display = "none"; }
   }
   var isChou = estJoueurChouchou(nom);
@@ -4031,7 +4031,7 @@ function ouvrirModalJoueur(nom){
 
   document.getElementById("modalJoueurBg").style.display = "flex";
 }
-function fermerModalJoueur(){ var bdrop = document.getElementById("modalJoueurBackdrop"); if(bdrop) bdrop.style.opacity = "0"; document.getElementById("modalJoueurBg").style.display = "none"; }
+function fermerModalJoueur(){ var bdrop = document.getElementById("modalJoueurBackdrop"); if(bdrop) bdrop.style.opacity = "0"; var mImg = document.getElementById("modalJoueurImg"); if(mImg){ mImg.src = ""; mImg.removeAttribute("src"); mImg.style.setProperty("display", "none", "important"); } var mInit = document.getElementById("modalJoueurInitiale"); if(mInit) mInit.style.setProperty("display", "flex", "important"); document.getElementById("modalJoueurBg").style.display = "none"; }
 function fermerModalSurBg(e){ if(e.target.id === "modalJoueurBg") fermerModalJoueur(); }
 var DERNIERE_INONDATION_COEURS = 0;
 function declencherInondationCoeurs(nomJoueur){
@@ -4283,8 +4283,8 @@ if(inpUrl) inpUrl.value = "";
 var mImg = document.getElementById("modalJoueurImg");
 var mInit = document.getElementById("modalJoueurInitiale");
 mImg.src = PHOTO_MODAL_DATA;
-mImg.style.display = "block";
-mInit.style.display = "none";
+mImg.style.setProperty("display", "block", "important");
+if(mInit) mInit.style.setProperty("display", "none", "important");
 var bdrop = document.getElementById("modalJoueurBackdrop");
 if(bdrop){ bdrop.style.display = "none"; }
 document.getElementById("modalJoueurStatus").textContent = "Photo prête à être enregistrée.";
@@ -4299,20 +4299,20 @@ var bdrop = document.getElementById("modalJoueurBackdrop");
 if(u){
 PHOTO_MODAL_DATA = u;
 mImg.src = u;
-mImg.style.display = "block";
-mInit.style.display = "none";
+mImg.style.setProperty("display", "block", "important");
+if(mInit) mInit.style.setProperty("display", "none", "important");
 if(bdrop){ bdrop.style.display = "none"; }
 mImg.onerror = function(){
-mImg.style.display = "none";
-mInit.style.display = "flex";
+mImg.src = ""; mImg.removeAttribute("src"); mImg.style.setProperty("display", "none", "important");
+if(mInit) mInit.style.setProperty("display", "flex", "important");
 if(bdrop){ bdrop.style.opacity = "0"; bdrop.style.backgroundImage = "none"; }
 };
 document.getElementById("modalJoueurStatus").textContent = "Lien photo prêt à être enregistré.";
 } else {
 PHOTO_MODAL_DATA = "__EFFACER__";
 mImg.src = "";
-mImg.style.display = "none";
-mInit.style.display = "flex";
+mImg.src = ""; mImg.removeAttribute("src"); mImg.style.setProperty("display", "none", "important");
+if(mInit) mInit.style.setProperty("display", "flex", "important");
 if(bdrop){ bdrop.style.opacity = "0"; bdrop.style.backgroundImage = "none"; }
 document.getElementById("modalJoueurStatus").textContent = "Photo retirée.";
 }
