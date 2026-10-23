@@ -1615,65 +1615,6 @@ var tinder = (demarrerEnTinder !== undefined && demarrerEnTinder !== null) ? !!d
 choisirModeTrain(tinder);
 }
 function entrerEffectif(){ basculerVue("rosterView"); }
-var UPDATE_INFO = null;
-function verifierMiseAJourAutomatique(){
-google.script.run.withSuccessHandler(function(res){
-if(res && res.disponible){
-UPDATE_INFO = res;
-var b = document.getElementById("updateBannerBox"); if(b) b.style.display = "block";
-var badge = document.getElementById("updateBadgeVer"); if(badge) badge.textContent = "v" + res.versionDistante;
-var title = document.getElementById("updateBannerTitle"); if(title && res.titre) title.textContent = res.titre;
-}
-}).verifierMiseAJour();
-}
-function verifierMiseAJourManuelle(){
-var btn = document.getElementById("btnCheckUpdateCoach");
-if(btn) btn.textContent = "Vérification en cours...";
-google.script.run.withSuccessHandler(function(res){
-if(btn) btn.textContent = "Vérifier les mises à jour";
-if(res && res.disponible){
-UPDATE_INFO = res;
-ouvrirModalMiseAJour();
-} else {
-afficherToast("Votre Handball Bot est parfaitement à jour (Version v" + (res ? res.versionActuelle : APP_VERSION) + ") !", "succes");
-}
-}).withFailureHandler(function(err){
-if(btn) btn.textContent = "Vérifier les mises à jour";
-afficherToast("Impossible de vérifier les mises à jour : " + err.message, "erreur");
-}).verifierMiseAJour(true);
-}
-function ouvrirModalMiseAJour(){
-if(!UPDATE_INFO) return;
-var titleEl = document.getElementById("modalUpdateTitle"); if(titleEl) titleEl.textContent = (UPDATE_INFO.titre || "Mise à jour disponible") + " (v" + UPDATE_INFO.versionDistante + ")";
-var metaEl = document.getElementById("modalUpdateMeta"); if(metaEl) metaEl.textContent = "Version actuelle : v" + UPDATE_INFO.versionActuelle + (UPDATE_INFO.date ? " • Publiée le " + UPDATE_INFO.date : "");
-var ul = document.getElementById("modalUpdateChangelog");
-if(ul){
-ul.innerHTML = "";
-(UPDATE_INFO.changelog || []).forEach(function(item){
-var li = document.createElement("li"); li.textContent = item; ul.appendChild(li);
-});
-}
-document.getElementById("modalMiseAJourBg").style.display = "flex";
-}
-function fermerModalMiseAJour(){ document.getElementById("modalMiseAJourBg").style.display = "none"; }
-function fermerModalMiseAJourSurBg(e){ if(e.target.id === "modalMiseAJourBg") fermerModalMiseAJour(); }
-function masquerBanniereUpdate(){ var b = document.getElementById("updateBannerBox"); if(b) b.style.display = "none"; }
-function copierLienCodeGs(){
-var url = (UPDATE_INFO && UPDATE_INFO.codeGsUrl) ? UPDATE_INFO.codeGsUrl : "https://raw.githubusercontent.com/" + UPSTREAM_TEMPLATE_REPO + "/main/code.gs";
-if(navigator.clipboard && navigator.clipboard.writeText){
-navigator.clipboard.writeText(url).then(function(){
-var b = document.getElementById("btnCopierCodeGs");
-if(b){ b.textContent = "Lien copié dans le presse-papier !"; setTimeout(function(){ b.textContent = "Copier le lien du code.gs mis à jour"; }, 2500); }
-});
-} else {
-window.open(url, "_blank");
-}
-}
-function ouvrirRepoGithub(){
-var repo = String((CLUB_CONFIG && CLUB_CONFIG.githubRepo) || "").replace(/^https?:\/\/github\.com\//i, "").replace(/^\/+|\/+$/g, "").trim();
-var url = (repo && repo.indexOf("/") !== -1) ? ("https://github.com/" + repo + "/actions") : ((UPDATE_INFO && UPDATE_INFO.repoUrl) ? UPDATE_INFO.repoUrl : "https://github.com");
-window.open(url, "_blank");
-}
 function seConnecter(silencieux){
 var tel = document.getElementById("inpTel").value, pin = document.getElementById("inpPin").value;
 if(!silencieux){
@@ -1699,7 +1640,6 @@ document.getElementById("coachMenuBox").style.display = "none";
 }
 if(EST_COACH){
 var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "flex";
-verifierMiseAJourAutomatique();
 majAffichageModesParDefaut();
 }
 try {
