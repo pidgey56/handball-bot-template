@@ -916,19 +916,30 @@ function creerCarteTinderHtml(j, isTop){
   }
   var ov = document.createElement("div"); ov.className = "tbg-overlay"; card.appendChild(ov);
 
-  function addStamp(clsPos, clsCol, txt){ var s = document.createElement("div"); s.className = "stamp " + clsPos + " " + clsCol; s.textContent = txt; card.appendChild(s); }
+  function addStamp(clsPos, clsCol, txt, icon){
+    var s = document.createElement("div");
+    s.className = "stamp " + clsPos + " " + clsCol;
+    s.style.display = "none";
+    s.style.opacity = "0";
+    if(icon){
+      s.innerHTML = '<span class="stamp-icon">' + icon + '</span><span>' + txt + '</span>';
+    } else {
+      s.textContent = txt;
+    }
+    card.appendChild(s);
+  }
   if(nbEq === 1){
-    addStamp("stamp-left", "stamp-out", "REPOS");
-    addStamp("stamp-right", "stamp-1b", eq1);
+    addStamp("stamp-left", "stamp-out", "REPOS", "✕");
+    addStamp("stamp-right", "stamp-1b", eq1, "✓");
   } else if(nbEq === 2){
-    addStamp("stamp-left", "stamp-1b", eq1);
-    addStamp("stamp-right", "stamp-1c", eq2);
-    addStamp("stamp-down", "stamp-out", "REPOS");
+    addStamp("stamp-left", "stamp-1b", eq1, "✓");
+    addStamp("stamp-right", "stamp-1c", eq2, "✓");
+    addStamp("stamp-down", "stamp-out", "REPOS", "✕");
   } else {
-    addStamp("stamp-up", "stamp-1b", eq1);
-    addStamp("stamp-left", "stamp-1c", eq2);
-    addStamp("stamp-right", "stamp-1d", eq3);
-    addStamp("stamp-down", "stamp-out", "REPOS");
+    addStamp("stamp-up", "stamp-1b", eq1, "✓");
+    addStamp("stamp-left", "stamp-1c", eq2, "✓");
+    addStamp("stamp-right", "stamp-1d", eq3, "✓");
+    addStamp("stamp-down", "stamp-out", "REPOS", "✕");
   }
 
   var bEd = document.createElement("button"); bEd.className = "tbtn-edit-card"; bEd.textContent = "Fiche";
@@ -1001,62 +1012,97 @@ function creerCarteTinderHtml(j, isTop){
   return card;
 }
 function attacherGestesTinder(card){
-var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
-var startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
-var s1B = card.querySelector(".stamp-1b"), s1C = card.querySelector(".stamp-1c"), s1D = card.querySelector(".stamp-1d"), sOut = card.querySelector(".stamp-out");
-function resetStamps(){ if(s1B) s1B.style.opacity = 0; if(s1C) s1C.style.opacity = 0; if(s1D) s1D.style.opacity = 0; if(sOut) sOut.style.opacity = 0; }
-function onStart(e){ isDragging = true; startX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX; startY = e.type.includes("mouse") ? e.clientY : e.touches[0].clientY; card.classList.remove("tcard-spring"); }
-function onMove(e){
-if(!isDragging) return;
-var clientX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
-var clientY = e.type.includes("mouse") ? e.clientY : e.touches[0].clientY;
-currentX = clientX - startX; currentY = clientY - startY;
-var rot = currentX * 0.08;
-card.style.transform = "translate3d(" + currentX + "px," + currentY + "px,0) rotate(" + rot + "deg)";
-resetStamps();
-if(nbEq === 1){
-if(currentX < -20 && sOut) sOut.style.opacity = Math.min(1, Math.abs(currentX) / 95);
-else if(currentX > 20 && s1B) s1B.style.opacity = Math.min(1, currentX / 95);
-} else if(nbEq === 2){
-if(currentY > 40 && Math.abs(currentY) > Math.abs(currentX)){ if(sOut) sOut.style.opacity = Math.min(1, currentY / 95); }
-else if(currentX < -20 && s1B){ s1B.style.opacity = Math.min(1, Math.abs(currentX) / 95); }
-else if(currentX > 20 && s1C){ s1C.style.opacity = Math.min(1, currentX / 95); }
-} else {
-if(currentY < -30 && Math.abs(currentY) > Math.abs(currentX)){ if(s1B) s1B.style.opacity = Math.min(1, Math.abs(currentY) / 95); }
-else if(currentY > 30 && Math.abs(currentY) > Math.abs(currentX)){ if(sOut) sOut.style.opacity = Math.min(1, currentY / 95); }
-else if(currentX < -20 && s1C){ s1C.style.opacity = Math.min(1, Math.abs(currentX) / 95); }
-else if(currentX > 20 && s1D){ s1D.style.opacity = Math.min(1, currentX / 95); }
-}
-}
-function onEnd(){
-if(!isDragging) return; isDragging = false;
-var dest = null;
-if(nbEq === 1){
-if(currentX < -90) dest = "OUT";
-else if(currentX > 90) dest = "1B";
-} else if(nbEq === 2){
-if(currentY > 90 && Math.abs(currentY) > Math.abs(currentX)) dest = "OUT";
-else if(currentX < -90 && Math.abs(currentX) > Math.abs(currentY)) dest = "1B";
-else if(currentX > 90 && Math.abs(currentX) > Math.abs(currentY)) dest = "1C";
-} else {
-if(currentY < -90 && Math.abs(currentY) > Math.abs(currentX)) dest = "1B";
-else if(currentY > 90 && Math.abs(currentY) > Math.abs(currentX)) dest = "OUT";
-else if(currentX < -90 && Math.abs(currentX) > Math.abs(currentY)) dest = "1C";
-else if(currentX > 90 && Math.abs(currentX) > Math.abs(currentY)) dest = "1D";
-}
-if(dest) ejecterCarte(card, dest);
-else { card.classList.add("tcard-spring"); card.style.transform = "translate3d(0px,0px,0) rotate(0deg)"; resetStamps(); }
-}
-card.addEventListener("mousedown", onStart); window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onEnd);
-card.addEventListener("touchstart", onStart, { passive: true }); window.addEventListener("touchmove", onMove, { passive: true }); window.addEventListener("touchend", onEnd);
+  var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
+  var startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
+  var s1B = card.querySelector(".stamp-1b"), s1C = card.querySelector(".stamp-1c"), s1D = card.querySelector(".stamp-1d"), sOut = card.querySelector(".stamp-out");
+  function setStamp(el, opacity){
+    if(!el) return;
+    if(opacity > 0.05){
+      el.style.display = "inline-flex";
+      el.style.opacity = String(opacity);
+    } else {
+      el.style.opacity = "0";
+      el.style.display = "none";
+    }
+  }
+  function resetStamps(){
+    setStamp(s1B, 0);
+    setStamp(s1C, 0);
+    setStamp(s1D, 0);
+    setStamp(sOut, 0);
+  }
+  resetStamps();
+  function onStart(e){
+    isDragging = true;
+    startX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
+    startY = e.type.includes("mouse") ? e.clientY : e.touches[0].clientY;
+    card.classList.remove("tcard-spring");
+    resetStamps();
+  }
+  function onMove(e){
+    if(!isDragging) return;
+    var clientX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
+    var clientY = e.type.includes("mouse") ? e.clientY : e.touches[0].clientY;
+    currentX = clientX - startX; currentY = clientY - startY;
+    var rot = currentX * 0.08;
+    card.style.transform = "translate3d(" + currentX + "px," + currentY + "px,0) rotate(" + rot + "deg)";
+    resetStamps();
+    if(nbEq === 1){
+      if(currentX < -20) setStamp(sOut, Math.min(1, Math.abs(currentX) / 95));
+      else if(currentX > 20) setStamp(s1B, Math.min(1, currentX / 95));
+    } else if(nbEq === 2){
+      if(currentY > 40 && Math.abs(currentY) > Math.abs(currentX)){ setStamp(sOut, Math.min(1, currentY / 95)); }
+      else if(currentX < -20){ setStamp(s1B, Math.min(1, Math.abs(currentX) / 95)); }
+      else if(currentX > 20){ setStamp(s1C, Math.min(1, currentX / 95)); }
+    } else {
+      if(currentY < -30 && Math.abs(currentY) > Math.abs(currentX)){ setStamp(s1B, Math.min(1, Math.abs(currentY) / 95)); }
+      else if(currentY > 30 && Math.abs(currentY) > Math.abs(currentX)){ setStamp(sOut, Math.min(1, Math.abs(currentY) / 95)); }
+      else if(currentX < -20){ setStamp(s1C, Math.min(1, Math.abs(currentX) / 95)); }
+      else if(currentX > 20){ setStamp(s1D, Math.min(1, currentX / 95)); }
+    }
+  }
+  function onEnd(){
+    if(!isDragging) return; isDragging = false;
+    var dest = null;
+    if(nbEq === 1){
+      if(currentX < -90) dest = "OUT";
+      else if(currentX > 90) dest = "1B";
+    } else if(nbEq === 2){
+      if(currentY > 90 && Math.abs(currentY) > Math.abs(currentX)) dest = "OUT";
+      else if(currentX < -90 && Math.abs(currentX) > Math.abs(currentY)) dest = "1B";
+      else if(currentX > 90 && Math.abs(currentX) > Math.abs(currentY)) dest = "1C";
+    } else {
+      if(currentY < -90 && Math.abs(currentY) > Math.abs(currentX)) dest = "1B";
+      else if(currentY > 90 && Math.abs(currentY) > Math.abs(currentX)) dest = "OUT";
+      else if(currentX < -90 && Math.abs(currentX) > Math.abs(currentY)) dest = "1C";
+      else if(currentX > 90 && Math.abs(currentX) > Math.abs(currentY)) dest = "1D";
+    }
+    if(dest) {
+      resetStamps();
+      if(dest === "1B") setStamp(s1B, 1);
+      else if(dest === "1C") setStamp(s1C, 1);
+      else if(dest === "1D") setStamp(s1D, 1);
+      else if(dest === "OUT") setStamp(sOut, 1);
+      ejecterCarte(card, dest);
+    } else {
+      card.classList.add("tcard-spring"); card.style.transform = "translate3d(0px,0px,0) rotate(0deg)"; resetStamps();
+    }
+  }
+  card.addEventListener("mousedown", onStart); window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onEnd);
+  card.addEventListener("touchstart", onStart, { passive: true }); window.addEventListener("touchmove", onMove, { passive: true }); window.addEventListener("touchend", onEnd);
 }
 function swiperVers(choix){
-if(ANIM_EN_COURS) return;
-var topCard = document.querySelector("#tinderContainer .tcard-top");
-if(!topCard) return;
-var s = topCard.querySelector(".stamp-" + choix.toLowerCase());
-if(s) s.style.opacity = 1;
-ejecterCarte(topCard, choix);
+  if(ANIM_EN_COURS) return;
+  var topCard = document.querySelector("#tinderContainer .tcard-top");
+  if(!topCard) return;
+  var allStamps = topCard.querySelectorAll(".stamp");
+  allStamps.forEach(function(st){ st.style.opacity = "0"; st.style.display = "none"; });
+  var s = topCard.querySelector(".stamp-" + choix.toLowerCase());
+  if(s){
+    s.style.display = "inline-flex";
+    s.style.opacity = "1";
+  }
+  ejecterCarte(topCard, choix);
 }
 function ejecterCarte(card, choix){
 ANIM_EN_COURS = true; card.classList.add("tcard-fly");
@@ -4126,17 +4172,28 @@ function creerCarteTrainTinderHtml(j, isTop){
   }
   var ov = document.createElement("div"); ov.className = "tbg-overlay"; card.appendChild(ov);
 
-  function addStamp(clsPos, clsCol, txt){ var s = document.createElement("div"); s.className = "stamp " + clsPos + " " + clsCol; s.textContent = txt; card.appendChild(s); }
+  function addStamp(clsPos, clsCol, txt, icon){
+    var s = document.createElement("div");
+    s.className = "stamp " + clsPos + " " + clsCol;
+    s.style.display = "none";
+    s.style.opacity = "0";
+    if(icon){
+      s.innerHTML = '<span class="stamp-icon">' + icon + '</span><span>' + txt + '</span>';
+    } else {
+      s.textContent = txt;
+    }
+    card.appendChild(s);
+  }
   if(cfgS.type === "separe"){
-    addStamp("stamp-left", "stamp-1b", "GROUPE 1");
-    addStamp("stamp-right", "stamp-1c", "GROUPE 2");
-    addStamp("stamp-down", "stamp-out", "REPOS");
+    addStamp("stamp-left", "stamp-1b", "GROUPE 1", "✓");
+    addStamp("stamp-right", "stamp-1c", "GROUPE 2", "✓");
+    addStamp("stamp-down", "stamp-out", "REPOS", "✕");
   } else if(cfgS.type === "reduit"){
-    addStamp("stamp-left", "stamp-out", "NON RETENU");
-    addStamp("stamp-right", "stamp-1b", "RETENU");
+    addStamp("stamp-left", "stamp-out", "NON RETENU", "✕");
+    addStamp("stamp-right", "stamp-retenu", "RETENU", "✓");
   } else {
-    addStamp("stamp-left", "stamp-out", "MÉNAGÉ");
-    addStamp("stamp-right", "stamp-1b", "PRÉSENT");
+    addStamp("stamp-left", "stamp-out", "MÉNAGÉ", "⚡");
+    addStamp("stamp-right", "stamp-actif", "PRÉSENT", "✓");
   }
 
   var bEd = document.createElement("button"); bEd.className = "tbtn-edit-card"; bEd.textContent = "Fiche";
@@ -4199,59 +4256,92 @@ function creerCarteTrainTinderHtml(j, isTop){
   return card;
 }
 function attacherGestesTrainTinder(card){
-var cfgS = TRAIN_CONFIG[SEANCE_COURANTE] || { type: "separe" };
-var startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
-var sLeft = card.querySelector(".stamp-left"), sRight = card.querySelector(".stamp-right"), sDown = card.querySelector(".stamp-down");
-function resetStamps(){ if(sLeft) sLeft.style.opacity = 0; if(sRight) sRight.style.opacity = 0; if(sDown) sDown.style.opacity = 0; }
-function onStart(e){ isDragging = true; startX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX; startY = e.type.includes("mouse") ? e.clientY : e.touches[0].clientY; card.classList.remove("tcard-spring"); }
-function onMove(e){
-if(!isDragging) return;
-var clientX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
-var clientY = e.type.includes("mouse") ? e.clientY : e.touches[0].clientY;
-currentX = clientX - startX; currentY = clientY - startY;
-var rot = currentX * 0.08;
-card.style.transform = "translate3d(" + currentX + "px," + currentY + "px,0) rotate(" + rot + "deg)";
-resetStamps();
-if(cfgS.type === "separe"){
-if(currentY > 40 && Math.abs(currentY) > Math.abs(currentX)){ if(sDown) sDown.style.opacity = Math.min(1, currentY / 95); }
-else if(currentX < -20 && sLeft){ sLeft.style.opacity = Math.min(1, Math.abs(currentX) / 95); }
-else if(currentX > 20 && sRight){ sRight.style.opacity = Math.min(1, currentX / 95); }
-} else {
-if(currentX < -20 && sLeft){ sLeft.style.opacity = Math.min(1, Math.abs(currentX) / 95); }
-else if(currentX > 20 && sRight){ sRight.style.opacity = Math.min(1, currentX / 95); }
-}
-}
-function onEnd(){
-if(!isDragging) return; isDragging = false;
-var dest = null;
-if(cfgS.type === "separe"){
-if(currentY > 90 && Math.abs(currentY) > Math.abs(currentX)) dest = "OUT";
-else if(currentX < -90 && Math.abs(currentX) > Math.abs(currentY)) dest = "G1";
-else if(currentX > 90 && Math.abs(currentX) > Math.abs(currentY)) dest = "G2";
-} else if(cfgS.type === "reduit"){
-if(currentX < -90) dest = "OUT";
-else if(currentX > 90) dest = "RETENU";
-} else {
-if(currentX < -90) dest = "MENAGE";
-else if(currentX > 90) dest = "ACTIF";
-}
-if(dest) ejecterCarteTrain(card, dest);
-else { card.classList.add("tcard-spring"); card.style.transform = "translate3d(0px,0px,0) rotate(0deg)"; resetStamps(); }
-}
-card.addEventListener("mousedown", onStart); window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onEnd);
-card.addEventListener("touchstart", onStart, { passive: true }); window.addEventListener("touchmove", onMove, { passive: true }); window.addEventListener("touchend", onEnd);
+  var cfgS = TRAIN_CONFIG[SEANCE_COURANTE] || { type: "separe" };
+  var startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
+  var sLeft = card.querySelector(".stamp-left"), sRight = card.querySelector(".stamp-right"), sDown = card.querySelector(".stamp-down");
+  function setStamp(el, opacity){
+    if(!el) return;
+    if(opacity > 0.05){
+      el.style.display = "inline-flex";
+      el.style.opacity = String(opacity);
+    } else {
+      el.style.opacity = "0";
+      el.style.display = "none";
+    }
+  }
+  function resetStamps(){
+    setStamp(sLeft, 0);
+    setStamp(sRight, 0);
+    setStamp(sDown, 0);
+  }
+  resetStamps();
+  function onStart(e){
+    isDragging = true;
+    startX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
+    startY = e.type.includes("mouse") ? e.clientY : e.touches[0].clientY;
+    card.classList.remove("tcard-spring");
+    resetStamps();
+  }
+  function onMove(e){
+    if(!isDragging) return;
+    var clientX = e.type.includes("mouse") ? e.clientX : e.touches[0].clientX;
+    var clientY = e.type.includes("mouse") ? e.clientY : e.touches[0].clientY;
+    currentX = clientX - startX; currentY = clientY - startY;
+    var rot = currentX * 0.08;
+    card.style.transform = "translate3d(" + currentX + "px," + currentY + "px,0) rotate(" + rot + "deg)";
+    resetStamps();
+    if(cfgS.type === "separe"){
+      if(currentY > 40 && Math.abs(currentY) > Math.abs(currentX)){ setStamp(sDown, Math.min(1, currentY / 95)); }
+      else if(currentX < -20 && sLeft){ setStamp(sLeft, Math.min(1, Math.abs(currentX) / 95)); }
+      else if(currentX > 20 && sRight){ setStamp(sRight, Math.min(1, currentX / 95)); }
+    } else {
+      if(currentX < -20 && sLeft){ setStamp(sLeft, Math.min(1, Math.abs(currentX) / 95)); }
+      else if(currentX > 20 && sRight){ setStamp(sRight, Math.min(1, currentX / 95)); }
+    }
+  }
+  function onEnd(){
+    if(!isDragging) return; isDragging = false;
+    var dest = null;
+    if(cfgS.type === "separe"){
+      if(currentY > 90 && Math.abs(currentY) > Math.abs(currentX)) dest = "OUT";
+      else if(currentX < -90 && Math.abs(currentX) > Math.abs(currentY)) dest = "G1";
+      else if(currentX > 90 && Math.abs(currentX) > Math.abs(currentY)) dest = "G2";
+    } else if(cfgS.type === "reduit"){
+      if(currentX < -90) dest = "OUT";
+      else if(currentX > 90) dest = "RETENU";
+    } else {
+      if(currentX < -90) dest = "MENAGE";
+      else if(currentX > 90) dest = "ACTIF";
+    }
+    if(dest) {
+      resetStamps();
+      if(dest === "G1" || (dest === "OUT" && cfgS.type === "reduit") || dest === "MENAGE") setStamp(sLeft, 1);
+      else if(dest === "G2" || dest === "RETENU" || dest === "ACTIF") setStamp(sRight, 1);
+      else if(dest === "OUT") setStamp(sDown, 1);
+      ejecterCarteTrain(card, dest);
+    } else {
+      card.classList.add("tcard-spring"); card.style.transform = "translate3d(0px,0px,0) rotate(0deg)"; resetStamps();
+    }
+  }
+  card.addEventListener("mousedown", onStart); window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onEnd);
+  card.addEventListener("touchstart", onStart, { passive: true }); window.addEventListener("touchmove", onMove, { passive: true }); window.addEventListener("touchend", onEnd);
 }
 function animerVoteBoutonTrain(choix){ if(TRAIN_MODE_TINDER) swiperTrainVers(choix); }
 function swiperTrainVers(choix){
-if(TRAIN_ANIM_EN_COURS) return;
-var topCard = document.querySelector("#trainTinderContainer .tcard-top");
-if(!topCard) return;
-var s = null;
-if(choix === "G1" || (choix === "OUT" && TRAIN_CONFIG[SEANCE_COURANTE].type === "reduit") || choix === "MENAGE") s = topCard.querySelector(".stamp-left");
-else if(choix === "G2" || choix === "RETENU" || choix === "ACTIF") s = topCard.querySelector(".stamp-right");
-else if(choix === "OUT") s = topCard.querySelector(".stamp-down");
-if(s) s.style.opacity = 1;
-ejecterCarteTrain(topCard, choix);
+  if(TRAIN_ANIM_EN_COURS) return;
+  var topCard = document.querySelector("#trainTinderContainer .tcard-top");
+  if(!topCard) return;
+  var allStamps = topCard.querySelectorAll(".stamp");
+  allStamps.forEach(function(st){ st.style.opacity = "0"; st.style.display = "none"; });
+  var s = null;
+  if(choix === "G1" || (choix === "OUT" && TRAIN_CONFIG[SEANCE_COURANTE].type === "reduit") || choix === "MENAGE") s = topCard.querySelector(".stamp-left");
+  else if(choix === "G2" || choix === "RETENU" || choix === "ACTIF") s = topCard.querySelector(".stamp-right");
+  else if(choix === "OUT") s = topCard.querySelector(".stamp-down");
+  if(s){
+    s.style.display = "inline-flex";
+    s.style.opacity = "1";
+  }
+  ejecterCarteTrain(topCard, choix);
 }
 function ejecterCarteTrain(card, choix){
 TRAIN_ANIM_EN_COURS = true; card.classList.add("tcard-fly");

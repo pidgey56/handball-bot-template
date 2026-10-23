@@ -1,13 +1,14 @@
 {
-  "version": "2.2.13",
+  "version": "2.2.14",
   "releaseDate": "2026-10-23",
-  "title": "Handball Manager 2.2.13 — Console de Contrôle Tinder Modernisée, Squelette Harmonisé & Contraste Garanti",
+  "title": "Handball Manager 2.2.14 — Badges Sportifs Tinder Modernisés & Disparition Absolue Hors Sélection",
   "changelog": [
-    "Refonte esthétique et ergonomique complète de la barre de boutons de contrôle Tinder (Match et Entraînement)",
-    "Harmonisation symétrique des boutons utilitaires gauche et droite (Annuler ↩ et Réinitialiser ↻) sous forme de capsules tactiles avec icône et libellé dédiés",
-    "Résolution du contraste critique sur le bouton Équipe 2 / R2 : remplacement du fond gris pâle illisible par une couleur sportive vive et contrastée avec texte blanc éclatant",
-    "Agrandissement tactile des boutons décisionnels (66px) avec dégradés riches, ombres portées douces et effets de rebond au clic / survol",
-    "Bouton Repos stylisé en ardoise sombre avec bordure et flèche corail vif pour une distinction immédiate",
-    "Adaptation responsive mobile optimisée pour garantir un alignement parfait sur une seule ligne sans superposition"
+    "Correction définitive du bug d'affichage simultané des tampons de placement (R1, R2, REPOS) sans sélection",
+    "Masquage strict (display: none !important et opacity: 0) par défaut et à l'initialisation de chaque carte",
+    "Apparition exclusive et progressive du badge correspondant lors du glissement tactile ou du clic bouton",
+    "Refonte esthétique complète des badges de placement façon 'sports badges' avec bordures blanches épaisses, effet verre dépoli (frost glass), dégradés dynamiques et ombres portées",
+    "Intégration d'icônes sportives distinctes (✓ pour les équipes/retenus, ✕ pour repos/non-retenus, ⚡ pour ménagés)",
+    "Repositionnement central optimisé du badge Repos pour supprimer tout risque de chevauchement avec les informations du joueur",
+    "Application uniforme sur la sélection Match Tinder et Entraînement Tinder"
   ]
 }
