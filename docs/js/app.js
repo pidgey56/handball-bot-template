@@ -26,7 +26,7 @@
   } catch(e) {}
 })();
 
-var APP_VERSION = '2.2.28';
+var APP_VERSION = '2.2.29';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -5768,41 +5768,13 @@ function appliquerClubConfigPublique(cfg){
 }
 
 
-window.basculerThemeCarnet = function() {
-  var isSlate = document.body.classList.contains('theme-slate');
-  var ic = document.getElementById('iconTheme');
-  var tx = document.getElementById('txtTheme');
-  if (isSlate) {
-    document.body.classList.remove('theme-slate');
-    try { localStorage.setItem('hb_da_theme', 'paper'); } catch(e){}
-    if (ic) ic.innerHTML = '<svg class="hb-icon"><use href="#icon-sun"></use></svg>';
-    if (tx) tx.textContent = 'Carnet';
-    if (typeof afficherToast === 'function') afficherToast('Mode Carnet Papier activé', 'info');
-  } else {
-    document.body.classList.add('theme-slate');
-    try { localStorage.setItem('hb_da_theme', 'slate'); } catch(e){}
-    if (ic) ic.innerHTML = '<svg class="hb-icon"><use href="#icon-moon"></use></svg>';
-    if (tx) tx.textContent = 'Ardoise';
-    if (typeof afficherToast === 'function') afficherToast('Mode Ardoise Vestiaire activé', 'info');
-  }
-};
-
 function initialiserThemeCarnet() {
   try {
-    var savedTheme = localStorage.getItem('hb_da_theme') || 'paper';
-    var ic = document.getElementById('iconTheme');
-    var tx = document.getElementById('txtTheme');
-    if (savedTheme === 'slate') {
-      document.body.classList.add('theme-slate');
-      if (ic) ic.innerHTML = '<svg class="hb-icon"><use href="#icon-moon"></use></svg>';
-      if (tx) tx.textContent = 'Ardoise';
-    } else {
-      document.body.classList.remove('theme-slate');
-      if (ic) ic.innerHTML = '<svg class="hb-icon"><use href="#icon-sun"></use></svg>';
-      if (tx) tx.textContent = 'Carnet';
-    }
+    document.body.classList.remove('theme-slate');
+    localStorage.removeItem('hb_da_theme');
   } catch(e) {}
 }
+window.basculerThemeCarnet = function() {};
 
 
 // ============================================================================
@@ -6102,7 +6074,7 @@ function supprimerSuggestionCoach(rowNumber) {
 
 
 // ============================================================================
-// GESTION DU STATUT WHATSAPP (v2.2.28)
+// GESTION DU STATUT WHATSAPP (v2.2.29)
 // ============================================================================
 function majStatutWhatsAppClient() {
   var bWhatsApp = document.getElementById("badgeStatusWhatsApp");
