@@ -415,7 +415,7 @@ function getClubConfig(ss) {
       }
     } catch (e) {}
   }
-  const adminPhones = String(adminPhonesRaw || '').split(',').map(function(t) { return normaliserNumero(dechiffrerNumero(t.trim())); }).filter(Boolean);
+  const adminPhones = String(adminPhonesRaw || '').split(/[,;]/).map(function(t) { return normaliserNumero(dechiffrerNumero(t.trim())); }).filter(Boolean);
 
   let urlFfhbClub = getVal('C32', '');
   if (!urlFfhbClub) {
