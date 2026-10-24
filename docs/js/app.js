@@ -5804,6 +5804,302 @@ function initialiserThemeCarnet() {
   } catch(e) {}
 }
 
+
+// ============================================================================
+// SUGGESTIONS DE COMPOSITIONS PAR LES JOUEURS (v2.2.27)
+// ============================================================================
+function extraireCompoActuellePourSuggestion() {
+  return {
+    nomAuteur: SESSION_NOM || "Joueur",
+    telephone: SESSION_TEL || "",
+    equipe1B: extraireListeNoms("zone1B"),
+    equipe1C: document.getElementById("zone1C") ? extraireListeNoms("zone1C") : [],
+    equipe1D: document.getElementById("zone1D") ? extraireListeNoms("zone1D") : [],
+    repos: document.getElementById("zoneRepos") ? extraireListeNoms("zoneRepos") : [],
+    nonRetenus: extraireListeNoms("zonePool")
+  };
+}
+
+function formaterDateHeureSuggestion(dateStr) {
+  if (!dateStr) return "";
+  try {
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    var j = d.getDate(), m = d.getMonth() + 1, h = d.getHours(), min = d.getMinutes();
+    var moisFr = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    return j + " " + (moisFr[m - 1] || "") + " à " + (h < 10 ? "0" + h : h) + "h" + (min < 10 ? "0" + min : min);
+  } catch(e) {
+    return String(dateStr);
+  }
+}
+
+function majAffichageSuggestions() {
+  var boxCoachAlerte = document.getElementById("boxCoachSuggestionsAlerte");
+  var txtCoachCount = document.getElementById("txtCoachSuggestionsCount");
+  var btnHead = document.getElementById("btnHeaderSuggestionsCoach");
+  var badgeHead = document.getElementById("badgeHeaderSuggestionsCount");
+  var btnFoot = document.getElementById("btnFooterSuggestionsCoach");
+  var badgeFoot = document.getElementById("badgeFooterSuggestionsCount");
+  var bannerJoueur = document.getElementById("bannerSuggestionJoueur");
+  var boxPlayerStatut = document.getElementById("boxPlayerSuggestionStatut");
+  var txtPlayerStatut = document.getElementById("txtPlayerSuggestionStatut");
+  var tileTitle = document.getElementById("tileMatchsTitle");
+  var tileDesc = document.getElementById("tileMatchsDesc");
+  var btnTactique = document.getElementById("btnSuggTactique");
+  var btnTinder = document.getElementById("btnSuggTinder");
+  var btnApercu = document.getElementById("btnApercuCompo");
+  var btnSaveFoot = document.getElementById("btnSauvegarderFooter");
+  var txtSaveFoot = document.getElementById("txtBtnSauvegarderFooter");
+  var btnPlayerSuggPrv = document.getElementById("btnPlayerSuggFromPreview");
+
+  var nbSugg = (SUGGESTIONS_COMPOS || []).length;
+
+  if (EST_COACH) {
+    if (boxCoachAlerte) {
+      boxCoachAlerte.style.display = nbSugg > 0 ? "block" : "none";
+      if (txtCoachCount) txtCoachCount.textContent = nbSugg + " suggestion" + (nbSugg > 1 ? "s" : "") + " de composition reçue" + (nbSugg > 1 ? "s" : "");
+    }
+    if (btnHead) {
+      btnHead.style.display = nbSugg > 0 ? "inline-flex" : "none";
+      if (badgeHead) badgeHead.textContent = nbSugg;
+    }
+    if (btnFoot) {
+      btnFoot.style.display = nbSugg > 0 ? "inline-flex" : "none";
+      if (badgeFoot) badgeFoot.textContent = nbSugg;
+    }
+    if (bannerJoueur) bannerJoueur.style.display = "none";
+    if (boxPlayerStatut) boxPlayerStatut.style.display = "none";
+
+    if (tileTitle) tileTitle.textContent = "Feuilles de Match & Convocations";
+    if (tileDesc) tileDesc.textContent = "Gérez la sélection des joueurs convoqués, le banc et les postes tactiques.";
+    if (btnTactique) btnTactique.innerHTML = "📐 Mode Tactique";
+    if (btnTinder) btnTinder.innerHTML = "⚡ Mode Tinder";
+    if (btnApercu) btnApercu.innerHTML = "👀 Aperçu Terrain & Convocations";
+
+    if (btnSaveFoot) {
+      btnSaveFoot.style.background = "";
+      btnSaveFoot.onclick = function() { sauvegarder(false); };
+    }
+    if (txtSaveFoot) txtSaveFoot.innerHTML = '<svg class="hb-icon"><use href="#icon-check"></use></svg> Sauvegarder';
+    if (btnPlayerSuggPrv) btnPlayerSuggPrv.style.display = "none";
+
+  } else {
+    if (boxCoachAlerte) boxCoachAlerte.style.display = "none";
+    if (btnHead) btnHead.style.display = "none";
+    if (btnFoot) btnFoot.style.display = "none";
+
+    if (tileTitle) tileTitle.textContent = "💡 Suggérer une Composition au Coach";
+    if (tileDesc) tileDesc.textContent = "Proposez votre vision d'équipe au coach en Mode Tactique ou Tinder !";
+    if (btnTactique) btnTactique.innerHTML = "💡 Suggérer (Mode Tactique)";
+    if (btnTinder) btnTinder.innerHTML = "⚡ Suggérer (Mode Tinder)";
+    if (btnApercu) btnApercu.innerHTML = "👀 Consulter la Composition Officielle";
+
+    var maSugg = null;
+    var normTel = SESSION_TEL ? normaliserTelClient(SESSION_TEL) : "";
+    var normNom = SESSION_NOM ? String(SESSION_NOM).toLowerCase().trim() : "";
+    if (SUGGESTIONS_COMPOS && SUGGESTIONS_COMPOS.length) {
+      maSugg = SUGGESTIONS_COMPOS.find(function(s) {
+        var sTel = s.telephone ? normaliserTelClient(s.telephone) : "";
+        var sNom = s.nom ? String(s.nom).toLowerCase().trim() : "";
+        return (normTel && sTel && normTel === sTel) || (normNom && sNom && normNom === sNom);
+      });
+    }
+
+    if (boxPlayerStatut) {
+      if (maSugg) {
+        boxPlayerStatut.style.display = "flex";
+        var dateTxt = maSugg.horodatage ? formaterDateHeureSuggestion(maSugg.horodatage) : "récemment";
+        if (txtPlayerStatut) {
+          txtPlayerStatut.innerHTML = "💡 <b>Votre suggestion est enregistrée (" + dateTxt + ").</b> Vous pouvez la modifier et la renvoyer à tout moment.";
+        }
+      } else {
+        boxPlayerStatut.style.display = "none";
+      }
+    }
+
+    if (bannerJoueur) bannerJoueur.style.display = "block";
+
+    if (btnSaveFoot) {
+      btnSaveFoot.style.background = "#8b5cf6";
+      btnSaveFoot.onclick = function() { ouvrirModalSoumettreSuggestion(); };
+    }
+    if (txtSaveFoot) txtSaveFoot.innerHTML = "💡 Envoyer ma suggestion au coach";
+    if (btnPlayerSuggPrv) btnPlayerSuggPrv.style.display = "inline-flex";
+  }
+}
+
+function ouvrirModalSoumettreSuggestion() {
+  var compo = extraireCompoActuellePourSuggestion();
+  var total = (compo.equipe1B.length || 0) + (compo.equipe1C.length || 0) + (compo.equipe1D.length || 0);
+  if (total === 0) {
+    afficherToast("Veuillez sélectionner au moins un joueur dans une équipe avant de soumettre.", "info");
+    return;
+  }
+  var box = document.getElementById("resumeMaSuggestionBox");
+  if (box) {
+    var n1 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "Équipe 1";
+    var n2 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "Équipe 2";
+    var n3 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "Équipe 3";
+    var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
+    var html = '<div style="font-weight:700;margin-bottom:6px;color:var(--text-main);">📋 Récapitulatif de votre proposition :</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+    html += '<span style="background:var(--color-team1);color:var(--color-team1-text);padding:3px 8px;border-radius:6px;font-weight:700;font-size:0.75rem;">' + n1 + ' : ' + compo.equipe1B.length + ' joueur(s)</span>';
+    if (nbEq >= 2) {
+      html += '<span style="background:var(--color-team2);color:var(--color-team2-text);padding:3px 8px;border-radius:6px;font-weight:700;font-size:0.75rem;">' + n2 + ' : ' + compo.equipe1C.length + ' joueur(s)</span>';
+    }
+    if (nbEq >= 3) {
+      html += '<span style="background:var(--color-team3);color:var(--color-team3-text);padding:3px 8px;border-radius:6px;font-weight:700;font-size:0.75rem;">' + n3 + ' : ' + compo.equipe1D.length + ' joueur(s)</span>';
+    }
+    if (compo.repos.length > 0) {
+      html += '<span style="background:#fee2e2;color:#b91c1c;padding:3px 8px;border-radius:6px;font-weight:700;font-size:0.75rem;">Repos : ' + compo.repos.length + '</span>';
+    }
+    html += '</div>';
+    box.innerHTML = html;
+  }
+  document.getElementById("modalSoumettreSuggestionBg").style.display = "flex";
+}
+
+function fermerModalSoumettreSuggestion() {
+  var m = document.getElementById("modalSoumettreSuggestionBg");
+  if (m) m.style.display = "none";
+}
+
+function fermerModalSoumettreSuggestionSurBg(e) {
+  if (e && e.target && e.target.id === "modalSoumettreSuggestionBg") fermerModalSoumettreSuggestion();
+}
+
+function confirmerEnvoiSuggestionJoueur() {
+  var compo = extraireCompoActuellePourSuggestion();
+  var commEl = document.getElementById("txtCommentaireSuggestion");
+  var comm = commEl ? commEl.value.trim() : "";
+  afficherLoading("Envoi de la suggestion...", "Transmission de votre proposition au coach...");
+  google.script.run
+    .withSuccessHandler(function(res) {
+      masquerLoading();
+      fermerModalSoumettreSuggestion();
+      if (commEl) commEl.value = "";
+      afficherToast("💡 Votre proposition a bien été transmise au coach !", "succes");
+      if (typeof confetti === "function") confetti({ particleCount: 60, spread: 50 });
+      chargerDonneesCoach();
+      retourAccueil();
+    })
+    .withFailureHandler(function(err) {
+      masquerLoading();
+      afficherToast("Erreur lors de l'envoi : " + err.message, "erreur");
+    })
+    .soumettreSuggestionCompo(compo, comm, SESSION_TEL, SESSION_PIN);
+}
+
+function ouvrirModalSuggestionsCoach() {
+  var c = document.getElementById("listSuggestionsCoachContainer");
+  if (!c) return;
+  c.innerHTML = "";
+
+  if (!SUGGESTIONS_COMPOS || SUGGESTIONS_COMPOS.length === 0) {
+    c.innerHTML = '<div style="text-align:center;padding:30px 10px;color:var(--text-muted);font-size:0.88rem;">' +
+      '<div style="font-size:2rem;margin-bottom:8px;">📭</div>' +
+      '<b>Aucune suggestion pour le moment.</b><br>' +
+      'Vos joueurs peuvent proposer leur composition depuis leur espace joueur (Mode Tactique ou Tinder).' +
+      '</div>';
+    document.getElementById("modalSuggestionsCoachBg").style.display = "flex";
+    return;
+  }
+
+  var n1 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "Équipe 1";
+  var n2 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe2) || "Équipe 2";
+  var n3 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe3) || "Équipe 3";
+  var nbEq = (CLUB_CONFIG && CLUB_CONFIG.nbEquipes) || 2;
+
+  SUGGESTIONS_COMPOS.forEach(function(sugg, idx) {
+    var card = document.createElement("div");
+    card.className = "modal-section-card";
+    card.style.cssText = "background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;";
+
+    var dt = formaterDateHeureSuggestion(sugg.horodatage);
+    var compo = sugg.compo || {};
+    var eq1Count = (compo.equipe1B && compo.equipe1B.length) || 0;
+    var eq2Count = (compo.equipe1C && compo.equipe1C.length) || 0;
+    var eq3Count = (compo.equipe1D && compo.equipe1D.length) || 0;
+    var reposCount = (compo.repos && compo.repos.length) || 0;
+
+    var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">' +
+      '<div style="font-weight:800;font-size:0.95rem;color:var(--text-main);display:flex;align-items:center;gap:6px;">' +
+        '<span>👤 ' + (sugg.nom || "Joueur") + '</span>' +
+        '<span style="font-size:0.75rem;font-weight:500;color:var(--text-muted);">(' + dt + ')</span>' +
+      '</div>' +
+      '<button type="button" class="btn-reset" style="padding:3px 8px;font-size:0.75rem;color:#ef4444;" onclick="supprimerSuggestionCoach(' + (sugg.rowNumber || (idx + 2)) + ')" title="Supprimer cette suggestion">🗑️</button>' +
+    '</div>';
+
+    var badgesHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:0.72rem;">' +
+      '<span style="background:var(--color-team1);color:var(--color-team1-text);padding:2px 8px;border-radius:6px;font-weight:700;">' + n1 + ' : ' + eq1Count + '</span>';
+    if (nbEq >= 2) {
+      badgesHtml += '<span style="background:var(--color-team2);color:var(--color-team2-text);padding:2px 8px;border-radius:6px;font-weight:700;">' + n2 + ' : ' + eq2Count + '</span>';
+    }
+    if (nbEq >= 3) {
+      badgesHtml += '<span style="background:var(--color-team3);color:var(--color-team3-text);padding:2px 8px;border-radius:6px;font-weight:700;">' + n3 + ' : ' + eq3Count + '</span>';
+    }
+    if (reposCount > 0) {
+      badgesHtml += '<span style="background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:6px;font-weight:700;">Repos : ' + reposCount + '</span>';
+    }
+    badgesHtml += '</div>';
+
+    var commentHtml = '';
+    if (sugg.commentaire && sugg.commentaire.trim().length > 0) {
+      commentHtml = '<div style="background:#fff;border-left:3px solid #8b5cf6;padding:6px 10px;border-radius:0 6px 6px 0;font-size:0.78rem;font-style:italic;color:#4b5563;">' +
+        '💬 « ' + sugg.commentaire + ' »' +
+      '</div>';
+    }
+
+    var actionsHtml = '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">' +
+      '<button type="button" class="btn-save" style="margin:0;padding:6px 14px;font-size:0.8rem;background:#8b5cf6;border-color:#7c3aed;font-weight:800;" onclick="chargerSuggestionJoueurDansCompo(' + idx + ')">📥 Charger cette composition</button>' +
+    '</div>';
+
+    card.innerHTML = headerHtml + commentHtml + badgesHtml + actionsHtml;
+    c.appendChild(card);
+  });
+
+  document.getElementById("modalSuggestionsCoachBg").style.display = "flex";
+}
+
+function fermerModalSuggestionsCoach() {
+  var m = document.getElementById("modalSuggestionsCoachBg");
+  if (m) m.style.display = "none";
+}
+
+function fermerModalSuggestionsCoachSurBg(e) {
+  if (e && e.target && e.target.id === "modalSuggestionsCoachBg") fermerModalSuggestionsCoach();
+}
+
+function chargerSuggestionJoueurDansCompo(idx) {
+  var sugg = SUGGESTIONS_COMPOS[idx];
+  if (!sugg || !sugg.compo) {
+    afficherToast("Données de suggestion invalides.", "erreur");
+    return;
+  }
+  fermerModalSuggestionsCoach();
+  appliquerRepartitionsCompo(sugg.compo);
+  afficherToast("💡 Composition proposée par " + (sugg.nom || "le joueur") + " chargée sur le terrain !", "succes");
+  if (typeof confetti === "function") confetti({ particleCount: 50, spread: 60 });
+  entrer(false);
+}
+
+function supprimerSuggestionCoach(rowNumber) {
+  if (!confirm("Voulez-vous supprimer cette suggestion de joueur ?")) return;
+  afficherLoading("Suppression...", "Suppression de la suggestion...");
+  google.script.run
+    .withSuccessHandler(function(res) {
+      masquerLoading();
+      afficherToast("Suggestion supprimée.", "info");
+      chargerDonneesCoach();
+      fermerModalSuggestionsCoach();
+    })
+    .withFailureHandler(function(err) {
+      masquerLoading();
+      afficherToast("Erreur : " + err.message, "erreur");
+    })
+    .supprimerSuggestionCompo(rowNumber);
+}
+
 function demarrerApp(){
   try { basculerVue("homeView"); } catch(eVue){}
   try { initialiserThemeCarnet(); } catch(eTheme){}
