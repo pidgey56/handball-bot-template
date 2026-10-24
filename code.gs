@@ -5516,6 +5516,11 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: stats }))
         .setMimeType(ContentService.MimeType.JSON);
     }
+    if (e.parameter.action === 'getSuggestions') {
+      const suggs = getSuggestionsComposData();
+      return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: suggs }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
   }
 
   const cfg = getClubConfig();
@@ -5562,6 +5567,9 @@ function doPost(e) {
       'getDonneesCoach': getDonneesCoach,
       'authentifierUtilisateur': authentifierUtilisateur,
       'enregistrerCompoEtPublier': enregistrerCompoEtPublier,
+      'soumettreSuggestionCompo': soumettreSuggestionCompo,
+      'getSuggestionsCompos': getSuggestionsComposData,
+      'supprimerSuggestionCompo': supprimerSuggestionCompo,
       'enregistrerBrouillonCompo': enregistrerBrouillonCompo,
       'recupererBrouillonCompo': recupererBrouillonCompo,
       'enregistrerEntrainementEtPublier': enregistrerEntrainementEtPublier,
@@ -6070,6 +6078,7 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
     caisseNoire: getCaisseNoireData(),
     vacances: getVacancesData(ss),
     statsSpakta: recupererStatsSpaktaClub(),
+    suggestionsCompos: getSuggestionsComposData(ss),
     clubConfig: {
       nomClub: cfg.nomClub,
       logoUrl: cfg.logoUrl,
@@ -6110,6 +6119,162 @@ function enregistrerCompoEtPublier(compo, envoyerWhatsApp, messageWhatsApp) {
 
   // Note : La diffusion automatique via bot WhatsApp a été remplacée par la copie instantanée presse-papier / partage natif
   return { ok: true, date: horodatage };
+}
+
+/**
+ * HANDBALL BOT 2.0 - SUGGESTIONS DE COMPOSITION DES JOUEURS
+ */
+function getOrCreateSheetSuggestions(ssOpt) {
+  const ss = ssOpt || getSpreadsheet();
+  let sh = ss.getSheetByName('Suggestions_Compos');
+  if (!sh) {
+    sh = ss.insertSheet('Suggestions_Compos');
+    sh.appendRow(['Horodatage', 'Nom Joueur', 'Telephone', 'Equipe 1', 'Equipe 2', 'Equipe 3', 'Repos', 'Non Retenus', 'Commentaire', 'JsonData']);
+    sh.getRange('A1:J1').setBackground('#1e293b').setFontColor('#ffffff').setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function soumettreSuggestionCompo(compo, commentaire, telephone, pin) {
+  if (!compo) throw new Error('Composition vide');
+  const ss = getSpreadsheet();
+  
+  // Identifier l'auteur
+  let nomJoueur = String(compo.nomAuteur || compo.auteur || '').trim();
+  let telNormalise = normaliserNumero(telephone || compo.telephone || '');
+  
+  if (!nomJoueur && telNormalise) {
+    const shEff = ss.getSheetByName('Effectif');
+    if (shEff) {
+      const rowsEff = shEff.getDataRange().getValues();
+      for (let i = 1; i < rowsEff.length; i++) {
+        if (normaliserNumero(dechiffrerNumero(rowsEff[i][1])) === telNormalise) {
+          nomJoueur = String(rowsEff[i][0] || '').trim();
+          break;
+        }
+      }
+    }
+  }
+  if (!nomJoueur) nomJoueur = 'Joueur';
+
+  const sh = getOrCreateSheetSuggestions(ss);
+  const horodatage = Utilities.formatDate(new Date(), 'Europe/Paris', 'dd/MM/yyyy HH:mm');
+  const eq1 = (compo.equipe1B || []).join(', ');
+  const eq2 = (compo.equipe1C || []).join(', ');
+  const eq3 = (compo.equipe1D || []).join(', ');
+  const repos = (compo.repos || []).join(', ');
+  const nonRet = (compo.nonRetenus || []).join(', ');
+  const comm = String(commentaire || compo.commentaire || '').trim();
+  const jsonStr = JSON.stringify(compo);
+
+  // Mettre à jour si ce joueur a déjà soumis une suggestion
+  const rows = sh.getDataRange().getValues();
+  let rowTrouvee = -1;
+  for (let r = 1; r < rows.length; r++) {
+    const rNom = String(rows[r][1] || '').trim().toLowerCase();
+    const rTel = normaliserNumero(rows[r][2] || '');
+    if ((nomJoueur && rNom === nomJoueur.toLowerCase()) || (telNormalise && rTel === telNormalise)) {
+      rowTrouvee = r + 1; // 1-based row
+      break;
+    }
+  }
+
+  const valuesRow = [horodatage, nomJoueur, telNormalise, eq1, eq2, eq3, repos, nonRet, comm, jsonStr];
+
+  if (rowTrouvee !== -1) {
+    sh.getRange(rowTrouvee, 1, 1, valuesRow.length).setValues([valuesRow]);
+  } else {
+    sh.appendRow(valuesRow);
+  }
+
+  try { CacheService.getScriptCache().remove('COACH_DATA_CACHE'); } catch (ce) {}
+
+  return {
+    ok: true,
+    auteur: nomJoueur,
+    date: horodatage,
+    message: 'Votre suggestion a été transmise au coach avec succès !'
+  };
+}
+
+function getSuggestionsComposData(ssOpt) {
+  try {
+    const ss = ssOpt || getSpreadsheet();
+    const sh = ss.getSheetByName('Suggestions_Compos');
+    if (!sh || sh.getLastRow() <= 1) return [];
+
+    const rows = sh.getDataRange().getValues();
+    const suggestions = [];
+
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      const horod = String(row[0] || '').trim();
+      const nom = String(row[1] || '').trim();
+      if (!nom) continue;
+
+      const tel = String(row[2] || '').trim();
+      const eq1Str = String(row[3] || '').trim();
+      const eq2Str = String(row[4] || '').trim();
+      const eq3Str = String(row[5] || '').trim();
+      const reposStr = String(row[6] || '').trim();
+      const nonRetStr = String(row[7] || '').trim();
+      const comm = String(row[8] || '').trim();
+      const jsonRaw = String(row[9] || '').trim();
+
+      let compoObj = null;
+      if (jsonRaw) {
+        try { compoObj = JSON.parse(jsonRaw); } catch (e) {}
+      }
+      if (!compoObj) {
+        compoObj = {
+          equipe1B: eq1Str ? eq1Str.split(',').map(s => s.trim()).filter(Boolean) : [],
+          equipe1C: eq2Str ? eq2Str.split(',').map(s => s.trim()).filter(Boolean) : [],
+          equipe1D: eq3Str ? eq3Str.split(',').map(s => s.trim()).filter(Boolean) : [],
+          repos: reposStr ? reposStr.split(',').map(s => s.trim()).filter(Boolean) : [],
+          nonRetenus: nonRetStr ? nonRetStr.split(',').map(s => s.trim()).filter(Boolean) : []
+        };
+      }
+
+      const eq1List = compoObj.equipe1B || [];
+      const eq2List = compoObj.equipe1C || [];
+      const eq3List = compoObj.equipe1D || [];
+      const reposList = compoObj.repos || [];
+
+      suggestions.push({
+        id: 'sugg_' + r,
+        rowNumber: r + 1,
+        horodatage: horod,
+        nom: nom,
+        telephone: tel,
+        commentaire: comm,
+        compo: compoObj,
+        resume: {
+          nbEq1: eq1List.length,
+          nbEq2: eq2List.length,
+          nbEq3: eq3List.length,
+          nbRepos: reposList.length,
+          totalSelectionnes: eq1List.length + eq2List.length + eq3List.length
+        }
+      });
+    }
+
+    return suggestions.reverse();
+  } catch (err) {
+    Logger.log('Erreur getSuggestionsComposData: ' + err.message);
+    return [];
+  }
+}
+
+function supprimerSuggestionCompo(rowNumber) {
+  const ss = getSpreadsheet();
+  const sh = ss.getSheetByName('Suggestions_Compos');
+  if (sh && rowNumber > 1 && rowNumber <= sh.getLastRow()) {
+    sh.deleteRow(rowNumber);
+    try { CacheService.getScriptCache().remove('COACH_DATA_CACHE'); } catch (ce) {}
+    return { ok: true };
+  }
+  return { ok: false };
 }
 
 function enregistrerEntrainementEtPublier(seance, typeSeance, groupes, nonRetenus, envoyerWhatsApp, messageWhatsApp) {

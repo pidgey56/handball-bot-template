@@ -26,7 +26,7 @@
   } catch(e) {}
 })();
 
-var APP_VERSION = '2.2.26';
+var APP_VERSION = '2.2.27';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -129,6 +129,7 @@ var SESSION_TEL = ""; var SESSION_PIN = ""; var SESSION_NOM = ""; var SESSION_ID
 var INFOS_MATCHS = null; var COVOITURAGE_DATA = { conducteurs: [], passagers: [] }; var VOTES_MVP_DATA = { totalVotes: 0, podiumMvp: [], monVoteMvp: "" }; var CHEVRE_DATA = { totalActions: 0, totalVotes: 0, actions: [], podiumChevre: [], monVoteActionId: "" }; var MES_ABSENCES = []; var STATUT_COVOIT_CHOISI = "conduis";
 var CAISSE_NOIRE_DATA = { config: { devise: "€", objectifCagnotte: 300, objectifDescription: "Resto & Tournée de fin d'année", moyenPaiement: "Lydia / Espèces au vestiaire", bareme: [] }, amendes: [], depenses: [], stats: { totalCollecte: 0, totalDu: 0, soldeCaisse: 0, totalDepenses: 0 } };
 var VACANCES_DATA = { periodes: [], enVacancesCetteSemaine: false, infoSemaine: {}, enVacancesAujourdhui: false, infoAujourdhui: {} };
+var SUGGESTIONS_COMPOS = [];
 var JOUEUR_MODAL_COURANT = null; var POSTE_MODAL_COURANT = ""; var PHOTO_MODAL_DATA = undefined;
 function afficherLoading(titre, sousTitre){
 var el = document.getElementById("globalLoadingScreen"); if(!el) return;
@@ -672,6 +673,7 @@ if(CLUB_CONFIG.nomClub){
 document.getElementById("homeClubName").textContent = CLUB_CONFIG.nomClub;
 document.getElementById("headerClubTitle").textContent = CLUB_CONFIG.nomClub + " - Compo Coach";
 }
+if(CLUB_CONFIG.logoUrl){ majClubLogoClient(CLUB_CONFIG.logoUrl); }
 if(CLUB_CONFIG.nomEquipe1){
 document.getElementById("labelCol1B").textContent = CLUB_CONFIG.nomEquipe1;
 document.getElementById("labelTinder1B").textContent = CLUB_CONFIG.nomEquipe1;
@@ -742,6 +744,8 @@ if(data.absences) MES_ABSENCES = data.absences;
 if(data.matchs) INFOS_MATCHS = data.matchs;
 if(data.caisseNoire) CAISSE_NOIRE_DATA = data.caisseNoire;
 if(data.vacances){ VACANCES_DATA = data.vacances; majBannieresVacances(); }
+if(data.suggestionsCompos && Array.isArray(data.suggestionsCompos)){ SUGGESTIONS_COMPOS = data.suggestionsCompos; }
+majAffichageSuggestions();
 if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);
 rendreRosterGrid(); majVueEntrainement();
 verifierBrouillonExistant();
@@ -1686,6 +1690,7 @@ lignes.push(""); lignes.push(" *" + titre1D + "* :"); lignes.push(l1D);
 return lignes.join("\n");
 }
 function sauvegarder(envoyerWhatsApp){
+if(!EST_COACH){ ouvrirModalSoumettreSuggestion(); return; }
 var compo = {
 equipe1B: extraireListeNoms("zone1B"),
 equipe1C: document.getElementById("zone1C") ? extraireListeNoms("zone1C") : [],
@@ -1923,11 +1928,12 @@ function majAffichageModesParDefaut(){
     }
   }
 }
-function retourAccueil(){ basculerVue("homeView"); }
+function retourAccueil(){ basculerVue("homeView"); majAffichageSuggestions(); }
 function entrer(demarrerEnTinder){
   basculerVue("appView");
   var tinder = (demarrerEnTinder !== undefined && demarrerEnTinder !== null) ? !!demarrerEnTinder : estAppareilMobile();
   choisirMode(tinder);
+  majAffichageSuggestions();
 }
 function entrerEntrainement(demarrerEnTinder){
 rendreOngletsTrain();
@@ -2006,6 +2012,7 @@ google.script.run.withSuccessHandler(function(data){ appliquerDonneesRecues(data
 }).withFailureHandler(function(err){
 masquerLoading();
 seDeconnecter(false);
+chargerDonneesCoach(false);
 var bLogin = document.getElementById("btnLogin"); if(bLogin) { bLogin.disabled = false; bLogin.textContent = "Se connecter"; }
 var errEl = document.getElementById("loginError"); if(errEl) errEl.textContent = (err && (err.message || err)) || "Identifiants invalides.";
 }).authentifierUtilisateur(tel, pin, true);
@@ -2890,6 +2897,7 @@ badgeCoachCaisse.textContent = (CAISSE_NOIRE_DATA.stats.soldeCaisse || 0) + " �
 if(descCoachCaisse) descCoachCaisse.textContent = "Gérer les amendes, encaissements, dépenses d'équipe et barème";
 }
 }
+majAffichageSuggestions();
 }
 function ouvrirModalMvp(){
 remplirSelectsMvp();
@@ -5856,6 +5864,7 @@ function demarrerApp(){
       seConnecter(aChargeDepuisCache);
     } else {
       masquerLoading();
+      chargerDonneesCoach(false);
     }
   } catch(e){ masquerLoading(); }
   setTimeout(function(){ masquerLoading(); }, 2500);
