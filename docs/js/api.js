@@ -35,7 +35,19 @@ const ApiClient = {
     const queryApi = params ? params.get('api') : null;
     if (queryApi) {
       var cleanedQ = assainirUrlApi(queryApi);
-      try { localStorage.setItem('hb_api_url', cleanedQ); } catch(e){}
+      try {
+        var prevUrl = localStorage.getItem('hb_api_url');
+        if (prevUrl && prevUrl !== cleanedQ) {
+          // Changement d'API / de club : purger le cache et la session de l'ancien club
+          localStorage.removeItem('hb_cache_data');
+          localStorage.removeItem('hb_session');
+          localStorage.removeItem('hb_tel');
+          localStorage.removeItem('hb_pin');
+          localStorage.removeItem('hb_draft_compo');
+          localStorage.removeItem('hb_spakta_stats');
+        }
+        localStorage.setItem('hb_api_url', cleanedQ);
+      } catch(e){}
       return cleanedQ;
     }
     try {
@@ -58,8 +70,20 @@ const ApiClient = {
   // Enregistrer une nouvelle URL de Google Sheet API
   setBaseUrl: function(url) {
     if (!url) return;
-    this.baseUrl = assainirUrlApi(url);
-    try { localStorage.setItem('hb_api_url', this.baseUrl); } catch(e){}
+    var cleaned = assainirUrlApi(url);
+    try {
+      var prevUrl = localStorage.getItem('hb_api_url');
+      if (prevUrl && prevUrl !== cleaned) {
+        localStorage.removeItem('hb_cache_data');
+        localStorage.removeItem('hb_session');
+        localStorage.removeItem('hb_tel');
+        localStorage.removeItem('hb_pin');
+        localStorage.removeItem('hb_draft_compo');
+        localStorage.removeItem('hb_spakta_stats');
+      }
+      localStorage.setItem('hb_api_url', cleaned);
+    } catch(e){}
+    this.baseUrl = cleaned;
     this.majBadgeStatut();
   },
 
