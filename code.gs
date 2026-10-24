@@ -24,8 +24,8 @@ const LOGO_OFFICIEL_ACBB = 'https://media-logos-clubs.ffhandball.fr/256/2023-06-
 // Logo de secours (Handball SVG moderne généré dynamiquement selon la couleur principale)
 function genererLogoDefaut(couleur) {
   const c = couleur || '#f97316';
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="' + c + '"><circle cx="12" cy="12" r="10" stroke="#cbd5e1" stroke-width="1.5" fill="#1e293b"/><path d="M12 2a10 10 0 0 0 0 20M2 12a10 10 0 0 0 20 0M4.93 4.93l14.14 14.14M4.93 19.07l14.14-14.14" stroke="#cbd5e1" stroke-width="1.2" fill="none"/></svg>';
-  return LOGO_OFFICIEL_ACBB;
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="' + c + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
 const LOGO_DEFAULT = genererLogoDefaut('#f97316');
@@ -434,7 +434,7 @@ function getClubConfig(ss) {
   const couleurEquipe2 = normaliserCouleurHex(getVal('C29', c2Def), c2Def);
   const couleurEquipe3 = normaliserCouleurHex(getVal('C30', c3Def), c3Def);
 
-  const logoFinal = (logoUrlRaw && logoUrlRaw !== LOGO_DEFAULT && !logoUrlRaw.includes('data:image/svg+xml')) ? convertirUrlPhoto(logoUrlRaw) : LOGO_OFFICIEL_ACBB;
+  const logoFinal = logoUrlRaw ? convertirUrlPhoto(logoUrlRaw) : genererLogoDefaut(couleurPrimaire);
 
   const labelEq1 = (equipesActives[0] && equipesActives[0].labelSondage) ? equipesActives[0].labelSondage : 'Équipe 1';
   const labelEq2 = (equipesActives[1] && equipesActives[1].labelSondage) ? equipesActives[1].labelSondage : 'Équipe 2';
