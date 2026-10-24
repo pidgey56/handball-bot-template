@@ -3,15 +3,15 @@
 // Gestion du cache hors-ligne et fonctionnement PWA (v2.2.24)
 // ============================================================================
 
-const CACHE_NAME = 'handball-app-v2.2.24';
+const CACHE_NAME = 'handball-app-v2.2.25';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './css/style.css?v=2.2.24',
-  './js/api.js?v=2.2.24',
-  './js/spakta-data.js?v=2.2.24',
-  './js/spakta-data.json?v=2.2.24',
-  './js/app.js?v=2.2.24',
+  './css/style.css?v=2.2.25',
+  './js/api.js?v=2.2.25',
+  './js/spakta-data.js?v=2.2.25',
+  './js/spakta-data.json?v=2.2.25',
+  './js/app.js?v=2.2.25',
   './manifest.json',
   './images/logo.png',
   './images/logo.svg',

@@ -1,7 +1,25 @@
 // ============================================================================
 // HANDBALL BOT 2.0 - APPLICATION FRONTEND
 // ============================================================================
-var APP_VERSION = '2.2.8';
+// Détection automatique de changement de club via le paramètre ?api= dans l'URL ou ?reset=1
+(function() {
+  try {
+    if (typeof window !== 'undefined' && window.location && window.location.search) {
+      var p = new URLSearchParams(window.location.search);
+      var qApi = p.get('api');
+      var doReset = p.get('reset') || p.get('logout');
+      var storedApi = localStorage.getItem('hb_api_url') || '';
+      if (doReset || (qApi && qApi.trim() !== storedApi.trim())) {
+        var toSave = qApi ? qApi.trim() : storedApi;
+        console.log('[Handball Bot] Nouveau club ou réinitialisation demandée : purge du stockage local.');
+        localStorage.clear();
+        if (toSave) localStorage.setItem('hb_api_url', toSave);
+      }
+    }
+  } catch(e) {}
+})();
+
+var APP_VERSION = '2.2.25';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -1980,11 +1998,12 @@ google.script.run.withSuccessHandler(function(data){ appliquerDonneesRecues(data
 }
 }).withFailureHandler(function(err){
 masquerLoading();
-document.getElementById("btnLogin").disabled = false;
-var bLogin = document.getElementById("btnLogin"); if(bLogin) { bLogin.disabled = false; bLogin.textContent = "Se connecter"; } document.getElementById("loginError").textContent = err.message || err;
+seDeconnecter(false);
+var bLogin = document.getElementById("btnLogin"); if(bLogin) { bLogin.disabled = false; bLogin.textContent = "Se connecter"; }
+var errEl = document.getElementById("loginError"); if(errEl) errEl.textContent = (err && (err.message || err)) || "Identifiants invalides.";
 }).authentifierUtilisateur(tel, pin, true);
 }
-function seDeconnecter(){
+function seDeconnecter(doReload){
 try {
   localStorage.removeItem("hb_pin");
   localStorage.removeItem("hb_tel");
@@ -1996,14 +2015,16 @@ SESSION_TEL = ""; SESSION_PIN = ""; SESSION_NOM = ""; SESSION_ID_SPAKTA = ""; ES
 document.body.classList.remove("user-logged-in");
 var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "none";
 var navTabs = document.getElementById("carnetNavTabs"); if(navTabs) navTabs.style.display = "none";
-document.getElementById("coachMenuBox").style.display = "none";
-document.getElementById("playerBox").style.display = "none";
-document.getElementById("loginBox").style.display = "flex";
+var coachMenu = document.getElementById("coachMenuBox"); if(coachMenu) coachMenu.style.display = "none";
+var playerBox = document.getElementById("playerBox"); if(playerBox) playerBox.style.display = "none";
+var loginBox = document.getElementById("loginBox"); if(loginBox) loginBox.style.display = "flex";
 document.getElementById("inpPin").value = "";
 document.getElementById("inpTel").value = "";
 var pPrv = document.getElementById("playerImgPreview"); if(pPrv){ pPrv.src = ""; pPrv.removeAttribute("src"); pPrv.style.setProperty("display", "none", "important"); }
 retourAccueil();
-window.location.reload();
+if (doReload !== false) {
+  window.location.reload();
+}
 }
 function changerMonPoste(){
 var np = document.getElementById("selPosteJoueur").value;
