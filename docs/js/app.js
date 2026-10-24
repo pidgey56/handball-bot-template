@@ -26,7 +26,7 @@
   } catch(e) {}
 })();
 
-var APP_VERSION = '2.2.27';
+var APP_VERSION = '2.2.28';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -749,8 +749,7 @@ majAffichageSuggestions();
 if(SESSION_NOM) majEspaceJoueur(SESSION_NOM);
 rendreRosterGrid(); majVueEntrainement();
 verifierBrouillonExistant();
-var bWa = document.getElementById("txtStatusWhatsApp");
-if(bWa) bWa.textContent = "WhatsApp Connecté • Synchronisé";
+majStatutWhatsAppClient();
   } catch(err){ console.error("Erreur appliquerDonneesRecues:", err); }
   finally { masquerLoading(); }
 }
@@ -5682,6 +5681,7 @@ function getNomMode(mode) {
 
 function appliquerModeFonctionnementVisuel(mode) {
   var m = mode || MODE_FONCTIONNEMENT || "FFHB_ONLY";
+  setTimeout(majStatutWhatsAppClient, 50);
   var btnF = document.getElementById("btnModeFFHB");
   var btnL = document.getElementById("btnModeLoisir");
   var btnC = document.getElementById("btnModeComplet");
@@ -6098,6 +6098,51 @@ function supprimerSuggestionCoach(rowNumber) {
       afficherToast("Erreur : " + err.message, "erreur");
     })
     .supprimerSuggestionCompo(rowNumber);
+}
+
+
+// ============================================================================
+// GESTION DU STATUT WHATSAPP (v2.2.28)
+// ============================================================================
+function majStatutWhatsAppClient() {
+  var bWhatsApp = document.getElementById("badgeStatusWhatsApp");
+  var dotPulse = document.getElementById("dotPulseWhatsApp");
+  var dotCore = document.getElementById("dotCoreWhatsApp");
+  var txtWa = document.getElementById("txtStatusWhatsApp");
+  if (!bWhatsApp) return;
+
+  var mode = MODE_FONCTIONNEMENT || (CLUB_CONFIG && CLUB_CONFIG.modeFonctionnement) || "FFHB_ONLY";
+  var isConfigured = Boolean(CLUB_CONFIG && CLUB_CONFIG.isWhatsAppConfigured);
+  var statut = (CLUB_CONFIG && CLUB_CONFIG.whatsappStatut) || (isConfigured ? "connecte" : "non_configure");
+
+  // Si on est en mode sans WhatsApp (FFHB_ONLY ou PRESENCES_ONLY) ou si WhatsApp n'est pas configuré
+  if (mode === "FFHB_ONLY" || mode === "PRESENCES_ONLY" || !isConfigured) {
+    bWhatsApp.style.display = "none";
+    return;
+  }
+
+  // Mode COMPLET avec WhatsApp configuré
+  bWhatsApp.style.display = "inline-flex";
+  if (statut === "connecte") {
+    if (dotPulse) dotPulse.style.background = "#22c55e";
+    if (dotCore) dotCore.style.background = "#22c55e";
+    if (txtWa) txtWa.textContent = "WhatsApp Connecté";
+    bWhatsApp.setAttribute("title", "WhatsApp Connecté & Synchronisé");
+  } else {
+    if (dotPulse) dotPulse.style.background = "#f59e0b";
+    if (dotCore) dotCore.style.background = "#f59e0b";
+    if (txtWa) txtWa.textContent = "WhatsApp En attente";
+    bWhatsApp.setAttribute("title", "WhatsApp en attente de synchronisation");
+  }
+}
+
+function clicBadgeWhatsApp() {
+  var isConfigured = Boolean(CLUB_CONFIG && CLUB_CONFIG.isWhatsAppConfigured);
+  if (isConfigured) {
+    afficherToast("WhatsApp Connecté & Synchronisé avec le groupe d'équipe !", "succes");
+  } else {
+    afficherToast("WhatsApp non configuré. Renseignez votre Groupe ID dans Configuration ou utilisez le Mode FFHB Uniquement.", "info");
+  }
 }
 
 function demarrerApp(){

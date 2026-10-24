@@ -529,8 +529,17 @@ function getClubConfig(ss) {
       }
     } catch (eSh) {}
   }
+  // Détection précise si WhatsApp est réellement configuré (vrai Group ID et dépôt GitHub lié)
+  const cleanGid = String(groupId || '').trim();
+  const isDummyGroupId = !cleanGid || cleanGid === '120363000000000000@g.us' || !cleanGid.includes('@g.us');
+  const cleanRepo = String(githubRepo || '').trim();
+  const isDummyRepo = !cleanRepo || cleanRepo.includes('mon-club') || cleanRepo.includes('template');
+  const hasToken = !!githubToken || (function(){ try { return !!PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN'); } catch(e){ return false; } })();
+  const isWhatsAppConfigured = !isDummyGroupId && !isDummyRepo && hasToken;
+  const whatsappStatut = isWhatsAppConfigured ? 'connecte' : 'non_configure';
+
   if (!['COMPLET', 'FFHB_ONLY', 'PRESENCES_ONLY'].includes(modeFonctionnement)) {
-    if (!githubRepo && !githubToken) {
+    if (!isWhatsAppConfigured) {
       modeFonctionnement = urlFfhbClub ? 'FFHB_ONLY' : 'PRESENCES_ONLY';
     } else {
       modeFonctionnement = 'COMPLET';
@@ -578,7 +587,9 @@ function getClubConfig(ss) {
     chouchou: chouchouConfig,
     mvp: mvpConfig,
     chevre: chevreConfig,
-    modeFonctionnement: modeFonctionnement
+    modeFonctionnement: modeFonctionnement,
+    isWhatsAppConfigured: isWhatsAppConfigured,
+    whatsappStatut: whatsappStatut
   };
 }
 
@@ -5503,7 +5514,7 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'ping') {
-      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.23' }))
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', version: '2.2.28' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     if (e.parameter.action === 'getDonneesCoach') {
@@ -6084,6 +6095,9 @@ function lireDonneesCoach(ssOpt, cfgOpt) {
       logoUrl: cfg.logoUrl,
       githubRepo: cfg.githubRepo,
       groupId: cfg.groupId,
+      isWhatsAppConfigured: Boolean(cfg.isWhatsAppConfigured),
+      whatsappStatut: cfg.whatsappStatut || 'non_configure',
+      modeFonctionnement: cfg.modeFonctionnement || 'FFHB_ONLY',
       nbEquipes: cfg.nbEquipes,
       equipes: cfg.equipes,
       nomEquipe1: cfg.nomEquipe1,
