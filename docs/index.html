@@ -41,7 +41,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.29">
+  <link rel="stylesheet" href="css/style.css?v=2.2.30">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -643,7 +643,8 @@
 <footer id="appFooter" style="display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:22px auto 36px auto;padding:12px 20px;">
 <button type="button" class="btn-reset btn-footer-action" onclick="recommencerSelection()"><svg class="hb-icon"><use href="#icon-refresh"></use></svg> Réinitialiser</button>
 <button type="button" class="btn-save btn-footer-draft" onclick="sauvegarderBrouillonLocal(true)"><svg class="hb-icon"><use href="#icon-save"></use></svg> Sauvegarder Brouillon</button>
-<button type="button" class="btn-save btn-footer-action" id="btnFooterSuggestionsCoach" onclick="ouvrirModalSuggestionsCoach()" style="display:none;background:#8b5cf6;border-color:#7c3aed;"><svg class="hb-icon"><use href="#icon-lightbulb"></use></svg> Suggestions Joueurs <span id="badgeFooterSuggestionsCount" style="margin-left:4px;padding:1px 6px;border-radius:10px;background:#fff;color:#7c3aed;font-size:0.72rem;font-weight:900;">0</span></button>
+<button type="button" class="btn-save btn-footer-action" id="btnFooterSuggestionsCoach" onclick="ouvrirModalSuggestionsCoach()" style="display:none;background:#8b5cf6;border-color:#7c3aed;"><svg class="hb-icon"><use href="#icon-lightbulb"></use></svg> Suggestions <span id="badgeFooterSuggestionsCount" style="margin-left:4px;padding:1px 6px;border-radius:10px;background:#fff;color:#7c3aed;font-size:0.72rem;font-weight:900;">0</span></button>
+<button type="button" class="btn-save btn-footer-action" id="btnFooterSuggCoach" onclick="ouvrirModalSoumettreSuggestion()" style="display:none;background:#7c3aed;border-color:#6d28d9;color:#fff;"><svg class="hb-icon"><use href="#icon-lightbulb"></use></svg> Proposer aux coachs</button>
 <button type="button" class="btn-reset btn-footer-action" id="btnChargerCompoPrec" onclick="rechargerCompoPrecedente()"><svg class="hb-icon"><use href="#icon-refresh"></use></svg> Charger compo précédente</button>
 <button type="button" class="btn-save btn-footer-save" id="btnSauvegarderFooter" onclick="sauvegarder(false)"><span id="txtBtnSauvegarderFooter"><svg class="hb-icon"><use href="#icon-check"></use></svg> Sauvegarder</span></button>
 <button type="button" class="btn-wa btn-footer-wa" onclick="ouvrirApercuMatch()"><svg class="hb-icon"><use href="#icon-court"></use></svg> Aperçu & Terrain tactique</button>
@@ -1786,6 +1787,7 @@
 <div class="preview-actions">
   <button type="button" class="btn-reset" onclick="retourApercu()">← Retour</button>
   <button type="button" class="btn-enter btn-preview-save" id="btnSavePreview" onclick="sauvegarderApercuDepuisTerrain()"><svg class="hb-icon"><use href="#icon-save"></use></svg> Sauvegarder</button>
+  <button type="button" class="btn-save btn-preview-save" id="btnCoachSuggFromPreview" style="display:none;background:#7c3aed;border-color:#6d28d9;color:#fff;" onclick="ouvrirModalSoumettreSuggestion()"><svg class="hb-icon"><use href="#icon-lightbulb"></use></svg> Proposer aux coachs</button>
   <button type="button" class="btn-share-native" id="btnSharePreviewNative" onclick="partagerMessageApercu()" style="display:none;" title="Partager directement via WhatsApp ou vos applications">
     <svg class="hb-icon"><use href="#icon-share"></use></svg> Partager...
   </button>
@@ -1801,15 +1803,15 @@
 </main>
 </div>
 
-  <!-- MODAL SUGGESTIONS DE COMPOSITIONS DES JOUEURS (POUR LE COACH) -->
+  <!-- MODAL SUGGESTIONS DE COMPOSITIONS (POUR LE COACH) -->
   <div class="modal-bg" id="modalSuggestionsCoachBg" onclick="fermerModalSuggestionsCoachSurBg(event)">
     <div class="modal-box" style="border-top:4px solid #8b5cf6;max-width:640px;">
       <div class="modal-header-modern">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:1.6rem;">💡</span>
           <div>
-            <h2 class="modal-title-modern" style="margin:0;">Suggestions de Compo des Joueurs</h2>
-            <p class="modal-desc-modern" style="margin:0;">Consultez les compositions proposées par vos joueurs et chargez-les en 1 clic.</p>
+            <h2 class="modal-title-modern" style="margin:0;">Suggestions & Variantes de Compo</h2>
+            <p class="modal-desc-modern" style="margin:0;">Consultez les compositions proposées par vos joueurs et vos confrères coachs, et chargez-les en 1 clic.</p>
           </div>
         </div>
         <button type="button" class="btn-reset" style="padding:4px 8px;font-size:1.1rem;" onclick="fermerModalSuggestionsCoach()">✕</button>
@@ -1823,15 +1825,15 @@
     </div>
   </div>
 
-  <!-- MODAL SOUMETTRE SUGGESTION (POUR LE JOUEUR) -->
+  <!-- MODAL SOUMETTRE SUGGESTION (POUR LE JOUEUR OU LE COACH) -->
   <div class="modal-bg" id="modalSoumettreSuggestionBg" onclick="fermerModalSoumettreSuggestionSurBg(event)">
     <div class="modal-box" style="border-top:4px solid #8b5cf6;max-width:480px;">
       <div class="modal-header-modern">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:1.6rem;">💡</span>
           <div>
-            <h2 class="modal-title-modern" style="margin:0;">Transmettre ma suggestion</h2>
-            <p class="modal-desc-modern" style="margin:0;">Proposez cette répartition d'équipes au coach pour le prochain match.</p>
+            <h2 class="modal-title-modern" id="titreModalSoumettreSuggestion" style="margin:0;">Transmettre ma suggestion</h2>
+            <p class="modal-desc-modern" id="descModalSoumettreSuggestion" style="margin:0;">Proposez cette répartition d'équipes au coach pour le prochain match.</p>
           </div>
         </div>
         <button type="button" class="btn-reset" style="padding:4px 8px;font-size:1.1rem;" onclick="fermerModalSoumettreSuggestion()">✕</button>
@@ -1840,7 +1842,7 @@
         <!-- Résumé dynamique des équipes sélectionnées -->
       </div>
       <div style="margin-top:12px;text-align:left;">
-        <label for="txtCommentaireSuggestion" style="font-size:0.8rem;font-weight:700;color:var(--text-main);display:block;margin-bottom:6px;">Un mot pour le coach ? (optionnel)</label>
+        <label for="txtCommentaireSuggestion" id="lblCommentaireSuggestion" style="font-size:0.8rem;font-weight:700;color:var(--text-main);display:block;margin-bottom:6px;">Un mot pour le coach ? (optionnel)</label>
         <textarea id="txtCommentaireSuggestion" class="inp-field" rows="3" placeholder="Ex : J'ai mis Sarah en SF1 car elle est très en forme, ou rotation testée à l'entraînement..." style="width:100%;box-sizing:border-box;resize:vertical;background:#fff;"></textarea>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
@@ -1869,13 +1871,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.29"></script>
-  <script src="js/api.js?v=2.2.29"></script>
-  <script src="js/app.js?v=2.2.29"></script>
+  <script src="js/spakta-data.js?v=2.2.30"></script>
+  <script src="js/api.js?v=2.2.30"></script>
+  <script src="js/app.js?v=2.2.30"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.29').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.30').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

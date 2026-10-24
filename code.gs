@@ -6153,10 +6153,19 @@ function getOrCreateSheetSuggestions(ssOpt) {
 function soumettreSuggestionCompo(compo, commentaire, telephone, pin) {
   if (!compo) throw new Error('Composition vide');
   const ss = getSpreadsheet();
+  const cfg = getConfig(ss);
   
+  let telNormalise = normaliserNumero(telephone || compo.telephone || '');
+  let isAuteurCoach = Boolean(compo.estCoach === true || compo.roleAuteur === 'coach');
+  if (!isAuteurCoach && pin && cfg.coachPin && String(pin).trim() === String(cfg.coachPin).trim()) {
+    isAuteurCoach = true;
+  }
+  if (!isAuteurCoach && telNormalise && cfg.adminPhones && cfg.adminPhones.indexOf(telNormalise) !== -1) {
+    isAuteurCoach = true;
+  }
+
   // Identifier l'auteur
   let nomJoueur = String(compo.nomAuteur || compo.auteur || '').trim();
-  let telNormalise = normaliserNumero(telephone || compo.telephone || '');
   
   if (!nomJoueur && telNormalise) {
     const shEff = ss.getSheetByName('Effectif');
@@ -6170,7 +6179,13 @@ function soumettreSuggestionCompo(compo, commentaire, telephone, pin) {
       }
     }
   }
-  if (!nomJoueur) nomJoueur = 'Joueur';
+  if (!nomJoueur) {
+    nomJoueur = isAuteurCoach ? 'Coach' : 'Joueur';
+  }
+
+  compo.estCoach = isAuteurCoach;
+  compo.roleAuteur = isAuteurCoach ? 'coach' : 'joueur';
+  compo.nomAuteur = nomJoueur;
 
   const sh = getOrCreateSheetSuggestions(ss);
   const horodatage = Utilities.formatDate(new Date(), 'Europe/Paris', 'dd/MM/yyyy HH:mm');
@@ -6182,7 +6197,7 @@ function soumettreSuggestionCompo(compo, commentaire, telephone, pin) {
   const comm = String(commentaire || compo.commentaire || '').trim();
   const jsonStr = JSON.stringify(compo);
 
-  // Mettre à jour si ce joueur a déjà soumis une suggestion
+  // Mettre à jour si cet auteur a déjà soumis une suggestion
   const rows = sh.getDataRange().getValues();
   let rowTrouvee = -1;
   for (let r = 1; r < rows.length; r++) {
@@ -6207,8 +6222,11 @@ function soumettreSuggestionCompo(compo, commentaire, telephone, pin) {
   return {
     ok: true,
     auteur: nomJoueur,
+    estCoach: isAuteurCoach,
     date: horodatage,
-    message: 'Votre suggestion a été transmise au coach avec succès !'
+    message: isAuteurCoach 
+      ? 'Votre proposition a été transmise aux autres coachs avec succès !'
+      : 'Votre suggestion a été transmise au coach avec succès !'
   };
 }
 
@@ -6254,6 +6272,7 @@ function getSuggestionsComposData(ssOpt) {
       const eq2List = compoObj.equipe1C || [];
       const eq3List = compoObj.equipe1D || [];
       const reposList = compoObj.repos || [];
+      const estCoach = Boolean(compoObj && (compoObj.estCoach === true || compoObj.roleAuteur === 'coach'));
 
       suggestions.push({
         id: 'sugg_' + r,
@@ -6263,6 +6282,8 @@ function getSuggestionsComposData(ssOpt) {
         telephone: tel,
         commentaire: comm,
         compo: compoObj,
+        estCoach: estCoach,
+        roleAuteur: estCoach ? 'coach' : 'joueur',
         resume: {
           nbEq1: eq1List.length,
           nbEq2: eq2List.length,

@@ -26,7 +26,7 @@
   } catch(e) {}
 })();
 
-var APP_VERSION = '2.2.29';
+var APP_VERSION = '2.2.30';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");
@@ -5778,12 +5778,14 @@ window.basculerThemeCarnet = function() {};
 
 
 // ============================================================================
-// SUGGESTIONS DE COMPOSITIONS PAR LES JOUEURS (v2.2.27)
+// SUGGESTIONS DE COMPOSITIONS PAR LES JOUEURS ET LES COACHS (v2.2.30)
 // ============================================================================
 function extraireCompoActuellePourSuggestion() {
   return {
-    nomAuteur: SESSION_NOM || "Joueur",
+    nomAuteur: SESSION_NOM || (EST_COACH ? "Coach" : "Joueur"),
     telephone: SESSION_TEL || "",
+    estCoach: Boolean(EST_COACH),
+    roleAuteur: EST_COACH ? "coach" : "joueur",
     equipe1B: extraireListeNoms("zone1B"),
     equipe1C: document.getElementById("zone1C") ? extraireListeNoms("zone1C") : [],
     equipe1D: document.getElementById("zone1D") ? extraireListeNoms("zone1D") : [],
@@ -5812,6 +5814,8 @@ function majAffichageSuggestions() {
   var badgeHead = document.getElementById("badgeHeaderSuggestionsCount");
   var btnFoot = document.getElementById("btnFooterSuggestionsCoach");
   var badgeFoot = document.getElementById("badgeFooterSuggestionsCount");
+  var btnFootCoachSugg = document.getElementById("btnFooterSuggCoach");
+  var btnCoachPrvSugg = document.getElementById("btnCoachSuggFromPreview");
   var bannerJoueur = document.getElementById("bannerSuggestionJoueur");
   var boxPlayerStatut = document.getElementById("boxPlayerSuggestionStatut");
   var txtPlayerStatut = document.getElementById("txtPlayerSuggestionStatut");
@@ -5829,7 +5833,7 @@ function majAffichageSuggestions() {
   if (EST_COACH) {
     if (boxCoachAlerte) {
       boxCoachAlerte.style.display = nbSugg > 0 ? "block" : "none";
-      if (txtCoachCount) txtCoachCount.textContent = nbSugg + " suggestion" + (nbSugg > 1 ? "s" : "") + " de composition reçue" + (nbSugg > 1 ? "s" : "");
+      if (txtCoachCount) txtCoachCount.textContent = nbSugg + " proposition" + (nbSugg > 1 ? "s" : "") + " / suggestion" + (nbSugg > 1 ? "s" : "") + " de composition reçue" + (nbSugg > 1 ? "s" : "");
     }
     if (btnHead) {
       btnHead.style.display = nbSugg > 0 ? "inline-flex" : "none";
@@ -5839,6 +5843,9 @@ function majAffichageSuggestions() {
       btnFoot.style.display = nbSugg > 0 ? "inline-flex" : "none";
       if (badgeFoot) badgeFoot.textContent = nbSugg;
     }
+    if (btnFootCoachSugg) btnFootCoachSugg.style.display = "inline-flex";
+    if (btnCoachPrvSugg) btnCoachPrvSugg.style.display = "inline-flex";
+
     if (bannerJoueur) bannerJoueur.style.display = "none";
     if (boxPlayerStatut) boxPlayerStatut.style.display = "none";
 
@@ -5859,6 +5866,8 @@ function majAffichageSuggestions() {
     if (boxCoachAlerte) boxCoachAlerte.style.display = "none";
     if (btnHead) btnHead.style.display = "none";
     if (btnFoot) btnFoot.style.display = "none";
+    if (btnFootCoachSugg) btnFootCoachSugg.style.display = "none";
+    if (btnCoachPrvSugg) btnCoachPrvSugg.style.display = "none";
 
     if (tileTitle) tileTitle.textContent = "💡 Suggérer une Composition au Coach";
     if (tileDesc) tileDesc.textContent = "Proposez votre vision d'équipe au coach en Mode Tactique ou Tinder !";
@@ -5907,6 +5916,27 @@ function ouvrirModalSoumettreSuggestion() {
     afficherToast("Veuillez sélectionner au moins un joueur dans une équipe avant de soumettre.", "info");
     return;
   }
+
+  var tTitre = document.getElementById("titreModalSoumettreSuggestion");
+  var tDesc = document.getElementById("descModalSoumettreSuggestion");
+  var lblComm = document.getElementById("lblCommentaireSuggestion");
+  var txtComm = document.getElementById("txtCommentaireSuggestion");
+  var btnConf = document.getElementById("btnConfirmerEnvoiSuggestion");
+
+  if (EST_COACH) {
+    if (tTitre) tTitre.textContent = "Proposer une variante aux coachs";
+    if (tDesc) tDesc.textContent = "Partagez cette idée de composition avec vos confrères coachs sans écraser la compo officielle.";
+    if (lblComm) lblComm.textContent = "Notes / Consignes tactiques pour les coachs (optionnel) :";
+    if (txtComm) txtComm.placeholder = "Ex : Test variante avec Alex en demi-centre et rotation Lucas / Thomas...";
+    if (btnConf) btnConf.innerHTML = "🚀 Partager la variante";
+  } else {
+    if (tTitre) tTitre.textContent = "Transmettre ma suggestion";
+    if (tDesc) tDesc.textContent = "Proposez cette répartition d'équipes au coach pour le prochain match.";
+    if (lblComm) lblComm.textContent = "Un mot pour le coach ? (optionnel)";
+    if (txtComm) txtComm.placeholder = "Ex : J'ai mis Sarah en SF1 car elle est très en forme, ou rotation testée à l'entraînement...";
+    if (btnConf) btnConf.innerHTML = "🚀 Envoyer au Coach";
+  }
+
   var box = document.getElementById("resumeMaSuggestionBox");
   if (box) {
     var n1 = (CLUB_CONFIG && CLUB_CONFIG.nomEquipe1) || "Équipe 1";
@@ -5944,16 +5974,20 @@ function confirmerEnvoiSuggestionJoueur() {
   var compo = extraireCompoActuellePourSuggestion();
   var commEl = document.getElementById("txtCommentaireSuggestion");
   var comm = commEl ? commEl.value.trim() : "";
-  afficherLoading("Envoi de la suggestion...", "Transmission de votre proposition au coach...");
+  var loadingMsg = EST_COACH ? "Partage de votre proposition avec les coachs..." : "Transmission de votre proposition au coach...";
+  afficherLoading("Envoi de la proposition...", loadingMsg);
   google.script.run
     .withSuccessHandler(function(res) {
       masquerLoading();
       fermerModalSoumettreSuggestion();
       if (commEl) commEl.value = "";
-      afficherToast("💡 Votre proposition a bien été transmise au coach !", "succes");
+      var toastMsg = EST_COACH 
+        ? "💡 Votre variante a été partagée aux coachs avec succès !" 
+        : "💡 Votre proposition a bien été transmise au coach !";
+      afficherToast(toastMsg, "succes");
       if (typeof confetti === "function") confetti({ particleCount: 60, spread: 50 });
       chargerDonneesCoach();
-      retourAccueil();
+      if (!EST_COACH) retourAccueil();
     })
     .withFailureHandler(function(err) {
       masquerLoading();
@@ -5971,7 +6005,7 @@ function ouvrirModalSuggestionsCoach() {
     c.innerHTML = '<div style="text-align:center;padding:30px 10px;color:var(--text-muted);font-size:0.88rem;">' +
       '<div style="font-size:2rem;margin-bottom:8px;">📭</div>' +
       '<b>Aucune suggestion pour le moment.</b><br>' +
-      'Vos joueurs peuvent proposer leur composition depuis leur espace joueur (Mode Tactique ou Tinder).' +
+      'Les joueurs et coachs peuvent soumettre des propositions d\'équipe depuis le Mode Tactique ou Tinder.' +
       '</div>';
     document.getElementById("modalSuggestionsCoachBg").style.display = "flex";
     return;
@@ -5985,7 +6019,14 @@ function ouvrirModalSuggestionsCoach() {
   SUGGESTIONS_COMPOS.forEach(function(sugg, idx) {
     var card = document.createElement("div");
     card.className = "modal-section-card";
-    card.style.cssText = "background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;";
+    
+    var isCoach = Boolean(sugg.estCoach || (sugg.compo && sugg.compo.estCoach) || sugg.roleAuteur === 'coach');
+    var badgeAuteur = isCoach 
+      ? '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:800;display:inline-flex;align-items:center;gap:3px;">🧑‍🏫 Coach</span>'
+      : '<span style="background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe;padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:3px;">👤 Joueur</span>';
+
+    var cardBorder = isCoach ? "border:1.5px solid #a855f7;background:#faf5ff;" : "border:1.5px solid #e2e8f0;background:#f8fafc;";
+    card.style.cssText = cardBorder + "border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;";
 
     var dt = formaterDateHeureSuggestion(sugg.horodatage);
     var compo = sugg.compo || {};
@@ -5995,8 +6036,9 @@ function ouvrirModalSuggestionsCoach() {
     var reposCount = (compo.repos && compo.repos.length) || 0;
 
     var headerHtml = '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">' +
-      '<div style="font-weight:800;font-size:0.95rem;color:var(--text-main);display:flex;align-items:center;gap:6px;">' +
-        '<span>👤 ' + (sugg.nom || "Joueur") + '</span>' +
+      '<div style="font-weight:800;font-size:0.95rem;color:var(--text-main);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+        '<span>' + (isCoach ? '🧑‍🏫 ' : '👤 ') + (sugg.nom || (isCoach ? "Coach" : "Joueur")) + '</span>' +
+        badgeAuteur +
         '<span style="font-size:0.75rem;font-weight:500;color:var(--text-muted);">(' + dt + ')</span>' +
       '</div>' +
       '<button type="button" class="btn-reset" style="padding:3px 8px;font-size:0.75rem;color:#ef4444;" onclick="supprimerSuggestionCoach(' + (sugg.rowNumber || (idx + 2)) + ')" title="Supprimer cette suggestion">🗑️</button>' +
@@ -6017,7 +6059,8 @@ function ouvrirModalSuggestionsCoach() {
 
     var commentHtml = '';
     if (sugg.commentaire && sugg.commentaire.trim().length > 0) {
-      commentHtml = '<div style="background:#fff;border-left:3px solid #8b5cf6;padding:6px 10px;border-radius:0 6px 6px 0;font-size:0.78rem;font-style:italic;color:#4b5563;">' +
+      var commentBorder = isCoach ? "#a855f7" : "#8b5cf6";
+      commentHtml = '<div style="background:#fff;border-left:3px solid ' + commentBorder + ';padding:6px 10px;border-radius:0 6px 6px 0;font-size:0.78rem;font-style:italic;color:#4b5563;">' +
         '💬 « ' + sugg.commentaire + ' »' +
       '</div>';
     }
@@ -6050,7 +6093,9 @@ function chargerSuggestionJoueurDansCompo(idx) {
   }
   fermerModalSuggestionsCoach();
   appliquerRepartitionsCompo(sugg.compo);
-  afficherToast("💡 Composition proposée par " + (sugg.nom || "le joueur") + " chargée sur le terrain !", "succes");
+  var isCoach = Boolean(sugg.estCoach || (sugg.compo && sugg.compo.estCoach) || sugg.roleAuteur === 'coach');
+  var roleLabel = isCoach ? "le coach " : "le joueur ";
+  afficherToast("💡 Composition proposée par " + roleLabel + (sugg.nom || "l'auteur") + " chargée sur le terrain !", "succes");
   if (typeof confetti === "function") confetti({ particleCount: 50, spread: 60 });
   entrer(false);
 }
