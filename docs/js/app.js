@@ -1985,7 +1985,13 @@ var bLogin = document.getElementById("btnLogin"); if(bLogin) { bLogin.disabled =
 }).authentifierUtilisateur(tel, pin, true);
 }
 function seDeconnecter(){
-try { localStorage.removeItem("hb_pin"); localStorage.removeItem("hb_session"); localStorage.removeItem("hb_cache_data"); } catch(e){}
+try {
+  localStorage.removeItem("hb_pin");
+  localStorage.removeItem("hb_tel");
+  localStorage.removeItem("hb_session");
+  localStorage.removeItem("hb_cache_data");
+  localStorage.removeItem("hb_club_config");
+} catch(e){}
 SESSION_TEL = ""; SESSION_PIN = ""; SESSION_NOM = ""; SESSION_ID_SPAKTA = ""; EST_COACH = false; EST_TRESORIER = false;
 document.body.classList.remove("user-logged-in");
 var bLogo = document.getElementById("btnEditClubLogoBadge"); if(bLogo) bLogo.style.display = "none";
@@ -1993,8 +1999,11 @@ var navTabs = document.getElementById("carnetNavTabs"); if(navTabs) navTabs.styl
 document.getElementById("coachMenuBox").style.display = "none";
 document.getElementById("playerBox").style.display = "none";
 document.getElementById("loginBox").style.display = "flex";
-document.getElementById("inpPin").value = ""; var pPrv = document.getElementById("playerImgPreview"); if(pPrv){ pPrv.src = ""; pPrv.removeAttribute("src"); pPrv.style.setProperty("display", "none", "important"); }
+document.getElementById("inpPin").value = "";
+document.getElementById("inpTel").value = "";
+var pPrv = document.getElementById("playerImgPreview"); if(pPrv){ pPrv.src = ""; pPrv.removeAttribute("src"); pPrv.style.setProperty("display", "none", "important"); }
 retourAccueil();
+window.location.reload();
 }
 function changerMonPoste(){
 var np = document.getElementById("selPosteJoueur").value;
