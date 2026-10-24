@@ -6348,7 +6348,7 @@ function construireHtmlWebApp() {
     serviceUrl = ScriptApp.getService().getUrl();
   } catch (e) {}
 
-  const webAppUrl = cleanBase + '?api=' + encodeURIComponent(serviceUrl);
+  const webAppUrl = cleanBase + '?api=' + encodeURIComponent(serviceUrl) + '&reset=1';
   const nomClub = cfg.nomClub || 'Handball Club';
   const logoUrl = cfg.logoUrl || genererLogoDefaut(cfg.couleurPrimaire);
   const couleur = cfg.couleurPrimaire || '#f97316';

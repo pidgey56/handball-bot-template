@@ -8,18 +8,25 @@
       var p = new URLSearchParams(window.location.search);
       var qApi = p.get('api');
       var doReset = p.get('reset') || p.get('logout');
-      var storedApi = localStorage.getItem('hb_api_url') || '';
-      if (doReset || (qApi && qApi.trim() !== storedApi.trim())) {
-        var toSave = qApi ? qApi.trim() : storedApi;
+      var storedApi = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_api_url')) || '';
+      if (qApi) {
+        qApi = qApi.trim().replace(/\\/g, '/');
+        if (qApi.includes("script.google.com/macros/s/") && !qApi.endsWith("/exec")) {
+          qApi = qApi.replace(/\/+$/, '') + "/exec";
+        }
+      }
+      var isDiff = qApi && (qApi.toLowerCase() !== storedApi.trim().toLowerCase());
+      if (doReset || isDiff) {
         console.log('[Handball Bot] Nouveau club ou réinitialisation demandée : purge du stockage local.');
         localStorage.clear();
-        if (toSave) localStorage.setItem('hb_api_url', toSave);
+        sessionStorage.clear();
+        if (qApi) localStorage.setItem('hb_api_url', qApi);
       }
     }
   } catch(e) {}
 })();
 
-var APP_VERSION = '2.2.25';
+var APP_VERSION = '2.2.26';
 var STATS_SPAKTA = (typeof window !== "undefined" && window.SPAKTA_INITIAL_DATA) || null;
 try {
   var storedSpakta = localStorage.getItem("hb_spakta_stats");

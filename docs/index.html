@@ -1,6 +1,31 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+  <script>
+    (function() {
+      try {
+        if (typeof window !== 'undefined' && window.location && window.location.search) {
+          var p = new URLSearchParams(window.location.search);
+          var qApi = p.get('api');
+          var doReset = p.get('reset') || p.get('logout');
+          var storedApi = (typeof localStorage !== 'undefined' && localStorage.getItem('hb_api_url')) || '';
+          if (qApi) {
+            qApi = qApi.trim().replace(/\\/g, '/');
+            if (qApi.includes("script.google.com/macros/s/") && !qApi.endsWith("/exec")) {
+              qApi = qApi.replace(/\/+$/, '') + "/exec";
+            }
+          }
+          var isDiff = qApi && (qApi.toLowerCase() !== storedApi.trim().toLowerCase());
+          if (doReset || isDiff) {
+            console.log('[Handball Bot] Nouveau club ou reset demandé : purge complète du stockage.');
+            localStorage.clear();
+            sessionStorage.clear();
+            if (qApi) localStorage.setItem('hb_api_url', qApi);
+          }
+        }
+      } catch(e) {}
+    })();
+  </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title id="pageTitle">Handball Coach</title>
@@ -16,7 +41,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=2.2.25">
+  <link rel="stylesheet" href="css/style.css?v=2.2.26">
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
@@ -1769,13 +1794,13 @@
   </div>
 
   <!-- SCRIPTS HANDBALL BOT 2.0 -->
-  <script src="js/spakta-data.js?v=2.2.25"></script>
-  <script src="js/api.js?v=2.2.25"></script>
-  <script src="js/app.js?v=2.2.25"></script>
+  <script src="js/spakta-data.js?v=2.2.26"></script>
+  <script src="js/api.js?v=2.2.26"></script>
+  <script src="js/app.js?v=2.2.26"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js?v=2.2.25').catch(function(e){ console.log('SW registration failed', e); });
+        navigator.serviceWorker.register('sw.js?v=2.2.26').catch(function(e){ console.log('SW registration failed', e); });
       });
     }
   </script>

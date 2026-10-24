@@ -36,15 +36,11 @@ const ApiClient = {
     if (queryApi) {
       var cleanedQ = assainirUrlApi(queryApi);
       try {
-        var prevUrl = localStorage.getItem('hb_api_url');
-        if (prevUrl && prevUrl !== cleanedQ) {
-          // Changement d'API / de club : purger le cache et la session de l'ancien club
-          localStorage.removeItem('hb_cache_data');
-          localStorage.removeItem('hb_session');
-          localStorage.removeItem('hb_tel');
-          localStorage.removeItem('hb_pin');
-          localStorage.removeItem('hb_draft_compo');
-          localStorage.removeItem('hb_spakta_stats');
+        var prevUrl = localStorage.getItem('hb_api_url') || '';
+        if (prevUrl.toLowerCase() !== cleanedQ.toLowerCase()) {
+          // Changement d'API / de club : purger l'intégralité du stockage local
+          localStorage.clear();
+          sessionStorage.clear();
         }
         localStorage.setItem('hb_api_url', cleanedQ);
       } catch(e){}
@@ -72,14 +68,10 @@ const ApiClient = {
     if (!url) return;
     var cleaned = assainirUrlApi(url);
     try {
-      var prevUrl = localStorage.getItem('hb_api_url');
-      if (prevUrl && prevUrl !== cleaned) {
-        localStorage.removeItem('hb_cache_data');
-        localStorage.removeItem('hb_session');
-        localStorage.removeItem('hb_tel');
-        localStorage.removeItem('hb_pin');
-        localStorage.removeItem('hb_draft_compo');
-        localStorage.removeItem('hb_spakta_stats');
+      var prevUrl = localStorage.getItem('hb_api_url') || '';
+      if (prevUrl.toLowerCase() !== cleaned.toLowerCase()) {
+        localStorage.clear();
+        sessionStorage.clear();
       }
       localStorage.setItem('hb_api_url', cleaned);
     } catch(e){}
